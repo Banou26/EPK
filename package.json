@@ -1,0 +1,53 @@
+{
+  "name": "epk",
+  "version": "0.0.1",
+  "description": "JS testing tool for a world without problems",
+  "main": "src/index.ts",
+  "repository": "https://github.com/banou26/steins-gate",
+  "author": "Banou",
+  "license": "MIT",
+  "scripts": {
+    "rollup": "rollup -c -w",
+    "parcel-dev": "parcel src/index.ts --target node --public-url ./",
+    "test-dev": "nodemon --watch src src/index.js tests/unit/index.ts",
+    "devo": "concurrently \"yarn run parcel-dev\" \"yarn run test-dev\"",
+    "devr": "parcel src/browser/index.html --no-hmr",
+    "test": "nodemon --exec babel-node src/index.mjs ./tests/unit/*.spec.js",
+    "index": "parcel src/index.ts --target node --public-url ./",
+    "browser": "parcel src/browser/index.html --out-file browser.html --no-hmr",
+    "dev": "concurrently \"yarn run index\" \"yarn run browser\""
+  },
+  "dependencies": {
+    "@babel/plugin-transform-typescript": "^7.2.0",
+    "babel-plugin-espower": "^3.0.0",
+    "babylon-walk": "^1.0.2",
+    "chalk": "^2.4.1",
+    "draftlog": "^1.0.12",
+    "fast-glob": "^2.2.4",
+    "finalhandler": "^1.1.1",
+    "ora": "^3.0.0",
+    "parcel-bundler": "^1.11.0",
+    "parcel-plugin-babel-typescript": "^0.0.3",
+    "perf_hooks": "^0.0.1",
+    "power-assert": "^1.6.1",
+    "puppeteer": "^1.11.0",
+    "rxjs": "^6.3.3",
+    "serve-static": "^1.13.2"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.0.0-0",
+    "@babel/node": "^7.2.2",
+    "@babel/plugin-proposal-object-rest-spread": "^7.2.0",
+    "@babel/plugin-proposal-optional-chaining": "^7.2.0",
+    "@babel/plugin-proposal-pipeline-operator": "^7.2.0",
+    "concurrently": "^4.1.0",
+    "nodemon": "^1.18.9",
+    "typescript": "^3.2.2"
+  },
+  "engines": {
+    "node": ">= 11.0.0"
+  },
+  "browserslist": [
+    "last 1 Chrome versions"
+  ]
+}
