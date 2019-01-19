@@ -1,2 +1,2 @@
-export * from './assert/index.ts'
-export * from './runner/index.ts'
+export * from './runner/index'
+export * from './test/index'

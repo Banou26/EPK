@@ -104,53 +104,7 @@ parcelRequire = (function (modules, cache, entry, globalName) {
 
   // Override the current require with this new one
   return newRequire;
-})({"utils.ts":[function(require,module,exports) {
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.TESTS_METADATA = exports.isBrowser = void 0;
-const isBrowser = typeof window !== 'undefined';
-exports.isBrowser = isBrowser;
-const TESTS_METADATA = '__STEINSGATE_TESTS_METADATA';
-exports.TESTS_METADATA = TESTS_METADATA;
-},{}],"assert/index.ts":[function(require,module,exports) {
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.test = exports.tests = exports.assert = void 0;
-
-var _powerAssert = _interopRequireDefault(require("power-assert"));
-
-var _utils = require("../utils.ts");
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-const assert = _powerAssert.default.customize({});
-
-exports.assert = assert;
-const tests = [];
-exports.tests = tests;
-
-const test = (desc, func) => {
-  if (typeof desc !== 'string') throw new Error('desc has to be a string');
-  if (typeof func !== 'function') throw new Error('func has to be a function');
-  if (tests.includes(desc)) throw new Error(`Found duplicate test description: ${desc}`);
-  tests.push(desc);
-};
-
-exports.test = test;
-setTimeout(_ => {
-  if (_utils.isBrowser) {
-    var _window, _window$TESTS_METADAT;
-
-    (_window = window) === null || _window === void 0 ? void 0 : (_window$TESTS_METADAT = _window[_utils.TESTS_METADATA]) === null || _window$TESTS_METADAT === void 0 ? void 0 : _window$TESTS_METADAT.call(_window, JSON.stringify(tests));
-  }
-}, 0);
-},{"../utils.ts":"utils.ts"}],"runner/cli.ts":[function(require,module,exports) {
+})({"runner/cli.ts":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -197,62 +151,72 @@ exports.default = _default;
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.log = exports.x = exports.check = exports.getFrame = exports.frames = exports.prettifyTime = void 0;
-
-var _rxjs = require("rxjs");
-
-var _operators = require("rxjs/operators");
+exports.prettifyTime = void 0;
 
 // import draftlog from 'draftlog'
+// import { Observable, timer, of } from 'rxjs'
+// import { takeUntil, switchMap, take, publish } from 'rxjs/operators'
 const prettifyTime = time => time < 1000 ? `${time.toFixed()}ms` : `${(time / 1000).toFixed(2)}s`; // draftlog.into(console)
+// export const frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
+// export const getFrame =
+//   i =>
+//     frames[i % frames.length]
+// export const check = '✔'
+// export const x = '✖'
+// export const log = (textFunction, operator) =>
+//   switchMap(value =>
+//     Observable.create(observer => {
+//       let completed
+//       const updateLine = console.draft()
+//       const t1 = Date.now()
+//       const observable =
+//         of(value)
+//           .pipe(
+//             operator,
+//             publish()
+//           )
+//       const obs = observable.refCount()
+//       const sub = obs.subscribe(val => {
+//         completed = true
+//         updateLine(
+//           textFunction({
+//             time: prettifyTime(Date.now() - t1),
+//             done: true,
+//             value
+//           })
+//         )
+//         observer.next(val)
+//       })
+//       const spinnerSub =
+//         timer(0, 100)
+//           .pipe(
+//             takeUntil(obs),
+//           )
+//           .subscribe(i =>
+//             updateLine(
+//               textFunction({
+//                 icon: frames[i % frames.length],
+//                 running: true,
+//                 value,
+//                 i
+//               })
+//             ))
+//       observable.connect()
+//       return _ => {
+//         if (completed) return
+//         sub.unsubscribe()
+//         spinnerSub.unsubscribe()
+//         updateLine(
+//           textFunction({
+//             cancelled: true,
+//             value
+//           })
+//         )
+//       }
+//     }))
 
 
 exports.prettifyTime = prettifyTime;
-const frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
-exports.frames = frames;
-
-const getFrame = i => frames[i % frames.length];
-
-exports.getFrame = getFrame;
-const check = '✔';
-exports.check = check;
-const x = '✖';
-exports.x = x;
-
-const log = (textFunction, operator) => (0, _operators.switchMap)(value => _rxjs.Observable.create(observer => {
-  let completed;
-  const updateLine = console.draft();
-  const t1 = Date.now();
-  const observable = (0, _rxjs.of)(value).pipe(operator, (0, _operators.publish)());
-  const obs = observable.refCount();
-  const sub = obs.subscribe(val => {
-    completed = true;
-    updateLine(textFunction({
-      time: prettifyTime(Date.now() - t1),
-      done: true,
-      value
-    }));
-    observer.next(val);
-  });
-  const spinnerSub = (0, _rxjs.timer)(0, 100).pipe((0, _operators.takeUntil)(obs)).subscribe(i => updateLine(textFunction({
-    icon: frames[i % frames.length],
-    running: true,
-    value,
-    i
-  })));
-  observable.connect();
-  return _ => {
-    if (completed) return;
-    sub.unsubscribe();
-    spinnerSub.unsubscribe();
-    updateLine(textFunction({
-      cancelled: true,
-      value
-    }));
-  };
-}));
-
-exports.log = log;
 },{}],"runner/bundler.ts":[function(require,module,exports) {
 "use strict";
 
@@ -590,64 +554,115 @@ function stringWidth(string) {
 var _default = new Logger();
 
 exports.default = _default;
+},{}],"runner/server.ts":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.port = void 0;
+
+var _path = _interopRequireDefault(require("path"));
+
+var _koa = _interopRequireDefault(require("koa"));
+
+var _koaStatic = _interopRequireDefault(require("koa-static"));
+
+var _koaMount = _interopRequireDefault(require("koa-mount"));
+
+var _getPort = _interopRequireDefault(require("get-port"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+const port = (0, _getPort.default)({
+  port: 10485
+});
+exports.port = port;
+const app = new _koa.default();
+const epk = new _koa.default();
+epk.use((0, _koaStatic.default)(_path.default.resolve(__dirname, '..', 'dist')));
+const tests = new _koa.default();
+tests.use((0, _koaStatic.default)(_path.default.resolve(__dirname, '..', '.epk', 'dist')));
+app.use((0, _koaMount.default)('/epk', epk));
+app.use((0, _koaMount.default)('/tests', tests));
+port.then(port => app.listen(port));
+},{}],"utils.ts":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.RUN_TEST = exports.RUN_TESTS = exports.GET_TESTS = exports.isBrowser = void 0;
+const isBrowser = typeof window !== 'undefined';
+exports.isBrowser = isBrowser;
+const GET_TESTS = '__EPK_GET_TESTS';
+exports.GET_TESTS = GET_TESTS;
+const RUN_TESTS = '__EPK_RUN_TESTS';
+exports.RUN_TESTS = RUN_TESTS;
+const RUN_TEST = '__EPK_RUN_TEST';
+exports.RUN_TEST = RUN_TEST;
 },{}],"runner/analyze.ts":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.default = void 0;
+exports.browser = void 0;
 
-var _fs = _interopRequireDefault(require("fs"));
-
-var _util = _interopRequireDefault(require("util"));
-
-var _rxjs = require("rxjs");
+var _path = _interopRequireDefault(require("path"));
 
 var _operators = require("rxjs/operators");
 
-var _utils = require("../utils.ts");
+var _utils = require("../utils");
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-const readFile = _util.default.promisify(_fs.default.readFile);
+const browser = page => (0, _operators.switchMap)(({
+  bundle
+}) => page.evaluate(({
+  GET_TESTS,
+  urls
+}) => window[GET_TESTS](urls), {
+  GET_TESTS: _utils.GET_TESTS,
+  urls: (bundle.isEmpty ? Array.from(bundle.childBundles) : [bundle]).map(({
+    name
+  }) => name.replace(`${_path.default.resolve(process.cwd(), '.epk', 'dist')}\\`, '/tests/'))
+}).then(result => ({
+  bundle,
+  tests: result
+})));
 
-const getTestsMetadata = (browser, bundle) => _rxjs.Observable.create(observer => {
-  let cancelled;
+exports.browser = browser;
+},{"../utils":"utils.ts"}],"runner/test.ts":[function(require,module,exports) {
+"use strict";
 
-  (async _ => {
-    const [file, page] = await Promise.all([readFile(bundle.name, 'utf8'), browser.newPage()]);
-
-    const close = _ => page.close();
-
-    if (cancelled) return close(0); // page.on('console', msg => console.log(msg.text()))
-
-    const result = await new Promise(async (resolve, reject) => {
-      await page.exposeFunction(_utils.TESTS_METADATA, async res => {
-        resolve(res);
-      });
-      if (cancelled) return close(1);
-      page.evaluate(file).catch(_ => {});
-    });
-    close(2);
-    observer.next(result);
-  })();
-
-  return _ => cancelled = true;
+Object.defineProperty(exports, "__esModule", {
+  value: true
 });
+exports.browser = void 0;
 
-const pageProvider = (browser, maxPages = 5) => _rxjs.Observable.create(observer => {
-  Promise.all(Array(5).map(_ => browser.newPage())).then(pages => {});
-  return _ => {};
-});
+var _operators = require("rxjs/operators");
 
-var _default = ({
-  browser,
-  maxPages = 25
-}) => (0, _operators.switchMap)(rootBundle => (0, _rxjs.of)(...(rootBundle.isEmpty ? Array.from(rootBundle.childBundles) : [rootBundle])).pipe((0, _operators.mergeMap)(bundle => getTestsMetadata(browser, bundle), maxPages)));
+var _utils = require("../utils");
 
-exports.default = _default;
-},{"../utils.ts":"utils.ts"}],"runner/index.ts":[function(require,module,exports) {
+const browser = page => (0, _operators.switchMap)(async ({
+  bundle,
+  tests
+}) => page.coverage.startJSCoverage().then(async _ => ({
+  bundle,
+  tests,
+  testsResult: await page.evaluate(({
+    RUN_TESTS,
+    tests
+  }) => window[RUN_TESTS](tests), {
+    RUN_TESTS: _utils.RUN_TESTS,
+    tests
+  }),
+  testsCoverage: await page.coverage.stopJSCoverage()
+})));
+
+exports.browser = browser;
+},{"../utils":"utils.ts"}],"runner/index.ts":[function(require,module,exports) {
 "use strict";
 
 var _path = _interopRequireDefault(require("path"));
@@ -660,26 +675,35 @@ var _operators = require("rxjs/operators");
 
 var _puppeteer = _interopRequireDefault(require("puppeteer"));
 
-var _cli = _interopRequireDefault(require("./cli.ts"));
+var _cli = _interopRequireDefault(require("./cli"));
 
-var _utils = require("./utils.ts");
+var _utils = require("./utils");
 
-var _bundler4 = _interopRequireDefault(require("./bundler.ts"));
+var _bundler4 = _interopRequireDefault(require("./bundler"));
 
-var _logger = _interopRequireDefault(require("./logger.ts"));
+var _logger = _interopRequireDefault(require("./logger"));
 
-var _analyze = _interopRequireDefault(require("./analyze.ts"));
+var _server = require("./server");
+
+var _analyze = require("./analyze");
+
+var _test = require("./test");
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-const init = async _ => {
-  var _Bundler, _bundler, _ref, _bundler2, _ref2, _ref3, _ref4, _ref5, _ref6, _bundler3;
+const init = async ({
+  node = false
+} = {}) => {
+  var _Bundler, _bundler, _ref, _bundler2, _ref2, _ref3, _ref4, _ref5, _ref6, _ref7, _ref8, _bundler3;
 
-  let buildTimeStart, buildTimeEnd, analyzeTimeStart, analyzeTimeEnd;
+  let pageReload, buildTimeStart, buildTimeEnd, analyzeTimeStart, analyzeTimeEnd, testTimeStart, testTimeEnd;
   const globs = await (0, _cli.default)();
   const browser = await _puppeteer.default.launch({
-    devtools: false
+    devtools: true
   });
+  const page = !node && (await browser.pages())[0];
+  page.on('console', msg => _logger.default.log(`browser: ${msg.text()}`));
+  await page.goto(`http://localhost:${await _server.port}/epk/browser-runner.html`);
   const entryFiles = (await _fastGlob.default.async(globs)).map(path => _path.default.join(process.cwd(), path));
   const entryFilesDisplayNames = entryFiles.map(path => _path.default.win32.basename(path)).join(', ');
   const bundler = (_Bundler = (0, _bundler4.default)(entryFiles), (0, _operators.publish)()(_Bundler));
@@ -689,46 +713,165 @@ const init = async _ => {
   building.subscribe(_ => {
     _logger.default.clear();
 
+    pageReload = page.reload();
     buildTimeStart = Date.now();
 
-    _logger.default.progress(_chalk.default.grey(`Building ${entryFilesDisplayNames}`));
+    _logger.default.progress(`\n${_chalk.default.grey(`Building ${entryFilesDisplayNames}`)}`);
   });
   const error = (_ref = (_bundler2 = bundler, (0, _operators.filter)(({
     name
   }) => name === 'buildError')(_bundler2)), (0, _operators.catchError)(error => _logger.default.error(error))(_ref));
   error.subscribe(_ => _logger.default.error(error));
-  const analyzed = (_ref2 = (_ref3 = (_ref4 = (_ref5 = (_ref6 = (_bundler3 = bundler, (0, _operators.filter)(({
+  const analyzed = (_ref2 = (_ref3 = (_ref4 = (_ref5 = (_ref6 = (_ref7 = (_ref8 = (_bundler3 = bundler, (0, _operators.filter)(({
     name
   }) => name === 'bundled')(_bundler3)), (0, _operators.tap)(_ => {
     buildTimeEnd = Date.now();
 
-    _logger.default.progress(_chalk.default.green(`Built in ${(0, _utils.prettifyTime)(buildTimeEnd - buildTimeStart)}.`));
-  })(_ref6)), (0, _operators.map)(({
+    _logger.default.progress(`\n${_chalk.default.green(`Built in ${(0, _utils.prettifyTime)(buildTimeEnd - buildTimeStart)}.`)}\n${_chalk.default.grey(`Analyzing ${entryFilesDisplayNames}`)}.`);
+  })(_ref8)), (0, _operators.switchMap)(({
     bundle
-  }) => bundle)(_ref5)), (0, _operators.tap)(_ => {
+  }) => pageReload.then(_ => ({
+    bundle
+  })))(_ref7)), (0, _operators.tap)(_ => {
     analyzeTimeStart = Date.now();
-
-    _logger.default.progress(_chalk.default.grey(`Analyzing ${entryFilesDisplayNames}`));
-  })(_ref4)), (0, _analyze.default)({
-    browser
-  })(_ref3)), (0, _operators.tap)(_ => {
+  })(_ref6)), (0, _analyze.browser)(page)(_ref5)), (0, _operators.tap)(_ => {
     analyzeTimeEnd = Date.now();
+    testTimeStart = Date.now();
 
-    _logger.default.progress(_chalk.default.green(`Analyzed in ${(0, _utils.prettifyTime)(analyzeTimeEnd - analyzeTimeStart)}.`));
+    _logger.default.progress(`\n${_chalk.default.green(`Built in ${(0, _utils.prettifyTime)(buildTimeEnd - buildTimeStart)}.`)}\n${_chalk.default.green(`Analyzed in ${(0, _utils.prettifyTime)(analyzeTimeEnd - analyzeTimeStart)}.`)}\n${_chalk.default.green(`Testing ${entryFilesDisplayNames}.`)}`);
+  })(_ref4)), (0, _test.browser)(page)(_ref3)), (0, _operators.tap)(_ => {
+    testTimeEnd = Date.now();
+
+    _logger.default.success(`\n${_chalk.default.green(`Built in ${(0, _utils.prettifyTime)(buildTimeEnd - buildTimeStart)}.`)}\n${_chalk.default.green(`Analyzed in ${(0, _utils.prettifyTime)(analyzeTimeEnd - analyzeTimeStart)}.`)}\n${_chalk.default.green(`Tested in ${(0, _utils.prettifyTime)(testTimeEnd - testTimeStart)}.`)}${_chalk.default.red(`\nErrors:`)}\n${_chalk.default.red(Object.entries(_.testsResult.reduce((obj, test) => (obj[test.url] ? obj[test.url].push(test) : obj[test.url] = [test], obj), {})).map(([url, tests]) => `${url}\n${tests.map(({
+      description,
+      error: {
+        message
+      }
+    }) => `${description}\n${message}`).join('\n')}`))}`);
   })(_ref2));
-  analyzed.subscribe(val => {});
+  analyzed.subscribe(val => {// logger.log(`finalValue: ${JSON.stringify(val.testsResult)}`)
+  });
   bundler.connect();
 };
 
 init();
-},{"./cli.ts":"runner/cli.ts","./utils.ts":"runner/utils.ts","./bundler.ts":"runner/bundler.ts","./logger.ts":"runner/logger.ts","./analyze.ts":"runner/analyze.ts"}],"index.ts":[function(require,module,exports) {
+},{"./cli":"runner/cli.ts","./utils":"runner/utils.ts","./bundler":"runner/bundler.ts","./logger":"runner/logger.ts","./server":"runner/server.ts","./analyze":"runner/analyze.ts","./test":"runner/test.ts"}],"test/test.ts":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.test = exports.fail = exports.pass = exports.todo = exports.tests = void 0;
+
+var _utils = require("../utils");
+
+const tests = new Map();
+exports.tests = tests;
+
+const todo = _ => {};
+
+exports.todo = todo;
+
+const pass = _ => {};
+
+exports.pass = pass;
+
+const fail = _ => {};
+
+exports.fail = fail;
+
+const test = (desc, func) => {
+  if (typeof desc !== 'string') throw new Error('desc has to be a string');
+  if (typeof func !== 'function') throw new Error('func has to be a function');
+  if (tests.has(desc)) throw new Error(`Found duplicate test description: ${desc}`);
+  tests.set(desc, func);
+};
+
+exports.test = test;
+const initiated = new Promise(resolve => setTimeout(resolve, 0));
+
+if (_utils.isBrowser) {
+  window.addEventListener('message', async ({
+    data: {
+      name,
+      data
+    }
+  }) => {
+    if (name === _utils.GET_TESTS) {
+      window.parent.postMessage({
+        name: _utils.GET_TESTS,
+        data: Array.from(tests).map(([desc, func]) => [desc, func.toString()])
+      });
+    } else if (name === _utils.RUN_TEST) {
+      let error;
+
+      try {
+        const result = await tests.get(data)(); // console.log(result)
+        // if (result instanceof Error) error = result
+      } catch (err) {
+        // console.log(err)
+        error = err;
+      } //   .then(result => console.log('result', result)).catch(err => console.log('error', err))
+      // setTimeout(_ => console.log(errors), 0)
+
+
+      window.parent.postMessage({
+        name: _utils.GET_TESTS,
+        data: {
+          error // ...await tests.get(data)()
+          //   .then(value => ({ /*value*/ }))
+          //   .catch(error => console.log('lol', error) || ({ error }))
+
+        }
+      });
+    }
+  });
+}
+},{"../utils":"utils.ts"}],"test/assert.ts":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.assert = void 0;
+
+var _powerAssert = _interopRequireDefault(require("power-assert"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+const assert = _powerAssert.default.customize({});
+
+exports.assert = assert;
+},{}],"test/index.ts":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+Object.defineProperty(exports, "test", {
+  enumerable: true,
+  get: function () {
+    return _test.test;
+  }
+});
+Object.defineProperty(exports, "assert", {
+  enumerable: true,
+  get: function () {
+    return _assert.assert;
+  }
+});
+
+var _test = require("./test");
+
+var _assert = require("./assert");
+},{"./test":"test/test.ts","./assert":"test/assert.ts"}],"index.ts":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _index = require("./assert/index.ts");
+var _index = require("./runner/index");
 
 Object.keys(_index).forEach(function (key) {
   if (key === "default" || key === "__esModule") return;
@@ -740,7 +883,7 @@ Object.keys(_index).forEach(function (key) {
   });
 });
 
-var _index2 = require("./runner/index.ts");
+var _index2 = require("./test/index");
 
 Object.keys(_index2).forEach(function (key) {
   if (key === "default" || key === "__esModule") return;
@@ -751,5 +894,5 @@ Object.keys(_index2).forEach(function (key) {
     }
   });
 });
-},{"./assert/index.ts":"assert/index.ts","./runner/index.ts":"runner/index.ts"}]},{},["index.ts"], null)
+},{"./runner/index":"runner/index.ts","./test/index":"test/index.ts"}]},{},["index.ts"], null)
 //# sourceMappingURL=index.map
