@@ -4,9 +4,9 @@ import draftlog from 'draftlog'
 import puppeteer from 'puppeteer'
 import { interval, Observable, timer, pipe, from, of } from 'rxjs'
 import { tap, takeUntil, delay, mergeMap, switchMap, take, publish, refCount } from 'rxjs/operators'
-import { prettifyTime, log } from './utils.ts'
-import { TESTS_METADATA } from '../utils.ts'
-import './server.ts'
+import { prettifyTime, log } from './utils'
+import { GET_TESTS } from '../utils'
+import './server'
 const readFile = util.promisify(fs.readFile)
 const writeFile = util.promisify(fs.writeFile)
 

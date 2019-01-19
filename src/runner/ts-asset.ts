@@ -48,8 +48,8 @@ module.exports = class EPKTSAsset extends JSAsset {
           config: {
             plugins: [
               require('@babel/plugin-transform-modules-commonjs'),
-              require('babel-plugin-espower'),
-              require('@babel/plugin-transform-typescript')
+              require('@babel/plugin-transform-typescript'),
+              require('babel-plugin-espower')
             ]
           }
         })
