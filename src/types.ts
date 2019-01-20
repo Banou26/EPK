@@ -14,6 +14,7 @@ export interface TestedContext extends AnalyzedContext {
 }
 
 export interface Test {
+  path: string
   url: string
   description: string
   body: Function

@@ -40,26 +40,28 @@ import { Test, TestResult } from '../types'
 //       .toPromise()
 
 const getTests =
-  (urls: string[]): Promise<Test[]> =>
+  (filesData): Promise<Test[]> =>
     (forkJoin(
-      ...urls.map(url =>
+      ...filesData.map(({ sourcePath, distPath, url }) =>
         iframe(`${url}`)
-          |> tap(iframe =>
-              iframe.contentWindow.postMessage({
-                name: GET_TESTS
-              }, '*'))
-          |> switchMap(iframe =>
-              fromEvent(window, 'message')
-                |> filter(({ source }) => source === iframe.contentWindow)
-                |> map(({ data }) => data)
-                |> map(({ data: testsData }) =>
-                    testsData
-                      .map(([ description, body ]: [ string, string ]) => ({
-                        url,
-                        description,
-                        body
-                      }))))
-          |> take(1))
+        |> tap(iframe =>
+            iframe.contentWindow.postMessage({
+              name: GET_TESTS
+            }, '*'))
+        |> switchMap(iframe =>
+            fromEvent(window, 'message')
+            |> filter(({ source }) => source === iframe.contentWindow)
+            |> map(({ data }) => data)
+            |> map(({ data: testsData }) =>
+                testsData
+                  .map(([ description, body ]: [ string, string ]) => ({
+                    sourcePath,
+                    distPath,
+                    url,
+                    description,
+                    body
+                  }))))
+        |> take(1))
     )
       |> map(tests => tests.flat()))
       .toPromise()
@@ -67,27 +69,29 @@ const getTests =
 const runTests =
   (tests: Test[]): Promise<TestResult> =>
     (forkJoin(
-      ...tests.map(({ url, description, body }: { url: string, description: string, body: string }) =>
+      ...tests.map(({ sourcePath, distPath, url, description, body }: { url: string, description: string, body: string }) =>
         iframe(`${url}?${description}`)
-          |> tap(iframe =>
+        |> tap(iframe =>
             iframe.contentWindow.postMessage({
               name: RUN_TEST,
               data: description
             }, '*'))
-          |> switchMap(iframe =>
-              fromEvent(window, 'message')
-                |> filter(({ source }) => source === iframe.contentWindow)
-                |> map(({ data }) => data)
-                |> map(({ data: { error } }) => ({
-                      url,
-                      description,
-                      body,
-                      error
-                    }))
-                |> delay(10000))
-          |> take(1))
+        |> switchMap(iframe =>
+            fromEvent(window, 'message')
+            |> filter(({ source }) => source === iframe.contentWindow)
+            |> map(({ data }) => data)
+            |> map(({ data: { error } }) => ({
+                sourcePath,
+                distPath,
+                url,
+                description,
+                body,
+                error
+              }))
+            /*|> delay(10000)*/)
+        |> take(1))
     )
-      |> map(tests => tests.flat()))
+    |> map(tests => tests.flat()))
       .toPromise()
 
 window[GET_TESTS] = getTests

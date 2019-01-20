@@ -15130,10 +15130,14 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 //     )
 //       |> map(tests => tests.flat()))
 //       .toPromise()
-const getTests = urls => {
+const getTests = filesData => {
   var _forkJoin;
 
-  return (_forkJoin = (0, _rxjs.forkJoin)(...urls.map(url => {
+  return (_forkJoin = (0, _rxjs.forkJoin)(...filesData.map(({
+    sourcePath,
+    distPath,
+    url
+  }) => {
     var _ref, _ref2, _iframe;
 
     return _ref = (_ref2 = (_iframe = (0, _iframe3.default)(`${url}`), (0, _operators.tap)(iframe => iframe.contentWindow.postMessage({
@@ -15148,6 +15152,8 @@ const getTests = urls => {
       }) => data)(_ref4)), (0, _operators.map)(({
         data: testsData
       }) => testsData.map(([description, body]) => ({
+        sourcePath,
+        distPath,
         url,
         description,
         body
@@ -15160,6 +15166,8 @@ const runTests = tests => {
   var _forkJoin2;
 
   return (_forkJoin2 = (0, _rxjs.forkJoin)(...tests.map(({
+    sourcePath,
+    distPath,
     url,
     description,
     body
@@ -15170,23 +15178,27 @@ const runTests = tests => {
       name: _utils.RUN_TEST,
       data: description
     }, '*'))(_iframe2)), (0, _operators.switchMap)(iframe => {
-      var _ref7, _ref8, _ref9, _fromEvent2;
+      var _ref7, _ref8, _fromEvent2;
 
-      return _ref7 = (_ref8 = (_ref9 = (_fromEvent2 = (0, _rxjs.fromEvent)(window, 'message'), (0, _operators.filter)(({
+      return _ref7 = (_ref8 = (_fromEvent2 = (0, _rxjs.fromEvent)(window, 'message'), (0, _operators.filter)(({
         source
       }) => source === iframe.contentWindow)(_fromEvent2)), (0, _operators.map)(({
         data
-      }) => data)(_ref9)), (0, _operators.map)(({
+      }) => data)(_ref8)), (0, _operators.map)(({
         data: {
           error
         }
       }) => ({
+        sourcePath,
+        distPath,
         url,
         description,
         body,
         error
-      }))(_ref8)), (0, _operators.delay)(10000)(_ref7);
-    })(_ref6)), (0, _operators.take)(1)(_ref5);
+      }))(_ref7);
+    }
+    /*|> delay(10000)*/
+    )(_ref6)), (0, _operators.take)(1)(_ref5);
   })), (0, _operators.map)(tests => tests.flat())(_forkJoin2)).toPromise();
 };
 

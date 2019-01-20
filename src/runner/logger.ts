@@ -2,7 +2,7 @@
 
 import chalk from 'chalk'
 import readline from 'readline'
-import { coundBreaks } from 'grapheme-breaker'
+import { countBreaks } from 'grapheme-breaker'
 import stripAnsi from 'strip-ansi'
 import ora from 'ora'
 import path from 'path'

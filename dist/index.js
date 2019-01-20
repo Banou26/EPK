@@ -151,11 +151,21 @@ exports.default = _default;
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.prettifyTime = void 0;
+exports.prettifyTime = exports.prettifyPath = void 0;
+
+var _path = _interopRequireDefault(require("path"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 // import draftlog from 'draftlog'
 // import { Observable, timer, of } from 'rxjs'
 // import { takeUntil, switchMap, take, publish } from 'rxjs/operators'
+const prettifyPath = path => _path.default.relative(process.cwd(), path); // Path.win32.basename(path) // name.replace(`${path.resolve(process.cwd(), '.epk', 'dist')}\\`, '/tests/')
+// path:"C:\Users\Banou\Desktop\epk\.epk\dist\asserts.spec.js"
+
+
+exports.prettifyPath = prettifyPath;
+
 const prettifyTime = time => time < 1000 ? `${time.toFixed()}ms` : `${(time / 1000).toFixed(2)}s`; // draftlog.into(console)
 // export const frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
 // export const getFrame =
@@ -233,42 +243,49 @@ var _rxjs = require("rxjs");
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-var _default = entryFiles => _rxjs.Observable.create(observer => {
-  const bundler = new _parcelBundler.default(entryFiles, {
-    outDir: '.epk/dist',
-    watch: true,
-    cache: true,
-    cacheDir: '.epk/cache',
-    minify: false,
-    scopeHoist: false,
-    hmr: false,
-    target: 'browser',
-    logLevel: 0,
-    // 3 = log everything, 2 = log warnings & errors, 1 = log errors
-    sourceMaps: true,
-    // Enable or disable sourcemaps, defaults to enabled (minified builds currently always create sourcemaps)
-    detailedReport: false
+var _default = entryFiles => {
+  const observable = _rxjs.Observable.create(observer => {
+    const bundler = new _parcelBundler.default(entryFiles, {
+      outDir: '.epk/dist',
+      watch: true,
+      cache: true,
+      cacheDir: '.epk/cache',
+      minify: false,
+      scopeHoist: false,
+      hmr: false,
+      target: 'browser',
+      logLevel: 0,
+      // 3 = log everything, 2 = log warnings & errors, 1 = log errors
+      sourceMaps: true,
+      // Enable or disable sourcemaps, defaults to enabled (minified builds currently always create sourcemaps)
+      detailedReport: false
+    });
+    bundler.addAssetType('js', _path.default.resolve(__dirname, '../src/runner/js-asset.ts'));
+    bundler.addAssetType('ts', _path.default.resolve(__dirname, '../src/runner/ts-asset.ts'));
+    bundler.on('bundled', bundle => observer.next({
+      name: 'bundled',
+      bundle,
+      bundledTime: Date.now()
+    }));
+    bundler.on('buildStart', entryPoints => observer.next({
+      bundler: observable,
+      name: 'buildStart',
+      entryPoints,
+      buildStartTime: Date.now()
+    }));
+    bundler.on('buildEnd', _ => observer.next({
+      name: 'buildEnd'
+    }));
+    bundler.on('buildError', error => observer.next({
+      name: 'error',
+      error
+    }));
+    bundler.bundle();
+    return _ => bundler.stop();
   });
-  bundler.addAssetType('js', _path.default.resolve(__dirname, '../src/runner/js-asset.ts'));
-  bundler.addAssetType('ts', _path.default.resolve(__dirname, '../src/runner/ts-asset.ts'));
-  bundler.on('bundled', bundle => observer.next({
-    name: 'bundled',
-    bundle
-  }));
-  bundler.on('buildStart', entryPoints => observer.next({
-    name: 'buildStart',
-    entryPoints
-  }));
-  bundler.on('buildEnd', _ => observer.next({
-    name: 'buildEnd'
-  }));
-  bundler.on('buildError', error => observer.next({
-    name: 'error',
-    error
-  }));
-  bundler.bundle();
-  return _ => bundler.stop();
-});
+
+  return observable;
+};
 
 exports.default = _default;
 },{}],"runner/logger.ts":[function(require,module,exports) {
@@ -282,6 +299,8 @@ exports.default = void 0;
 var _chalk = _interopRequireDefault(require("chalk"));
 
 var _readline = _interopRequireDefault(require("readline"));
+
+var _graphemeBreaker = require("grapheme-breaker");
 
 var _stripAnsi = _interopRequireDefault(require("strip-ansi"));
 
@@ -548,7 +567,7 @@ function pad(text, length, align = 'left') {
 
 
 function stringWidth(string) {
-  return countBreaks((0, _stripAnsi.default)('' + string));
+  return (0, _graphemeBreaker.countBreaks)((0, _stripAnsi.default)('' + string));
 }
 
 var _default = new Logger();
@@ -607,62 +626,195 @@ exports.RUN_TEST = RUN_TEST;
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.browser = void 0;
+exports.default = exports.browser = void 0;
 
 var _path = _interopRequireDefault(require("path"));
 
+var _chalk = _interopRequireDefault(require("chalk"));
+
+var _rxjs = require("rxjs");
+
 var _operators = require("rxjs/operators");
 
-var _utils = require("../utils");
+var _utils = require("./utils");
+
+var _utils2 = require("../utils");
+
+var _logger = _interopRequireDefault(require("./logger"));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-const browser = page => (0, _operators.switchMap)(({
-  bundle
-}) => page.evaluate(({
-  GET_TESTS,
-  urls
-}) => window[GET_TESTS](urls), {
-  GET_TESTS: _utils.GET_TESTS,
-  urls: (bundle.isEmpty ? Array.from(bundle.childBundles) : [bundle]).map(({
-    name
-  }) => name.replace(`${_path.default.resolve(process.cwd(), '.epk', 'dist')}\\`, '/tests/'))
-}).then(result => ({
-  bundle,
-  tests: result
-})));
-
+const browser = (0, _operators.switchMap)(async ctx => {
+  const {
+    bundle,
+    page
+  } = ctx;
+  const tests = await page.evaluate(({
+    GET_TESTS,
+    urls
+  }) => window[GET_TESTS](urls), {
+    GET_TESTS: _utils2.GET_TESTS,
+    urls: (bundle.isEmpty ? Array.from(bundle.childBundles) : [bundle]).map(({
+      name: distPath,
+      entryAsset: {
+        name: sourcePath
+      }
+    }) => ({
+      sourcePath,
+      distPath,
+      url: distPath.replace(`${_path.default.resolve(process.cwd(), '.epk', 'dist')}\\`, '/tests/')
+    }))
+  });
+  return {
+    tests,
+    ...ctx
+  };
+});
 exports.browser = browser;
-},{"../utils":"utils.ts"}],"runner/test.ts":[function(require,module,exports) {
+
+var _default = (0, _operators.switchMap)(val => {
+  var _ref, _ref2, _of;
+
+  return _ref = (_ref2 = (_of = (0, _rxjs.of)(val), (0, _operators.tap)(({
+    entryPoints,
+    bundledTime,
+    buildStartTime
+  }) => {
+    _logger.default.progress(`\n${_chalk.default.green(`Built in ${(0, _utils.prettifyTime)(bundledTime - buildStartTime)}.`)}\n${_chalk.default.grey(`Analyzing ${entryPoints.map(_utils.prettifyPath).join(', ')}`)}.`);
+  })(_of)), (0, _operators.tap)(ctx => ctx.analyzeStartTime = Date.now())(_ref2)), browser(_ref);
+});
+
+exports.default = _default;
+},{"./utils":"runner/utils.ts","../utils":"utils.ts","./logger":"runner/logger.ts"}],"runner/test.ts":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.browser = void 0;
+exports.default = exports.browser = void 0;
+
+var _chalk = _interopRequireDefault(require("chalk"));
 
 var _operators = require("rxjs/operators");
 
-var _utils = require("../utils");
+var _utils = require("./utils");
 
-const browser = page => (0, _operators.switchMap)(async ({
-  bundle,
-  tests
-}) => page.coverage.startJSCoverage().then(async _ => ({
-  bundle,
-  tests,
-  testsResult: await page.evaluate(({
+var _utils2 = require("../utils");
+
+var _rxjs = require("rxjs");
+
+var _logger = _interopRequireDefault(require("./logger"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+const browser = (0, _operators.switchMap)(async ctx => {
+  const {
+    page,
+    bundle,
+    tests
+  } = ctx;
+  await page.coverage.startJSCoverage();
+  const testsResult = await page.evaluate(({
     RUN_TESTS,
     tests
   }) => window[RUN_TESTS](tests), {
-    RUN_TESTS: _utils.RUN_TESTS,
+    RUN_TESTS: _utils2.RUN_TESTS,
     tests
-  }),
-  testsCoverage: await page.coverage.stopJSCoverage()
-})));
-
+  });
+  return {
+    testsResult,
+    testsCoverage: await page.coverage.stopJSCoverage(),
+    ...ctx
+  };
+});
 exports.browser = browser;
-},{"../utils":"utils.ts"}],"runner/index.ts":[function(require,module,exports) {
+
+var _default = (0, _operators.switchMap)(val => {
+  var _ref, _of;
+
+  return _ref = (_of = (0, _rxjs.of)(val), (0, _operators.tap)(ctx => {
+    ctx.analyzeEndTime = Date.now();
+    ctx.testStartTime = Date.now();
+    const {
+      entryPoints,
+      buildStartTime,
+      bundledTime,
+      analyzeEndTime,
+      analyzeStartTime
+    } = ctx;
+
+    _logger.default.progress(`\n${_chalk.default.green(`Built in ${(0, _utils.prettifyTime)(bundledTime - buildStartTime)}.`)}\n${_chalk.default.green(`Analyzed in ${(0, _utils.prettifyTime)(analyzeEndTime - analyzeStartTime)}.`)}\n${_chalk.default.green(`Testing ${entryPoints.map(_utils.prettifyPath).join(', ')}.`)}`);
+  })(_of)), browser(_ref);
+});
+
+exports.default = _default;
+},{"./utils":"runner/utils.ts","../utils":"utils.ts","./logger":"runner/logger.ts"}],"runner/post-analyze.ts":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+var _chalk = _interopRequireDefault(require("chalk"));
+
+var _operators = require("rxjs/operators");
+
+var _rxjs = require("rxjs");
+
+var _utils = require("./utils");
+
+var _logger = _interopRequireDefault(require("./logger"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+const formatTest = ({
+  description,
+  error: {
+    message
+  }
+}) => `\
+ ${description}
+ ${_chalk.default.gray(message.split('\n').shift().trim())}
+
+${_chalk.default.red(message.split('\n').splice(2).join('\n'))}`;
+
+const formatTests = tests => `\
+${_chalk.default.underline((0, _utils.prettifyPath)(tests[0].sourcePath))}
+
+${tests.map(formatTest).join('\n')}`;
+
+const format = (buildTime, analyzeTime, testTime, groupedTests) => `
+${_chalk.default.green(`Built in ${buildTime}.`)}
+${_chalk.default.green(`Analyzed in ${analyzeTime}.`)}
+${_chalk.default.green(`Tested in ${testTime}.`)}
+${_chalk.default.reset.red(`Errors:`)}
+
+${_chalk.default.reset(groupedTests.map(([sourcePath, tests]) => [sourcePath, tests.filter(test => test.error)]).map(([, tests]) => formatTests(tests)).join('\n'))}`;
+
+var _default = (0, _operators.switchMap)(val => {
+  var _of;
+
+  return _of = (0, _rxjs.of)(val), (0, _operators.tap)(ctx => {
+    var _format;
+
+    ctx.testEndTime = Date.now();
+    const {
+      entryPoints,
+      buildStartTime,
+      bundledTime,
+      analyzeEndTime,
+      analyzeStartTime,
+      testStartTime,
+      testEndTime,
+      testsResult
+    } = ctx;
+    _format = format((0, _utils.prettifyTime)(bundledTime - buildStartTime), (0, _utils.prettifyTime)(analyzeEndTime - analyzeStartTime), (0, _utils.prettifyTime)(testEndTime - testStartTime), Object.entries(testsResult.reduce((obj, test) => (obj[test.sourcePath] ? obj[test.sourcePath].push(test) : obj[test.sourcePath] = [test], obj), {}))), _logger.default.success(_format);
+  })(_of);
+});
+
+exports.default = _default;
+},{"./utils":"runner/utils.ts","./logger":"runner/logger.ts"}],"runner/index.ts":[function(require,module,exports) {
 "use strict";
 
 var _path = _interopRequireDefault(require("path"));
@@ -679,24 +831,29 @@ var _cli = _interopRequireDefault(require("./cli"));
 
 var _utils = require("./utils");
 
-var _bundler4 = _interopRequireDefault(require("./bundler"));
+var _bundler2 = _interopRequireDefault(require("./bundler"));
 
 var _logger = _interopRequireDefault(require("./logger"));
 
 var _server = require("./server");
 
-var _analyze = require("./analyze");
+var _analyze = _interopRequireDefault(require("./analyze"));
 
-var _test = require("./test");
+var _test = _interopRequireDefault(require("./test"));
+
+var _postAnalyze = _interopRequireDefault(require("./post-analyze"));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 const init = async ({
   node = false
 } = {}) => {
-  var _Bundler, _bundler, _ref, _bundler2, _ref2, _ref3, _ref4, _ref5, _ref6, _ref7, _ref8, _bundler3;
+  var _ref, _ref2, _Bundler;
 
   let pageReload, buildTimeStart, buildTimeEnd, analyzeTimeStart, analyzeTimeEnd, testTimeStart, testTimeEnd;
+
+  _logger.default.progress(`\n${_chalk.default.grey(`Preparing the environment.`)}`);
+
   const globs = await (0, _cli.default)();
   const browser = await _puppeteer.default.launch({
     devtools: true
@@ -705,57 +862,40 @@ const init = async ({
   page.on('console', msg => _logger.default.log(`browser: ${msg.text()}`));
   await page.goto(`http://localhost:${await _server.port}/epk/browser-runner.html`);
   const entryFiles = (await _fastGlob.default.async(globs)).map(path => _path.default.join(process.cwd(), path));
-  const entryFilesDisplayNames = entryFiles.map(path => _path.default.win32.basename(path)).join(', ');
-  const bundler = (_Bundler = (0, _bundler4.default)(entryFiles), (0, _operators.publish)()(_Bundler));
-  const building = (_bundler = bundler, (0, _operators.filter)(({
+  const runner = (_ref = (_ref2 = (_Bundler = (0, _bundler2.default)(entryFiles), (0, _operators.filter)(({
     name
-  }) => name === 'buildStart')(_bundler));
-  building.subscribe(_ => {
+  }) => name === 'buildStart')(_Bundler)), (0, _operators.tap)(_ => {
     _logger.default.clear();
 
-    pageReload = page.reload();
-    buildTimeStart = Date.now();
+    _logger.default.progress(`\n${_chalk.default.grey(`Building ${entryFiles.map(_utils.prettifyPath).join(', ')}`)}`);
+  })(_ref2)), (0, _operators.switchMap)(({
+    bundler,
+    entryPoints,
+    buildStartTime
+  }) => {
+    var _ref3, _ref4, _ref5, _ref6, _bundler;
 
-    _logger.default.progress(`\n${_chalk.default.grey(`Building ${entryFilesDisplayNames}`)}`);
-  });
-  const error = (_ref = (_bundler2 = bundler, (0, _operators.filter)(({
-    name
-  }) => name === 'buildError')(_bundler2)), (0, _operators.catchError)(error => _logger.default.error(error))(_ref));
-  error.subscribe(_ => _logger.default.error(error));
-  const analyzed = (_ref2 = (_ref3 = (_ref4 = (_ref5 = (_ref6 = (_ref7 = (_ref8 = (_bundler3 = bundler, (0, _operators.filter)(({
-    name
-  }) => name === 'bundled')(_bundler3)), (0, _operators.tap)(_ => {
-    buildTimeEnd = Date.now();
-
-    _logger.default.progress(`\n${_chalk.default.green(`Built in ${(0, _utils.prettifyTime)(buildTimeEnd - buildTimeStart)}.`)}\n${_chalk.default.grey(`Analyzing ${entryFilesDisplayNames}`)}.`);
-  })(_ref8)), (0, _operators.switchMap)(({
-    bundle
-  }) => pageReload.then(_ => ({
-    bundle
-  })))(_ref7)), (0, _operators.tap)(_ => {
-    analyzeTimeStart = Date.now();
-  })(_ref6)), (0, _analyze.browser)(page)(_ref5)), (0, _operators.tap)(_ => {
-    analyzeTimeEnd = Date.now();
-    testTimeStart = Date.now();
-
-    _logger.default.progress(`\n${_chalk.default.green(`Built in ${(0, _utils.prettifyTime)(buildTimeEnd - buildTimeStart)}.`)}\n${_chalk.default.green(`Analyzed in ${(0, _utils.prettifyTime)(analyzeTimeEnd - analyzeTimeStart)}.`)}\n${_chalk.default.green(`Testing ${entryFilesDisplayNames}.`)}`);
-  })(_ref4)), (0, _test.browser)(page)(_ref3)), (0, _operators.tap)(_ => {
-    testTimeEnd = Date.now();
-
-    _logger.default.success(`\n${_chalk.default.green(`Built in ${(0, _utils.prettifyTime)(buildTimeEnd - buildTimeStart)}.`)}\n${_chalk.default.green(`Analyzed in ${(0, _utils.prettifyTime)(analyzeTimeEnd - analyzeTimeStart)}.`)}\n${_chalk.default.green(`Tested in ${(0, _utils.prettifyTime)(testTimeEnd - testTimeStart)}.`)}${_chalk.default.red(`\nErrors:`)}\n${_chalk.default.red(Object.entries(_.testsResult.reduce((obj, test) => (obj[test.url] ? obj[test.url].push(test) : obj[test.url] = [test], obj), {})).map(([url, tests]) => `${url}\n${tests.map(({
-      description,
-      error: {
-        message
-      }
-    }) => `${description}\n${message}`).join('\n')}`))}`);
-  })(_ref2));
-  analyzed.subscribe(val => {// logger.log(`finalValue: ${JSON.stringify(val.testsResult)}`)
-  });
-  bundler.connect();
+    return _ref3 = (_ref4 = (_ref5 = (_ref6 = (_bundler = bundler, (0, _operators.filter)(({
+      name
+    }) => name === 'bundled')(_bundler)), (0, _operators.switchMap)(async ctx => {
+      await page.reload();
+      return {
+        bundler,
+        entryPoints,
+        page,
+        buildStartTime,
+        ...ctx
+      };
+    })(_ref6)), (0, _analyze.default)(_ref5)), (0, _test.default)(_ref4)), (0, _postAnalyze.default)(_ref3);
+  })(_ref));
+  const sub = runner.subscribe(_ => {});
+  return {
+    unsubscribe: _ => sub.unsubscribe()
+  };
 };
 
-init();
-},{"./cli":"runner/cli.ts","./utils":"runner/utils.ts","./bundler":"runner/bundler.ts","./logger":"runner/logger.ts","./server":"runner/server.ts","./analyze":"runner/analyze.ts","./test":"runner/test.ts"}],"test/test.ts":[function(require,module,exports) {
+if (!module.parent) init();
+},{"./cli":"runner/cli.ts","./utils":"runner/utils.ts","./bundler":"runner/bundler.ts","./logger":"runner/logger.ts","./server":"runner/server.ts","./analyze":"runner/analyze.ts","./test":"runner/test.ts","./post-analyze":"runner/post-analyze.ts"}],"test/test.ts":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
