@@ -2,6 +2,11 @@
 // import { Observable, timer, of } from 'rxjs'
 // import { takeUntil, switchMap, take, publish } from 'rxjs/operators'
 
+import Path from 'path'
+
+export const prettifyPath = path => Path.relative(process.cwd(), path) // Path.win32.basename(path) // name.replace(`${path.resolve(process.cwd(), '.epk', 'dist')}\\`, '/tests/')
+// path:"C:\Users\Banou\Desktop\epk\.epk\dist\asserts.spec.js"
+
 export const prettifyTime = time =>
   time < 1000
     ? `${time.toFixed()}ms`
