@@ -2,6 +2,7 @@
   "compilerOptions": {
     "moduleResolution": "node",
     "target": "esnext",
-    "module": "esnext"
+    "module": "esnext",
+    "allowSyntheticDefaultImports": true
   }
 }

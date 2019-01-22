@@ -5,11 +5,12 @@ import { Page } from 'puppeteer'
 import { switchMap, filter, tap, map } from 'rxjs/operators'
 import { prettifyPath, prettifyTime } from './utils'
 import { isBrowser, GET_TESTS } from '../utils'
-import { AnalyzedContext } from '../types'
+import { AnalyzedContext, TestedContext } from '../types'
 import logger from './logger'
 
 export const browser: Observable<AnalyzedContext> =
-  switchMap(async ctx => {
+  // @ts-ignore
+  switchMap(async (ctx: AnalyzedContext) => {
     const { bundle, page } = ctx
     const tests = await page.evaluate(
         ({ GET_TESTS, urls }: { GET_TESTS: string, urls: string[] }) =>
@@ -35,12 +36,16 @@ export const browser: Observable<AnalyzedContext> =
 
 export default
   switchMap(val =>
+    // @ts-ignore
     of(val)
-    |> tap(({ entryPoints, bundledTime, buildStartTime }) => {
+    // @ts-ignore
+    |> tap(({ entryPoints, bundledTime, buildStartTime }: TestedContext) => {
         logger.progress(`\n${
           chalk.green(`Built in ${prettifyTime(bundledTime - buildStartTime)}.`)
         }\n${
           chalk.grey(`Analyzing ${entryPoints.map(prettifyPath).join(', ')}`)}.`)
       })
-    |> tap(ctx => (ctx.analyzeStartTime = Date.now()))
+      // @ts-ignore
+    |> tap((ctx: TestedContext) => (ctx.analyzeStartTime = Date.now()))
+    // @ts-ignore
     |> browser)

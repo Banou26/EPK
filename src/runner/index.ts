@@ -10,17 +10,16 @@ import logger from './logger'
 import { port } from './server'
 import analyze from './analyze'
 import test from './test'
-import { of } from 'rxjs'
+import { of, Observable } from 'rxjs'
 import postAnalyze from './post-analyze'
 
-const init = async ({ node = false } = {}) => {
-  let pageReload, buildTimeStart, buildTimeEnd, analyzeTimeStart, analyzeTimeEnd, testTimeStart, testTimeEnd
+const init = async ({ node = false } = {}): Promise<Observable<any>> => {
   logger.progress(`\n${chalk.grey(`Preparing the environment.`)}`)
   const globs: string[] = await cli()
 
   const browser: Browser = await puppeteer.launch({ devtools: true })
   const page: Page = !node && (await browser.pages())[0]
-  
+
   page.on('console', msg => logger.log(`browser: ${msg.text()}`))
 
   await page.goto(`http://localhost:${await port}/epk/browser-runner.html`)
@@ -29,16 +28,21 @@ const init = async ({ node = false } = {}) => {
     (await fg.async(globs))
       .map(path => Path.join(process.cwd(), path))
 
-  const runner =
-    Bundler(entryFiles)
+  return (Bundler(entryFiles)
+    // @ts-ignore
     |> filter(({ name }) => name === 'buildStart')
+    // @ts-ignore
     |> tap(_ => {
         logger.clear()
         logger.progress(`\n${chalk.grey(`Building ${entryFiles.map(prettifyPath).join(', ')}`)}`)
       })
+      // @ts-ignore
     |> switchMap(({ bundler, entryPoints, buildStartTime }) =>
+        // @ts-ignore
         bundler
+        // @ts-ignore
         |> filter(({ name }) => name === 'bundled')
+        // @ts-ignore
         |> switchMap(async ctx => {
             await page.reload()
             return {
@@ -49,14 +53,16 @@ const init = async ({ node = false } = {}) => {
               ...ctx
             }
           })
+        // @ts-ignore
         |> analyze
+        // @ts-ignore
         |> test
-        |> postAnalyze)
-
-  const sub = runner.subscribe(_ => {})
-  return {
-    unsubscribe: _ => sub.unsubscribe()
-  }
+        // @ts-ignore
+        |> postAnalyze)) as any
 }
 
-if (!module.parent) init()
+if (!module.parent) {
+  init()
+    .then(obs =>
+      obs.subscribe(_ => {}))
+}
