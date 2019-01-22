@@ -538,7 +538,7 @@ const app = new _koa.default();
 const epk = new _koa.default();
 epk.use((0, _koaStatic.default)(_path.default.resolve(__dirname, '..', 'dist')));
 const tests = new _koa.default();
-tests.use((0, _koaStatic.default)(_path.default.resolve(__dirname, '..', '.epk', 'dist')));
+tests.use((0, _koaStatic.default)(_path.default.resolve(process.cwd(), '.epk', 'dist')));
 app.use((0, _koaMount.default)('/epk', epk));
 app.use((0, _koaMount.default)('/tests', tests));
 port.then(port => app.listen(port));

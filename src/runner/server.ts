@@ -10,7 +10,7 @@ const app = new Koa()
 const epk = new Koa()
 epk.use(serve(path.resolve(__dirname, '..', 'dist')))
 const tests = new Koa()
-tests.use(serve(path.resolve(__dirname, '..', '.epk', 'dist')))
+tests.use(serve(path.resolve(process.cwd(), '.epk', 'dist')))
 
 app.use(mount('/epk', epk))
 app.use(mount('/tests', tests))
