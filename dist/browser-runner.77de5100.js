@@ -15133,73 +15133,98 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 const getTests = filesData => {
   var _forkJoin;
 
-  return (_forkJoin = (0, _rxjs.forkJoin)(...filesData.map(({
-    sourcePath,
-    distPath,
-    url
-  }) => {
-    var _ref, _ref2, _iframe;
+  return (// @ts-ignore
+    (_forkJoin = (0, _rxjs.forkJoin)(...filesData.map(({
+      sourcePath,
+      distPath,
+      url
+    }) => {
+      var _ref, _ref2, _iframe;
 
-    return _ref = (_ref2 = (_iframe = (0, _iframe3.default)(`${url}`), (0, _operators.tap)(iframe => iframe.contentWindow.postMessage({
-      name: _utils.GET_TESTS
-    }, '*'))(_iframe)), (0, _operators.switchMap)(iframe => {
-      var _ref3, _ref4, _fromEvent;
+      return (// @ts-ignore
+        _ref = (_ref2 = (_iframe = (0, _iframe3.default)(`${url}`) // @ts-ignore
+        , (0, _operators.tap)(iframe => iframe.contentWindow.postMessage({
+          name: _utils.GET_TESTS
+        }, '*'))(_iframe) // @ts-ignore
+        ), (0, _operators.switchMap)(iframe => {
+          var _ref3, _ref4, _fromEvent;
 
-      return _ref3 = (_ref4 = (_fromEvent = (0, _rxjs.fromEvent)(window, 'message'), (0, _operators.filter)(({
-        source
-      }) => source === iframe.contentWindow)(_fromEvent)), (0, _operators.map)(({
-        data
-      }) => data)(_ref4)), (0, _operators.map)(({
-        data: testsData
-      }) => testsData.map(([description, body]) => ({
-        sourcePath,
-        distPath,
-        url,
-        description,
-        body
-      })))(_ref3);
-    })(_ref2)), (0, _operators.take)(1)(_ref);
-  })), (0, _operators.map)(tests => tests.flat())(_forkJoin)).toPromise();
+          return (// @ts-ignore
+            _ref3 = (_ref4 = (_fromEvent = (0, _rxjs.fromEvent)(window, 'message') // @ts-ignore
+            , (0, _operators.filter)(({
+              source
+            }) => source === iframe.contentWindow)(_fromEvent) // @ts-ignore
+            ), (0, _operators.map)(({
+              data
+            }) => data)(_ref4) // @ts-ignore
+            ), (0, _operators.map)(({
+              data: testsData
+            }) => testsData.map(([description, body]) => ({
+              sourcePath,
+              distPath,
+              url,
+              description,
+              body
+            })))(_ref3)
+          );
+        })(_ref2) // @ts-ignore
+        ), (0, _operators.take)(1)(_ref)
+      );
+    })) // @ts-ignore
+    , (0, _operators.map)(tests => tests.flat())(_forkJoin)).toPromise()
+  );
 };
 
-const runTests = tests => {
+const runTests = (tests // @ts-ignore
+) => {
   var _forkJoin2;
 
-  return (_forkJoin2 = (0, _rxjs.forkJoin)(...tests.map(({
+  return (_forkJoin2 = (0, _rxjs.forkJoin)( // @ts-ignore
+  ...tests.map(({
     sourcePath,
     distPath,
     url,
     description,
     body
-  }) => {
+  } // @ts-ignore
+  ) => {
     var _ref5, _ref6, _iframe2;
 
-    return _ref5 = (_ref6 = (_iframe2 = (0, _iframe3.default)(`${url}?${description}`), (0, _operators.tap)(iframe => iframe.contentWindow.postMessage({
+    return _ref5 = (_ref6 = (_iframe2 = (0, _iframe3.default)(`${url}?${description}`) // @ts-ignore
+    , (0, _operators.tap)(iframe => iframe.contentWindow.postMessage({
       name: _utils.RUN_TEST,
       data: description
-    }, '*'))(_iframe2)), (0, _operators.switchMap)(iframe => {
+    }, '*'))(_iframe2) // @ts-ignore
+    ), (0, _operators.switchMap)(iframe => {
       var _ref7, _ref8, _fromEvent2;
 
-      return _ref7 = (_ref8 = (_fromEvent2 = (0, _rxjs.fromEvent)(window, 'message'), (0, _operators.filter)(({
-        source
-      }) => source === iframe.contentWindow)(_fromEvent2)), (0, _operators.map)(({
-        data
-      }) => data)(_ref8)), (0, _operators.map)(({
-        data: {
+      return (// @ts-ignore
+        _ref7 = (_ref8 = (_fromEvent2 = (0, _rxjs.fromEvent)(window, 'message') // @ts-ignore
+        , (0, _operators.filter)(({
+          source
+        }) => source === iframe.contentWindow)(_fromEvent2) // @ts-ignore
+        ), (0, _operators.map)(({
+          data
+        }) => data)(_ref8) // @ts-ignore
+        ), (0, _operators.map)(({
+          data: {
+            error
+          }
+        }) => ({
+          sourcePath,
+          distPath,
+          url,
+          description,
+          body,
           error
-        }
-      }) => ({
-        sourcePath,
-        distPath,
-        url,
-        description,
-        body,
-        error
-      }))(_ref7);
+        }))(_ref7)
+      );
     }
     /*|> delay(10000)*/
-    )(_ref6)), (0, _operators.take)(1)(_ref5);
-  })), (0, _operators.map)(tests => tests.flat())(_forkJoin2)).toPromise();
+    )(_ref6) // @ts-ignore
+    ), (0, _operators.take)(1)(_ref5);
+  })) // @ts-ignore
+  , (0, _operators.map)(tests => tests.flat())(_forkJoin2)).toPromise();
 };
 
 window[_utils.GET_TESTS] = getTests;

@@ -1,7 +1,7 @@
 import program from 'commander'
 import chalk from 'chalk'
 
-export default _ =>
+export default (): string[] =>
   new Promise((resolve, reject) => {
     program
       .command('serve [input...]')
@@ -34,4 +34,4 @@ export default _ =>
     }
 
     program.parse(args)
-  })
+  }) as any

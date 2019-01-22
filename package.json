@@ -14,7 +14,7 @@
     "dev": "concurrently \"yarn run index\" \"yarn run test\" \"yarn run browser-runner\""
   },
   "dependencies": {
-    "@babel/plugin-transform-typescript": "^7.2.0",
+    "@babel/preset-typescript": "^7.1.0",
     "babel-plugin-espower": "^3.0.0",
     "babylon-walk": "^1.0.2",
     "chalk": "^2.4.1",

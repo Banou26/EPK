@@ -41,17 +41,25 @@ import { Test, TestResult } from '../types'
 
 const getTests =
   (filesData): Promise<Test[]> =>
-    (forkJoin(
+    // @ts-ignore
+    ((forkJoin(
       ...filesData.map(({ sourcePath, distPath, url }) =>
+      // @ts-ignore
         iframe(`${url}`)
-        |> tap(iframe =>
+        // @ts-ignore
+        |> tap((iframe: HTMLIFrameElement) =>
             iframe.contentWindow.postMessage({
               name: GET_TESTS
             }, '*'))
+          // @ts-ignore
         |> switchMap(iframe =>
+            // @ts-ignore
             fromEvent(window, 'message')
+            // @ts-ignore
             |> filter(({ source }) => source === iframe.contentWindow)
+            // @ts-ignore
             |> map(({ data }) => data)
+            // @ts-ignore
             |> map(({ data: testsData }) =>
                 testsData
                   .map(([ description, body ]: [ string, string ]) => ({
@@ -61,25 +69,36 @@ const getTests =
                     description,
                     body
                   }))))
+        // @ts-ignore
         |> take(1))
     )
-      |> map(tests => tests.flat()))
+      // @ts-ignore
+      |> map(tests => tests.flat())) as Observable)
       .toPromise()
 
 const runTests =
   (tests: Test[]): Promise<TestResult> =>
-    (forkJoin(
+    // @ts-ignore
+    ((forkJoin(
+      // @ts-ignore
       ...tests.map(({ sourcePath, distPath, url, description, body }: { url: string, description: string, body: string }) =>
+        // @ts-ignore
         iframe(`${url}?${description}`)
-        |> tap(iframe =>
+        // @ts-ignore
+        |> tap((iframe: HTMLIFrameElement) =>
             iframe.contentWindow.postMessage({
               name: RUN_TEST,
               data: description
             }, '*'))
+        // @ts-ignore
         |> switchMap(iframe =>
+            // @ts-ignore
             fromEvent(window, 'message')
+            // @ts-ignore
             |> filter(({ source }) => source === iframe.contentWindow)
+            // @ts-ignore
             |> map(({ data }) => data)
+            // @ts-ignore
             |> map(({ data: { error } }) => ({
                 sourcePath,
                 distPath,
@@ -89,9 +108,11 @@ const runTests =
                 error
               }))
             /*|> delay(10000)*/)
+        // @ts-ignore
         |> take(1))
     )
-    |> map(tests => tests.flat()))
+    // @ts-ignore
+    |> map(tests => tests.flat())) as Observable)
       .toPromise()
 
 window[GET_TESTS] = getTests

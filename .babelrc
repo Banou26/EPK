@@ -1,6 +1,8 @@
 {
+  "presets": [
+    "@babel/preset-typescript"
+  ],
   "plugins": [
-    "@babel/plugin-transform-typescript",
     "@babel/plugin-proposal-optional-chaining",
     ["@babel/plugin-proposal-pipeline-operator", { "proposal": "minimal" }]
   ]
