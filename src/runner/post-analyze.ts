@@ -3,6 +3,7 @@ import { switchMap,tap } from 'rxjs/operators'
 import { of } from 'rxjs'
 import { prettifyPath, prettifyTime} from './utils'
 import logger from './logger'
+import { TestedContext } from '../types';
 
 const formatTest = ({ description, error: { message } }) => `\
  ${description}
@@ -35,8 +36,8 @@ ${chalk.reset.red(`Errors:`)}
 
 ${chalk.reset(
     groupedTests
-      .map(([sourcePath, tests]) => [
-          sourcePath,
+      .map(([url, tests]) => [
+          url,
           tests
             .filter(test => test.error)
         ])
@@ -45,21 +46,25 @@ ${chalk.reset(
 
 export default
   switchMap(val =>
+      // @ts-ignore
     of(val)
-    |> tap(ctx => {
+    // @ts-ignore
+    |> tap((ctx: TestedContext) => {
         ctx.testEndTime = Date.now()
-        const { entryPoints, buildStartTime, bundledTime, analyzeEndTime, analyzeStartTime, testStartTime, testEndTime, testsResult } = ctx
+        const { entryPoints, buildStartTime, bundledTime, analyzeEndTime, analyzeStartTime, testStartTime, testEndTime, testsResults } = ctx
+        // @ts-ignore
         format(
           prettifyTime(bundledTime - buildStartTime),
           prettifyTime(analyzeEndTime - analyzeStartTime),
           prettifyTime(testEndTime - testStartTime),
           Object.entries(
-            testsResult
+            (testsResults || [])
               .reduce((obj, test) =>
-                (obj[test.sourcePath]
-                  ? obj[test.sourcePath].push(test)
-                  : obj[test.sourcePath] = [test]
+                (obj[test.url]
+                  ? obj[test.url].push(test)
+                  : obj[test.url] = [test]
                 , obj), {}))
         )
+          // @ts-ignore
         |> logger.success
     }))

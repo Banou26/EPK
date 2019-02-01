@@ -15155,17 +15155,25 @@ const getTests = filesData => {
               source
             }) => source === iframe.contentWindow)(_fromEvent) // @ts-ignore
             ), (0, _operators.map)(({
+              errors,
               data
-            }) => data)(_ref4) // @ts-ignore
+            }) => ({
+              errors,
+              data
+            }))(_ref4) // @ts-ignore
             ), (0, _operators.map)(({
+              errors,
               data: testsData
-            }) => testsData.map(([description, body]) => ({
-              sourcePath,
-              distPath,
-              url,
-              description,
-              body
-            })))(_ref3)
+            }) => ({
+              errors,
+              tests: testsData.map(([description, body]) => ({
+                sourcePath,
+                distPath,
+                url,
+                description,
+                body
+              }))
+            }))(_ref3)
           );
         })(_ref2) // @ts-ignore
         ), (0, _operators.take)(1)(_ref)

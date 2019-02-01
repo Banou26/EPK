@@ -58,17 +58,19 @@ const getTests =
             // @ts-ignore
             |> filter(({ source }) => source === iframe.contentWindow)
             // @ts-ignore
-            |> map(({ data }) => data)
+            |> map(({ errors, data }) => ({ errors, data }))
             // @ts-ignore
-            |> map(({ data: testsData }) =>
-                testsData
+            |> map(({ errors, data: testsData }) => ({
+              errors,
+              tests: testsData
                   .map(([ description, body ]: [ string, string ]) => ({
                     sourcePath,
                     distPath,
                     url,
                     description,
                     body
-                  }))))
+                  }))
+            })))
         // @ts-ignore
         |> take(1))
     )

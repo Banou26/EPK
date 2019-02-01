@@ -12,7 +12,7 @@ export const browser: Observable<AnalyzedContext> =
   // @ts-ignore
   switchMap(async (ctx: AnalyzedContext) => {
     const { bundle, page } = ctx
-    const tests = await page.evaluate(
+    const { tests, errors} = await page.evaluate(
         ({ GET_TESTS, urls }: { GET_TESTS: string, urls: string[] }) =>
           window[GET_TESTS](urls),
         {
@@ -30,6 +30,7 @@ export const browser: Observable<AnalyzedContext> =
       )
     return {
       tests,
+      errors,
       ...ctx
     }
   })

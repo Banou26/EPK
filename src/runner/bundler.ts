@@ -1,10 +1,11 @@
 import Path from 'path'
 import Bundler from 'parcel-bundler'
 import { Observable } from 'rxjs'
+import { Options } from '../types'
 
-export default entryFiles => {
+export default (options: Options) => {
   const observable = Observable.create(observer => {
-    const bundler = new Bundler(entryFiles, {
+    const bundler = new Bundler(options.entryFiles, {
       outDir: '.epk/dist',
       watch: true,
       cache: true,
@@ -20,9 +21,9 @@ export default entryFiles => {
     bundler.addAssetType('js', Path.resolve(__dirname, '../src/runner/js-asset.ts'))
     bundler.addAssetType('ts', Path.resolve(__dirname, '../src/runner/ts-asset.ts'))
     bundler.on('bundled', bundle =>
-      observer.next({ name: 'bundled', bundle, bundledTime: Date.now() }))
-    bundler.on('buildStart', entryPoints =>
-      observer.next({ bundler: observable, name: 'buildStart', entryPoints, buildStartTime: Date.now() }))
+      observer.next({ options, bundler: observable, name: 'bundled', bundle, buildEndTime: Date.now() }))
+    bundler.on('buildStart', entryFiles  =>
+      observer.next({ options, bundler: observable, name: 'buildStart', entryFiles , buildStartTime: Date.now() }))
     bundler.on('buildEnd', _ =>
       observer.next({ name: 'buildEnd' }))
     bundler.on('buildError', error =>

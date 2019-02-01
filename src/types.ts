@@ -1,20 +1,35 @@
+import { Page as PPTRPage } from 'puppeteer'
+import { Observable } from 'rxjs'
+
 // import { Observable } from "rxjs"
 
+export interface Options {
+  entryFiles: string[]
+}
+
 export interface Context {
-  entryPoints: string[]
+  options: Options
+  entryFiles: string[]
+  pageProvider: Observable<PPTRPage>
+  name: string
   bundle: any
   buildStartTime: number
-  bundledTime: number
+  buildEndTime: number
+}
+
+export interface Page {
+  tests: Test[]
+  testsResults?: TestResult[]
+  errors?: Error[]
 }
 
 export interface AnalyzedContext extends Context {
-  tests: Test[]
+  pages: Page[]
   analyzeEndTime: number
   analyzeStartTime: number
 }
 
 export interface TestedContext extends AnalyzedContext {
-  testsResults: TestResult[]
   testsCoverage: any
   testStartTime: number
   testEndTime: number

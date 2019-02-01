@@ -2,6 +2,9 @@ import { test, assert } from '../../src/test/index'
 // const assert = require('assert')
 // import { test } from '../../dist/test.js'
 // const assert = _ => {}
+
+// throw new Error('LOL')
+
 test('desc1', _ => {
   // console.log('first')
   // assert(true === false)
@@ -14,7 +17,7 @@ test('desc2', async _ => {
   assert(true === false)
 })
 
-Array(10)
-  .fill()
-  .forEach((_, i) =>
-    test(`desc${i + 3}`, _ => {}))
+// Array(10)
+//   .fill()
+//   .forEach((_, i) =>
+//     test(`desc${i + 3}`, _ => {}))
