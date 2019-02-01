@@ -22,10 +22,11 @@ if (isBrowser) {
       window.parent
         .postMessage({
           name: GET_TESTS,
+          errors,
           data:
             Array.from(tests)
               .map(([desc, func]) => [desc, func.toString()])
-        })
+        }, '*')
     } else if (name === RUN_TEST) {
       let error
       try {
@@ -48,7 +49,7 @@ if (isBrowser) {
             //   .then(value => ({ /*value*/ }))
             //   .catch(error => console.log('lol', error) || ({ error }))
           }
-        })
+        }, '*')
     }
   })
 }

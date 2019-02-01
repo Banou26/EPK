@@ -104,7 +104,7 @@ parcelRequire = (function (modules, cache, entry, globalName) {
 
   // Override the current require with this new one
   return newRequire;
-})({"runner/cli.ts":[function(require,module,exports) {
+})({"cli/index.ts":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -118,20 +118,16 @@ var _chalk = _interopRequireDefault(require("chalk"));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
+const helpMessage = `
+Run \`${_chalk.default.bold('epk help <command>')}\` for more information on specific commands
+`;
+
 var _default = () => new Promise((resolve, reject) => {
   _commander.default.command('serve [input...]').description('starts a development server').action(resolve);
 
-  _commander.default.command('help [command]').description('display help information for a command').action(function (command) {
-    let cmd = _commander.default.commands.find(c => c.name() === command) || _commander.default;
+  _commander.default.command('help [command]').description('display help information for a command').action(command => (_commander.default.commands.find(c => c.name() === command) || _commander.default).help());
 
-    cmd.help();
-  });
-
-  _commander.default.on('--help', function () {
-    console.log('');
-    console.log('  Run `' + _chalk.default.bold('epk help <command>') + '` for more information on specific commands');
-    console.log('');
-  }); // Make serve the default command except for --help
+  _commander.default.on('--help', _ => console.log(helpMessage)); // Make serve the default command except for --help
 
 
   const args = process.argv;
@@ -145,25 +141,6 @@ var _default = () => new Promise((resolve, reject) => {
 });
 
 exports.default = _default;
-},{}],"runner/utils.ts":[function(require,module,exports) {
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.prettifyTime = exports.prettifyPath = void 0;
-
-var _path = _interopRequireDefault(require("path"));
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-const prettifyPath = path => _path.default.relative(process.cwd(), path);
-
-exports.prettifyPath = prettifyPath;
-
-const prettifyTime = time => time < 1000 ? `${time.toFixed()}ms` : `${(time / 1000).toFixed(2)}s`;
-
-exports.prettifyTime = prettifyTime;
 },{}],"runner/bundler.ts":[function(require,module,exports) {
 "use strict";
 
@@ -180,9 +157,9 @@ var _rxjs = require("rxjs");
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-var _default = entryFiles => {
+var _default = options => {
   const observable = _rxjs.Observable.create(observer => {
-    const bundler = new _parcelBundler.default(entryFiles, {
+    const bundler = new _parcelBundler.default(options.entryFiles, {
       outDir: '.epk/dist',
       watch: true,
       cache: true,
@@ -200,14 +177,17 @@ var _default = entryFiles => {
     bundler.addAssetType('js', _path.default.resolve(__dirname, '../src/runner/js-asset.ts'));
     bundler.addAssetType('ts', _path.default.resolve(__dirname, '../src/runner/ts-asset.ts'));
     bundler.on('bundled', bundle => observer.next({
+      options,
+      bundler: observable,
       name: 'bundled',
       bundle,
-      bundledTime: Date.now()
+      buildEndTime: Date.now()
     }));
-    bundler.on('buildStart', entryPoints => observer.next({
+    bundler.on('buildStart', entryFiles => observer.next({
+      options,
       bundler: observable,
       name: 'buildStart',
-      entryPoints,
+      entryFiles,
       buildStartTime: Date.now()
     }));
     bundler.on('buildEnd', _ => observer.next({
@@ -225,7 +205,7 @@ var _default = entryFiles => {
 };
 
 exports.default = _default;
-},{}],"runner/logger.ts":[function(require,module,exports) {
+},{}],"cli/logger.ts":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -249,8 +229,12 @@ var _fs = _interopRequireDefault(require("fs"));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-// https://github.com/parcel-bundler/parcel/tree/master/packages/core/logger/src
-const prettyError = (err, opts = {}) => {
+// from https://github.com/parcel-bundler/parcel/tree/master/packages/core/logger/src
+const prettyError = (err, {
+  color
+} = {
+  color: undefined
+}) => {
   let message = typeof err === 'string' ? err : err.message;
   if (!message) message = 'Unknown error';
 
@@ -267,7 +251,7 @@ const prettyError = (err, opts = {}) => {
   let stack;
 
   if (err.codeFrame) {
-    stack = opts.color && err.highlightedCodeFrame || err.codeFrame;
+    stack = color && err.highlightedCodeFrame || err.codeFrame;
   } else if (err.stack) {
     stack = err.stack.slice(err.stack.indexOf('\n') + 1);
   }
@@ -280,191 +264,145 @@ const prettyError = (err, opts = {}) => {
 
 const supportsEmoji = process.platform !== 'win32' || process.env.TERM === 'xterm-256color'; // Fallback symbols for Windows from https://en.wikipedia.org/wiki/Code_page_437
 
-const emoji = {
+const defaultEmojis = {
   progress: supportsEmoji ? '⏳' : '∞',
   success: supportsEmoji ? '✨' : '√',
   error: supportsEmoji ? '🚨' : '×',
   warning: supportsEmoji ? '⚠️' : '‼'
 };
 
-class Logger {
-  constructor(options) {
-    this.lines = 0;
-    this.spinner = null;
-    this.setOptions(options);
-  }
+const countLines = str => (0, _stripAnsi.default)(str).split('\n').reduce((p, line) => process.stdout.columns ? p + Math.ceil((line.length || 1) / process.stdout.columns) : p + 1); // Pad a string with spaces on either side
 
-  setOptions(options) {
-    this.logLevel = options && isNaN(options.logLevel) === false ? Number(options.logLevel) : 3;
-    this.color = options && typeof options.color === 'boolean' ? options.color : _chalk.default.supportsColor;
-    this.emoji = options && options.emoji || emoji;
-    this.chalk = new _chalk.default.constructor({
-      enabled: this.color
-    });
-    this.isTest = options && typeof options.isTest === 'boolean' ? options.isTest : process.env.NODE_ENV === 'test';
-  }
 
-  countLines(message) {
-    return (0, _stripAnsi.default)(message).split('\n').reduce((p, line) => {
-      if (process.stdout.columns) {
-        return p + Math.ceil((line.length || 1) / process.stdout.columns);
-      }
+const pad = (text, length, align = 'left') => {
+  const pad = ' '.repeat(length - stringWidth(text));
+  if (align === 'right') return `${pad}${text}`;
+  return `${text}${pad}`;
+}; // Count visible characters in a string
 
-      return p + 1;
-    }, 0);
-  }
 
-  writeRaw(message) {
-    this.stopSpinner();
-    this.lines += this.countLines(message) - 1;
-    process.stdout.write(message);
-  }
+const stringWidth = str => {
+  var _ref, _ref2;
 
-  write(message, persistent = false) {
-    if (this.logLevel > 3) {
-      return this.verbose(message);
+  return (// @ts-ignore
+    _ref = (_ref2 = `${str}` // @ts-ignore
+    , (0, _stripAnsi.default)(_ref2) // @ts-ignore
+    ), (0, _graphemeBreaker.countBreaks)(_ref)
+  );
+};
+
+const Logger = ({
+  logLevel = 3,
+  color = _chalk.default.supportsColor,
+  emojis = defaultEmojis,
+  chalk = new _chalk.default.constructor({
+    enabled: color
+  }),
+  isTest = process.env.NODE_ENV === 'test'
+} = {}) => {
+  let lines = 0;
+  let spinner;
+  let logFile;
+
+  const writeRaw = str => {
+    stopSpinner();
+    lines += countLines(str) - 1;
+    process.stdout.write(str);
+  };
+
+  const write = (message, persistent = false) => {
+    if (logLevel > 3) {
+      return verbose(message);
     }
 
     if (!persistent) {
-      this.lines += this.countLines(message);
+      lines += countLines(message);
     }
 
-    this.stopSpinner();
+    stopSpinner();
 
-    this._log(message);
-  }
+    _log(message);
+  };
 
-  verbose(message) {
-    if (this.logLevel < 4) {
-      return;
-    }
-
+  const verbose = str => {
+    if (logLevel < 4) return;
     let currDate = new Date();
-    message = `[${currDate.toLocaleTimeString()}]: ${message}`;
+    str = `[${currDate.toLocaleTimeString()}]: ${str}`;
 
-    if (this.logLevel > 4) {
-      if (!this.logFile) {
-        this.logFile = _fs.default.createWriteStream(_path.default.join(process.cwd(), `parcel-debug-${currDate.toISOString()}.log`));
+    if (logLevel > 4) {
+      if (!logFile) {
+        logFile = _fs.default.createWriteStream(_path.default.join(process.cwd(), `parcel-debug-${currDate.toISOString()}.log`));
       }
 
-      this.logFile.write((0, _stripAnsi.default)(message) + '\n');
+      logFile.write((0, _stripAnsi.default)(str) + '\n');
     }
 
-    this._log(message);
-  }
+    _log(str);
+  };
 
-  log(message) {
-    if (this.logLevel < 3) {
-      return;
-    }
+  const log = str => logLevel >= 3 && write(str);
 
-    this.write(message);
-  }
+  const persistent = str => logLevel >= 3 && write(chalk.bold(str), true);
 
-  persistent(message) {
-    if (this.logLevel < 3) {
-      return;
-    }
+  const warn = err => logLevel >= 2 && _writeError(err, emojis.warning, chalk.yellow);
 
-    this.write(this.chalk.bold(message), true);
-  }
+  const error = err => logLevel >= 1 && _writeError(err, emojis.error, chalk.red.bold);
 
-  warn(err) {
-    if (this.logLevel < 2) {
-      return;
-    }
+  const success = str => log(`${emojis.success}  ${chalk.green.bold(str)}`);
 
-    this._writeError(err, this.emoji.warning, this.chalk.yellow);
-  }
+  const formatError = (err, options) => prettyError(err, options);
 
-  error(err) {
-    if (this.logLevel < 1) {
-      return;
-    }
-
-    this._writeError(err, this.emoji.error, this.chalk.red.bold);
-  }
-
-  success(message) {
-    this.log(`${this.emoji.success}  ${this.chalk.green.bold(message)}`);
-  }
-
-  formatError(err, opts) {
-    return prettyError(err, opts);
-  }
-
-  _writeError(err, emoji, color) {
-    let {
+  const _writeError = (err, emoji, _color) => {
+    const {
       message,
       stack
-    } = this.formatError(err, {
-      color: this.color
+    } = formatError(err, {
+      color
     });
-    this.write(color(`${emoji}  ${message}`));
+    write(_color(`${emoji}  ${message}`));
+    if (stack) write(stack);
+  };
 
-    if (stack) {
-      this.write(stack);
-    }
-  }
+  const clear = () => {
+    if (!color || isTest || logLevel > 3) return;
 
-  clear() {
-    if (!this.color || this.isTest || this.logLevel > 3) {
-      return;
-    }
-
-    while (this.lines > 0) {
+    while (lines > 0) {
       _readline.default.clearLine(process.stdout, 0);
 
       _readline.default.moveCursor(process.stdout, 0, -1);
 
-      this.lines--;
+      lines--;
     }
 
     _readline.default.cursorTo(process.stdout, 0);
 
-    this.stopSpinner();
-  }
+    stopSpinner();
+  };
 
-  progress(message) {
-    if (this.logLevel < 3) {
-      return;
-    }
+  const progress = str => {
+    if (logLevel < 3) return;else if (logLevel > 3) return verbose(str);
+    const styledMessage = chalk.gray.bold(str);
 
-    if (this.logLevel > 3) {
-      return this.verbose(message);
-    }
-
-    let styledMessage = this.chalk.gray.bold(message);
-
-    if (!this.spinner) {
-      this.spinner = (0, _ora.default)({
+    if (!spinner) {
+      spinner = (0, _ora.default)({
         text: styledMessage,
         stream: process.stdout,
-        enabled: this.isTest ? false : undefined // fall back to ora default unless we need to explicitly disable it.
+        enabled: isTest ? false : undefined // fall back to ora default unless we need to explicitly disable it.
 
       }).start();
-    } else {
-      this.spinner.text = styledMessage;
+    } else spinner.text = styledMessage;
+  };
+
+  const stopSpinner = () => {
+    if (spinner) {
+      spinner.stop();
+      spinner = null;
     }
-  }
+  };
 
-  stopSpinner() {
-    if (this.spinner) {
-      this.spinner.stop();
-      this.spinner = null;
-    }
-  }
+  const _log = str => console.log(str);
 
-  handleMessage(options) {
-    this[options.method](...options.args);
-  }
-
-  _log(message) {
-    // eslint-disable-next-line no-console
-    console.log(message);
-  }
-
-  table(columns, table) {
+  const table = (columns, table) => {
     // Measure column widths
     let colWidths = [];
 
@@ -479,70 +417,152 @@ class Logger {
 
 
     for (let row of table) {
-      let items = row.map((item, i) => {
+      log(row.map((item, i) => {
         // Add padding between columns unless the alignment is the opposite to the
         // next column and pad to the column width.
         let padding = !columns[i + 1] || columns[i + 1].align === columns[i].align ? 4 : 0;
         return pad(item, colWidths[i] + padding, columns[i].align);
-      });
-      this.log(items.join(''));
+      }).join(''));
     }
-  }
+  };
 
-} // Pad a string with spaces on either side
+  const logger = {
+    writeRaw,
+    write,
+    verbose,
+    log,
+    persistent,
+    warn,
+    error,
+    success,
+    formatError,
+    _writeError,
+    clear,
+    progress,
+    stopSpinner,
+    _log,
+    table,
+    handleMessage: undefined
+  };
 
+  const handleMessage = ({
+    method,
+    args
+  }) => logger[method](...args);
 
-function pad(text, length, align = 'left') {
-  let pad = ' '.repeat(length - stringWidth(text));
+  logger.handleMessage = handleMessage;
+  return logger;
+};
 
-  if (align === 'right') {
-    return pad + text;
-  }
-
-  return text + pad;
-} // Count visible characters in a string
-
-
-function stringWidth(string) {
-  return (0, _graphemeBreaker.countBreaks)((0, _stripAnsi.default)('' + string));
-}
-
-var _default = new Logger();
+var _default = Logger();
 
 exports.default = _default;
-},{}],"runner/server.ts":[function(require,module,exports) {
+},{}],"api/utils.ts":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.port = void 0;
+exports.prettifyTime = exports.prettifyPath = void 0;
 
 var _path = _interopRequireDefault(require("path"));
 
-var _koa = _interopRequireDefault(require("koa"));
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-var _koaStatic = _interopRequireDefault(require("koa-static"));
+const prettifyPath = path => _path.default.relative(process.cwd(), path);
 
-var _koaMount = _interopRequireDefault(require("koa-mount"));
+exports.prettifyPath = prettifyPath;
 
-var _getPort = _interopRequireDefault(require("get-port"));
+const prettifyTime = time => time < 1000 ? `${time.toFixed()}ms` : `${(time / 1000).toFixed(2)}s`;
+
+exports.prettifyTime = prettifyTime;
+},{}],"api/runner.ts":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+var _puppeteer = _interopRequireDefault(require("puppeteer"));
+
+var _rxjs = require("rxjs");
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-const port = (0, _getPort.default)({
-  port: 10485
+var _default = async (options = {}) => {
+  const browser = await _puppeteer.default.launch({
+    devtools: false
+  });
+  return _rxjs.Observable.create(observer => {
+    const page = browser.newPage();
+    page.then(page => observer.next(page));
+    return async _ => (await page).close();
+  });
+};
+
+exports.default = _default;
+},{}],"api/index.ts":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
 });
-exports.port = port;
-const app = new _koa.default();
-const epk = new _koa.default();
-epk.use((0, _koaStatic.default)(_path.default.resolve(__dirname, '..', 'dist')));
-const tests = new _koa.default();
-tests.use((0, _koaStatic.default)(_path.default.resolve(process.cwd(), '.epk', 'dist')));
-app.use((0, _koaMount.default)('/epk', epk));
-app.use((0, _koaMount.default)('/tests', tests));
-port.then(port => app.listen(port));
-},{}],"utils.ts":[function(require,module,exports) {
+exports.default = void 0;
+
+var _chalk = _interopRequireDefault(require("chalk"));
+
+var _operators = require("rxjs/operators");
+
+var _bundler2 = _interopRequireDefault(require("../runner/bundler"));
+
+var _logger = _interopRequireDefault(require("../cli/logger"));
+
+var _utils = require("./utils");
+
+var _runner = _interopRequireDefault(require("./runner"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var _default = (options // @ts-ignore
+) => {
+  var _ref, _ref2, _ref3, _Bundler;
+
+  return _ref = (_ref2 = (_ref3 = (_Bundler = (0, _bundler2.default)(options) // @ts-ignore
+  , (0, _operators.filter)(({
+    name
+  }) => name === 'buildStart')(_Bundler) // @ts-ignore
+  ), (0, _operators.mergeMap)(async ctx => ({ ...ctx,
+    runner: await (0, _runner.default)()
+  }))(_ref3) // @ts-ignore
+  ), (0, _operators.tap)(({
+    entryFiles
+  }) => {
+    _logger.default.clear();
+
+    _logger.default.progress(`\n${_chalk.default.grey(`Building ${entryFiles.map(_utils.prettifyPath).join(', ')}`)}`);
+  })(_ref2) // @ts-ignore
+  ), (0, _operators.switchMap)(({
+    entryFiles,
+    buildStartTime
+  }) => {
+    var _ref4, _bundler;
+
+    return (// @ts-ignore
+      _ref4 = (_bundler = bundler // @ts-ignore
+      , (0, _operators.filter)(({
+        name
+      }) => name === 'bundled')(_bundler) // @ts-ignore
+      ), (0, _operators.map)(ctx => ({ ...ctx,
+        entryFiles,
+        buildStartTime
+      }))(_ref4)
+    );
+  })(_ref);
+};
+
+exports.default = _default;
+},{"../runner/bundler":"runner/bundler.ts","../cli/logger":"cli/logger.ts","./utils":"api/utils.ts","./runner":"api/runner.ts"}],"utils.ts":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -557,299 +577,25 @@ const RUN_TESTS = '__EPK_RUN_TESTS';
 exports.RUN_TESTS = RUN_TESTS;
 const RUN_TEST = '__EPK_RUN_TEST';
 exports.RUN_TEST = RUN_TEST;
-},{}],"runner/analyze.ts":[function(require,module,exports) {
+},{}],"test/error.ts":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.default = exports.browser = void 0;
+exports.errors = void 0;
 
-var _path = _interopRequireDefault(require("path"));
+var _utils = require("../utils");
 
-var _chalk = _interopRequireDefault(require("chalk"));
+const errors = [];
+exports.errors = errors;
 
-var _rxjs = require("rxjs");
-
-var _operators = require("rxjs/operators");
-
-var _utils = require("./utils");
-
-var _utils2 = require("../utils");
-
-var _logger = _interopRequireDefault(require("./logger"));
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-const browser = // @ts-ignore
-(0, _operators.switchMap)(async ctx => {
-  const {
-    bundle,
-    page
-  } = ctx;
-  const tests = await page.evaluate(({
-    GET_TESTS,
-    urls
-  }) => window[GET_TESTS](urls), {
-    GET_TESTS: _utils2.GET_TESTS,
-    urls: (bundle.isEmpty ? Array.from(bundle.childBundles) : [bundle]).map(({
-      name: distPath,
-      entryAsset: {
-        name: sourcePath
-      }
-    }) => ({
-      sourcePath,
-      distPath,
-      url: distPath.replace(`${_path.default.resolve(process.cwd(), '.epk', 'dist')}\\`, '/tests/')
-    }))
-  });
-  return {
-    tests,
-    ...ctx
-  };
-});
-exports.browser = browser;
-
-var _default = (0, _operators.switchMap)(val => {
-  var _ref, _ref2, _of;
-
-  return (// @ts-ignore
-    _ref = (_ref2 = (_of = (0, _rxjs.of)(val) // @ts-ignore
-    , (0, _operators.tap)(({
-      entryPoints,
-      bundledTime,
-      buildStartTime
-    }) => {
-      _logger.default.progress(`\n${_chalk.default.green(`Built in ${(0, _utils.prettifyTime)(bundledTime - buildStartTime)}.`)}\n${_chalk.default.grey(`Analyzing ${entryPoints.map(_utils.prettifyPath).join(', ')}`)}.`);
-    })(_of) // @ts-ignore
-    ), (0, _operators.tap)(ctx => ctx.analyzeStartTime = Date.now())(_ref2) // @ts-ignore
-    ), browser(_ref)
-  );
-});
-
-exports.default = _default;
-},{"./utils":"runner/utils.ts","../utils":"utils.ts","./logger":"runner/logger.ts"}],"runner/test.ts":[function(require,module,exports) {
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = exports.browser = void 0;
-
-var _chalk = _interopRequireDefault(require("chalk"));
-
-var _operators = require("rxjs/operators");
-
-var _utils = require("./utils");
-
-var _utils2 = require("../utils");
-
-var _rxjs = require("rxjs");
-
-var _logger = _interopRequireDefault(require("./logger"));
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-const browser = // @ts-ignore
-(0, _operators.switchMap)(async ctx => {
-  const {
-    page,
-    bundle,
-    tests
-  } = ctx;
-  await page.coverage.startJSCoverage();
-  const testsResult = await page.evaluate(({
-    RUN_TESTS,
-    tests
-  }) => window[RUN_TESTS](tests), {
-    RUN_TESTS: _utils2.RUN_TESTS,
-    tests
-  });
-  return {
-    testsResult,
-    testsCoverage: await page.coverage.stopJSCoverage(),
-    ...ctx
-  };
-});
-exports.browser = browser;
-
-var _default = (0, _operators.switchMap)(val => {
-  var _ref, _of;
-
-  return (// @ts-ignore
-    _ref = (_of = (0, _rxjs.of)(val) // @ts-ignore
-    , (0, _operators.tap)(ctx => {
-      ctx.analyzeEndTime = Date.now();
-      ctx.testStartTime = Date.now();
-      const {
-        entryPoints,
-        buildStartTime,
-        bundledTime,
-        analyzeEndTime,
-        analyzeStartTime
-      } = ctx;
-
-      _logger.default.progress(`\n${_chalk.default.green(`Built in ${(0, _utils.prettifyTime)(bundledTime - buildStartTime)}.`)}\n${_chalk.default.green(`Analyzed in ${(0, _utils.prettifyTime)(analyzeEndTime - analyzeStartTime)}.`)}\n${_chalk.default.green(`Testing ${entryPoints.map(_utils.prettifyPath).join(', ')}.`)}`);
-    })(_of) // @ts-ignore
-    ), browser(_ref)
-  );
-});
-
-exports.default = _default;
-},{"./utils":"runner/utils.ts","../utils":"utils.ts","./logger":"runner/logger.ts"}],"runner/post-analyze.ts":[function(require,module,exports) {
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = void 0;
-
-var _chalk = _interopRequireDefault(require("chalk"));
-
-var _operators = require("rxjs/operators");
-
-var _rxjs = require("rxjs");
-
-var _utils = require("./utils");
-
-var _logger = _interopRequireDefault(require("./logger"));
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-const formatTest = ({
-  description,
-  error: {
-    message
-  }
-}) => `\
- ${description}
- ${_chalk.default.gray(message.split('\n').shift().trim())}
-
-${_chalk.default.red(message.split('\n').splice(2).join('\n'))}`;
-
-const formatTests = tests => `\
-${_chalk.default.underline((0, _utils.prettifyPath)(tests[0].sourcePath))}
-
-${tests.map(formatTest).join('\n')}`;
-
-const format = (buildTime, analyzeTime, testTime, groupedTests) => `
-${_chalk.default.green(`Built in ${buildTime}.`)}
-${_chalk.default.green(`Analyzed in ${analyzeTime}.`)}
-${_chalk.default.green(`Tested in ${testTime}.`)}
-${_chalk.default.reset.red(`Errors:`)}
-
-${_chalk.default.reset(groupedTests.map(([sourcePath, tests]) => [sourcePath, tests.filter(test => test.error)]).map(([, tests]) => formatTests(tests)).join('\n'))}`;
-
-var _default = (0, _operators.switchMap)(val => {
-  var _of;
-
-  return _of = (0, _rxjs.of)(val), (0, _operators.tap)(ctx => {
-    var _format;
-
-    ctx.testEndTime = Date.now();
-    const {
-      entryPoints,
-      buildStartTime,
-      bundledTime,
-      analyzeEndTime,
-      analyzeStartTime,
-      testStartTime,
-      testEndTime,
-      testsResult
-    } = ctx;
-    _format = format((0, _utils.prettifyTime)(bundledTime - buildStartTime), (0, _utils.prettifyTime)(analyzeEndTime - analyzeStartTime), (0, _utils.prettifyTime)(testEndTime - testStartTime), Object.entries(testsResult.reduce((obj, test) => (obj[test.sourcePath] ? obj[test.sourcePath].push(test) : obj[test.sourcePath] = [test], obj), {}))), _logger.default.success(_format);
-  })(_of);
-});
-
-exports.default = _default;
-},{"./utils":"runner/utils.ts","./logger":"runner/logger.ts"}],"runner/index.ts":[function(require,module,exports) {
-"use strict";
-
-var _path = _interopRequireDefault(require("path"));
-
-var _chalk = _interopRequireDefault(require("chalk"));
-
-var _fastGlob = _interopRequireDefault(require("fast-glob"));
-
-var _operators = require("rxjs/operators");
-
-var _puppeteer = _interopRequireDefault(require("puppeteer"));
-
-var _cli = _interopRequireDefault(require("./cli"));
-
-var _utils = require("./utils");
-
-var _bundler2 = _interopRequireDefault(require("./bundler"));
-
-var _logger = _interopRequireDefault(require("./logger"));
-
-var _server = require("./server");
-
-var _analyze = _interopRequireDefault(require("./analyze"));
-
-var _test = _interopRequireDefault(require("./test"));
-
-var _postAnalyze = _interopRequireDefault(require("./post-analyze"));
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-const init = async ({
-  node = false
-} = {}) => {
-  var _ref, _ref2, _Bundler;
-
-  _logger.default.progress(`\n${_chalk.default.grey(`Preparing the environment.`)}`);
-
-  const globs = await (0, _cli.default)();
-  const browser = await _puppeteer.default.launch({
-    devtools: true
-  });
-  const page = !node && (await browser.pages())[0];
-  page.on('console', msg => _logger.default.log(`browser: ${msg.text()}`));
-  await page.goto(`http://localhost:${await _server.port}/epk/browser-runner.html`);
-  const entryFiles = (await _fastGlob.default.async(globs)).map(path => _path.default.join(process.cwd(), path));
-  return _ref = (_ref2 = (_Bundler = (0, _bundler2.default)(entryFiles) // @ts-ignore
-  , (0, _operators.filter)(({
-    name
-  }) => name === 'buildStart')(_Bundler) // @ts-ignore
-  ), (0, _operators.tap)(_ => {
-    _logger.default.clear();
-
-    _logger.default.progress(`\n${_chalk.default.grey(`Building ${entryFiles.map(_utils.prettifyPath).join(', ')}`)}`);
-  })(_ref2) // @ts-ignore
-  ), (0, _operators.switchMap)(({
-    bundler,
-    entryPoints,
-    buildStartTime
-  }) => {
-    var _ref3, _ref4, _ref5, _ref6, _bundler;
-
-    return (// @ts-ignore
-      _ref3 = (_ref4 = (_ref5 = (_ref6 = (_bundler = bundler // @ts-ignore
-      , (0, _operators.filter)(({
-        name
-      }) => name === 'bundled')(_bundler) // @ts-ignore
-      ), (0, _operators.switchMap)(async ctx => {
-        await page.reload();
-        return {
-          bundler,
-          entryPoints,
-          page,
-          buildStartTime,
-          ...ctx
-        };
-      })(_ref6) // @ts-ignore
-      ), (0, _analyze.default)(_ref5) // @ts-ignore
-      ), (0, _test.default)(_ref4) // @ts-ignore
-      ), (0, _postAnalyze.default)(_ref3)
-    );
-  })(_ref);
-};
-
-if (!module.parent) {
-  init().then(obs => obs.subscribe(_ => {}));
+if (_utils.isBrowser) {
+  window.addEventListener('error', err => errors.push(err));
+} else {
+  process.on('uncaughtException', err => errors.push(err));
 }
-},{"./cli":"runner/cli.ts","./utils":"runner/utils.ts","./bundler":"runner/bundler.ts","./logger":"runner/logger.ts","./server":"runner/server.ts","./analyze":"runner/analyze.ts","./test":"runner/test.ts","./post-analyze":"runner/post-analyze.ts"}],"test/test.ts":[function(require,module,exports) {
+},{"../utils":"utils.ts"}],"test/test.ts":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -858,6 +604,8 @@ Object.defineProperty(exports, "__esModule", {
 exports.test = exports.fail = exports.pass = exports.todo = exports.tests = void 0;
 
 var _utils = require("../utils");
+
+var _error = require("./error");
 
 const tests = new Map();
 exports.tests = tests;
@@ -894,8 +642,9 @@ if (_utils.isBrowser) {
     if (name === _utils.GET_TESTS) {
       window.parent.postMessage({
         name: _utils.GET_TESTS,
+        errors: _error.errors,
         data: Array.from(tests).map(([desc, func]) => [desc, func.toString()])
-      });
+      }, '*');
     } else if (name === _utils.RUN_TEST) {
       let error;
 
@@ -917,11 +666,11 @@ if (_utils.isBrowser) {
           //   .catch(error => console.log('lol', error) || ({ error }))
 
         }
-      });
+      }, '*');
     }
   });
 }
-},{"../utils":"utils.ts"}],"test/assert.ts":[function(require,module,exports) {
+},{"../utils":"utils.ts","./error":"test/error.ts"}],"test/assert.ts":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -965,19 +714,13 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _index = require("./runner/index");
+var _fastGlob = _interopRequireDefault(require("fast-glob"));
 
-Object.keys(_index).forEach(function (key) {
-  if (key === "default" || key === "__esModule") return;
-  Object.defineProperty(exports, key, {
-    enumerable: true,
-    get: function () {
-      return _index[key];
-    }
-  });
-});
+var _path = _interopRequireDefault(require("path"));
 
-var _index2 = require("./test/index");
+var _index = _interopRequireDefault(require("./cli/index"));
+
+var _index2 = _interopRequireWildcard(require("./api/index"));
 
 Object.keys(_index2).forEach(function (key) {
   if (key === "default" || key === "__esModule") return;
@@ -988,5 +731,29 @@ Object.keys(_index2).forEach(function (key) {
     }
   });
 });
-},{"./runner/index":"runner/index.ts","./test/index":"test/index.ts"}]},{},["index.ts"], null)
+
+var _index3 = require("./test/index");
+
+Object.keys(_index3).forEach(function (key) {
+  if (key === "default" || key === "__esModule") return;
+  Object.defineProperty(exports, key, {
+    enumerable: true,
+    get: function () {
+      return _index3[key];
+    }
+  });
+});
+
+function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) { var desc = Object.defineProperty && Object.getOwnPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : {}; if (desc.get || desc.set) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } } newObj.default = obj; return newObj; } }
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+if (!module.parent) {
+  // Run via CLI
+  (0, _index.default)().then(async globs => (0, _index2.default)({
+    entryFiles: (await _fastGlob.default.async(globs)).map(path => _path.default.join(process.cwd(), path)) // @ts-ignore
+
+  }).subscribe());
+}
+},{"./cli/index":"cli/index.ts","./api/index":"api/index.ts","./test/index":"test/index.ts"}]},{},["index.ts"], null)
 //# sourceMappingURL=index.map

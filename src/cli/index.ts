@@ -1,7 +1,11 @@
 import program from 'commander'
 import chalk from 'chalk'
 
-export default (): string[] =>
+const helpMessage = `
+Run \`${chalk.bold('epk help <command>')}\` for more information on specific commands
+`
+
+export default (): Promise<string[]> =>
   new Promise((resolve, reject) => {
     program
       .command('serve [input...]')
@@ -11,20 +15,14 @@ export default (): string[] =>
     program
       .command('help [command]')
       .description('display help information for a command')
-      .action(function(command) {
-        let cmd = program.commands.find(c => c.name() === command) || program
-        cmd.help()
-      })
+      .action(command =>
+        (program
+            .commands
+            .find(c =>
+              c.name() === command) ||
+        program).help())
 
-    program.on('--help', function() {
-      console.log('')
-      console.log(
-        '  Run `' +
-          chalk.bold('epk help <command>') +
-          '` for more information on specific commands'
-      )
-      console.log('')
-    })
+    program.on('--help', _ => console.log(helpMessage))
 
     // Make serve the default command except for --help
     const args = process.argv
@@ -34,4 +32,5 @@ export default (): string[] =>
     }
 
     program.parse(args)
-  }) as any
+  })
+  
