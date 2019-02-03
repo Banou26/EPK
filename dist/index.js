@@ -463,7 +463,7 @@ exports.default = _default;
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.prettifyTime = exports.prettifyPath = void 0;
+exports.callPageFunction = exports.prettifyTime = exports.transformPathToUrl = exports.prettifyPath = void 0;
 
 var _path = _interopRequireDefault(require("path"));
 
@@ -473,10 +473,82 @@ const prettifyPath = path => _path.default.relative(process.cwd(), path);
 
 exports.prettifyPath = prettifyPath;
 
+const transformPathToUrl = path => path.replace(`${_path.default.resolve(process.cwd(), '.epk', 'dist')}\\`, '/tests/');
+
+exports.transformPathToUrl = transformPathToUrl;
+
 const prettifyTime = time => time < 1000 ? `${time.toFixed()}ms` : `${(time / 1000).toFixed(2)}s`;
 
 exports.prettifyTime = prettifyTime;
-},{}],"api/runner.ts":[function(require,module,exports) {
+
+const callPageFunction = (page, type, ...payload) => page.evaluate(({
+  type,
+  payload
+}) => window[type](...payload), {
+  type,
+  payload
+});
+
+exports.callPageFunction = callPageFunction;
+},{}],"types.ts":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.MESSAGE_TYPE = exports.BROWSER = void 0;
+// import { Observable } from "rxjs"
+let BROWSER;
+exports.BROWSER = BROWSER;
+
+(function (BROWSER) {
+  BROWSER["CHROME"] = "Chrome";
+  BROWSER["CHROME_CANARY"] = "ChromeCanary";
+  BROWSER["FIREFOX"] = "Firefox";
+  BROWSER["FIREFOX_NIGHTLY"] = "FirefoxNightly";
+})(BROWSER || (exports.BROWSER = BROWSER = {}));
+
+let MESSAGE_TYPE;
+exports.MESSAGE_TYPE = MESSAGE_TYPE;
+
+(function (MESSAGE_TYPE) {
+  MESSAGE_TYPE["GET_TESTS"] = "__EPK_GET_TESTS";
+  MESSAGE_TYPE["RUN_TESTS"] = "__EPK_RUN_TESTS";
+  MESSAGE_TYPE["RUN_TEST"] = "__EPK_RUN_TEST";
+})(MESSAGE_TYPE || (exports.MESSAGE_TYPE = MESSAGE_TYPE = {}));
+},{}],"api/server.ts":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.port = void 0;
+
+var _path = _interopRequireDefault(require("path"));
+
+var _koa = _interopRequireDefault(require("koa"));
+
+var _koaStatic = _interopRequireDefault(require("koa-static"));
+
+var _koaMount = _interopRequireDefault(require("koa-mount"));
+
+var _getPort = _interopRequireDefault(require("get-port"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+const port = (0, _getPort.default)({
+  port: 10485
+});
+exports.port = port;
+const app = new _koa.default();
+const epk = new _koa.default();
+epk.use((0, _koaStatic.default)(_path.default.resolve(__dirname, '..', 'dist')));
+const tests = new _koa.default();
+tests.use((0, _koaStatic.default)(_path.default.resolve(process.cwd(), '.epk', 'dist')));
+app.use((0, _koaMount.default)('/epk', epk));
+app.use((0, _koaMount.default)('/tests', tests));
+port.then(port => app.listen(port));
+},{}],"api/page-provider.ts":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -488,21 +560,102 @@ var _puppeteer = _interopRequireDefault(require("puppeteer"));
 
 var _rxjs = require("rxjs");
 
+var _types = require("../types");
+
+var _server = require("./server");
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-var _default = async (options = {}) => {
-  const browser = await _puppeteer.default.launch({
-    devtools: false
-  });
-  return _rxjs.Observable.create(observer => {
-    const page = browser.newPage();
-    page.then(page => observer.next(page));
-    return async _ => (await page).close();
-  });
+const getChrome = () => _puppeteer.default.launch({
+  devtools: true
+});
+
+const getFirefox = () => _puppeteer.default.launch({
+  devtools: false
+});
+
+const browsers = {
+  [_types.BROWSER.CHROME]: getChrome,
+  [_types.BROWSER.CHROME_CANARY]: getChrome,
+  [_types.BROWSER.FIREFOX]: getFirefox,
+  [_types.BROWSER.FIREFOX_NIGHTLY]: getFirefox
+};
+
+const getBrowsers = async browserList => (await Promise.all(browserList.map(browser => browsers[browser]()))).reduce((o, v, k) => (o[browserList[k]] = v, o), {});
+
+var _default = async options => {
+  const browsers = await getBrowsers(options.browsers);
+  return {
+    [_types.BROWSER.CHROME]: _rxjs.Observable.create(observer => {
+      let page;
+
+      (async () => {
+        observer.next(page = await browsers[_types.BROWSER.CHROME].newPage());
+        await page.goto(`http://localhost:${await _server.port}/epk/browser-runner.html`);
+      })();
+
+      return async _ => (await page).close();
+    }),
+    [_types.BROWSER.FIREFOX]: _rxjs.Observable.create(observer => {
+      let page;
+
+      (async () => {
+        observer.next(page = await browsers[_types.BROWSER.FIREFOX].newPage());
+        await page.goto(`http://localhost:${await _server.port}/epk/browser-runner.html`);
+      })();
+
+      return async _ => (await page).close();
+    })
+  };
 };
 
 exports.default = _default;
-},{}],"api/index.ts":[function(require,module,exports) {
+},{"../types":"types.ts","./server":"api/server.ts"}],"api/analyze.ts":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+var _operators = require("rxjs/operators");
+
+var _rxjs = require("rxjs");
+
+var _types = require("../types");
+
+var _utils = require("./utils");
+
+const analyzeChrome = (page, url) => (0, _utils.callPageFunction)(page, _types.MESSAGE_TYPE.GET_TESTS, url);
+
+const analyzeFirefox = (page, url) => (0, _utils.callPageFunction)(page, _types.MESSAGE_TYPE.GET_TESTS, url);
+
+const analyzes = {
+  [_types.BROWSER.CHROME]: analyzeChrome,
+  [_types.BROWSER.FIREFOX]: analyzeFirefox
+};
+
+var _default = (0, _operators.switchMap)(ctx => (0, _rxjs.merge)(...ctx.browsers.map(browser => ctx.files.map(({
+  url
+} // @ts-ignore
+) => {
+  var _ctx$pageProvider$bro;
+
+  return _ctx$pageProvider$bro = ctx.pageProvider[browser], // @ts-ignore
+  (0, _operators.switchMap)(page => _rxjs.Observable.create(observer => {
+    analyzes[browser](page, url).then(res => {
+      observer.next({
+        res,
+        browser,
+        url
+      });
+    });
+    return _ => {};
+  }))(_ctx$pageProvider$bro);
+})).flat()));
+
+exports.default = _default;
+},{"../types":"types.ts","./utils":"api/utils.ts"}],"api/index.ts":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -520,21 +673,20 @@ var _logger = _interopRequireDefault(require("../cli/logger"));
 
 var _utils = require("./utils");
 
-var _runner = _interopRequireDefault(require("./runner"));
+var _pageProvider = _interopRequireDefault(require("./page-provider"));
+
+var _analyze = _interopRequireDefault(require("./analyze"));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var _default = (options // @ts-ignore
 ) => {
-  var _ref, _ref2, _ref3, _Bundler;
+  var _ref, _ref2, _Bundler;
 
-  return _ref = (_ref2 = (_ref3 = (_Bundler = (0, _bundler2.default)(options) // @ts-ignore
+  return _ref = (_ref2 = (_Bundler = (0, _bundler2.default)(options) // @ts-ignore
   , (0, _operators.filter)(({
     name
   }) => name === 'buildStart')(_Bundler) // @ts-ignore
-  ), (0, _operators.mergeMap)(async ctx => ({ ...ctx,
-    runner: await (0, _runner.default)()
-  }))(_ref3) // @ts-ignore
   ), (0, _operators.tap)(({
     entryFiles
   }) => {
@@ -543,40 +695,45 @@ var _default = (options // @ts-ignore
     _logger.default.progress(`\n${_chalk.default.grey(`Building ${entryFiles.map(_utils.prettifyPath).join(', ')}`)}`);
   })(_ref2) // @ts-ignore
   ), (0, _operators.switchMap)(({
+    bundler,
     entryFiles,
     buildStartTime
   }) => {
-    var _ref4, _bundler;
+    var _ref3, _ref4, _ref5, _ref6, _bundler;
 
-    return (// @ts-ignore
-      _ref4 = (_bundler = bundler // @ts-ignore
-      , (0, _operators.filter)(({
-        name
-      }) => name === 'bundled')(_bundler) // @ts-ignore
-      ), (0, _operators.map)(ctx => ({ ...ctx,
-        entryFiles,
-        buildStartTime
-      }))(_ref4)
-    );
+    const files = entryFiles.map(path => ({
+      path,
+      url: (0, _utils.transformPathToUrl)(path)
+    })); // @ts-ignore
+
+    return _ref3 = (_ref4 = (_ref5 = (_ref6 = (_bundler = bundler // @ts-ignore
+    , (0, _operators.filter)(({
+      name
+    }) => name === 'bundled')(_bundler) // @ts-ignore
+    ), (0, _operators.mergeMap)(async ctx => ({ ...ctx,
+      pageProvider: await (0, _pageProvider.default)(options)
+    }))(_ref6) // @ts-ignore
+    ), (0, _operators.map)(ctx => ({ ...ctx,
+      browsers: options.browsers,
+      files,
+      entryFiles,
+      buildStartTime
+    }))(_ref5) // @ts-ignore
+    ), (0, _analyze.default)(_ref4) // @ts-ignore
+    ), (0, _operators.tap)(res => _logger.default.progress(`${res}`))(_ref3);
   })(_ref);
 };
 
 exports.default = _default;
-},{"../runner/bundler":"runner/bundler.ts","../cli/logger":"cli/logger.ts","./utils":"api/utils.ts","./runner":"api/runner.ts"}],"utils.ts":[function(require,module,exports) {
+},{"../runner/bundler":"runner/bundler.ts","../cli/logger":"cli/logger.ts","./utils":"api/utils.ts","./page-provider":"api/page-provider.ts","./analyze":"api/analyze.ts"}],"utils.ts":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.RUN_TEST = exports.RUN_TESTS = exports.GET_TESTS = exports.isBrowser = void 0;
+exports.isBrowser = void 0;
 const isBrowser = typeof window !== 'undefined';
 exports.isBrowser = isBrowser;
-const GET_TESTS = '__EPK_GET_TESTS';
-exports.GET_TESTS = GET_TESTS;
-const RUN_TESTS = '__EPK_RUN_TESTS';
-exports.RUN_TESTS = RUN_TESTS;
-const RUN_TEST = '__EPK_RUN_TEST';
-exports.RUN_TEST = RUN_TEST;
 },{}],"test/error.ts":[function(require,module,exports) {
 "use strict";
 
@@ -732,6 +889,10 @@ Object.keys(_index2).forEach(function (key) {
   });
 });
 
+var _types = require("./types");
+
+var _logger = _interopRequireDefault(require("./cli/logger"));
+
 var _index3 = require("./test/index");
 
 Object.keys(_index3).forEach(function (key) {
@@ -751,9 +912,12 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 if (!module.parent) {
   // Run via CLI
   (0, _index.default)().then(async globs => (0, _index2.default)({
+    browsers: [_types.BROWSER.CHROME],
     entryFiles: (await _fastGlob.default.async(globs)).map(path => _path.default.join(process.cwd(), path)) // @ts-ignore
 
-  }).subscribe());
+  }).subscribe(_ => {}, err => {
+    _logger.default.error(err);
+  }));
 }
-},{"./cli/index":"cli/index.ts","./api/index":"api/index.ts","./test/index":"test/index.ts"}]},{},["index.ts"], null)
+},{"./cli/index":"cli/index.ts","./api/index":"api/index.ts","./types":"types.ts","./cli/logger":"cli/logger.ts","./test/index":"test/index.ts"}]},{},["index.ts"], null)
 //# sourceMappingURL=index.map

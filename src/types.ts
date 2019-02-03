@@ -3,13 +3,34 @@ import { Observable } from 'rxjs'
 
 // import { Observable } from "rxjs"
 
+export enum BROWSER {
+  CHROME = 'Chrome',
+  CHROME_CANARY = 'ChromeCanary',
+  FIREFOX = 'Firefox',
+  FIREFOX_NIGHTLY = 'FirefoxNightly'
+}
+
+export enum MESSAGE_TYPE {
+  GET_TESTS = '__EPK_GET_TESTS',
+  RUN_TESTS = '__EPK_RUN_TESTS',
+  RUN_TEST = '__EPK_RUN_TEST'
+}
+
+export interface Message {
+  type: MESSAGE_TYPE,
+  payload: any
+}
+
 export interface Options {
   entryFiles: string[]
+  browsers: BROWSER[]
 }
 
 export interface Context {
   options: Options
+  files: File[]
   entryFiles: string[]
+  browsers: BROWSER[]
   pageProvider: Observable<PPTRPage>
   name: string
   bundle: any
@@ -17,14 +38,20 @@ export interface Context {
   buildEndTime: number
 }
 
-export interface Page {
-  tests: Test[]
-  testsResults?: TestResult[]
-  errors?: Error[]
+export interface BrowserResult {
+  browser: BROWSER
+  testsResults: TestResult[]
+  errors: Error[]
+}
+
+export interface File {
+  path: string
+  url: string
+  tests?: Test[]
+  browsersResults?: BrowserResult[]
 }
 
 export interface AnalyzedContext extends Context {
-  pages: Page[]
   analyzeEndTime: number
   analyzeStartTime: number
 }
