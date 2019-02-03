@@ -110,15 +110,9 @@ parcelRequire = (function (modules, cache, entry, globalName) {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.RUN_TEST = exports.RUN_TESTS = exports.GET_TESTS = exports.isBrowser = void 0;
+exports.isBrowser = void 0;
 const isBrowser = typeof window !== 'undefined';
 exports.isBrowser = isBrowser;
-const GET_TESTS = '__EPK_GET_TESTS';
-exports.GET_TESTS = GET_TESTS;
-const RUN_TESTS = '__EPK_RUN_TESTS';
-exports.RUN_TESTS = RUN_TESTS;
-const RUN_TEST = '__EPK_RUN_TEST';
-exports.RUN_TEST = RUN_TEST;
 },{}],"../../node_modules/process/browser.js":[function(require,module,exports) {
 
 // shim for using process in browser

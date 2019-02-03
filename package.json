@@ -28,6 +28,7 @@
     "perf_hooks": "^0.0.1",
     "power-assert": "^1.6.1",
     "puppeteer": "^1.11.0",
+    "puppeteer-firefox": "^0.4.2",
     "rxjs": "6"
   },
   "devDependencies": {
