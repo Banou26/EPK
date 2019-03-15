@@ -1,8 +1,7 @@
 import { fromEvent, from, of, forkJoin, isObservable, Observable } from 'rxjs'
 import { map, switchMap, mergeMap, take, zip, bufferCount, tap, filter, delay } from 'rxjs/operators'
 import iframe from './iframe'
-import { GET_TESTS, RUN_TESTS, RUN_TEST } from '../utils'
-import { Test, TestResult } from '../types'
+import { File, Test, TestResult, MESSAGE_TYPE } from '../types'
 
 // const getTests =
 //   (urls: string[]): Promise<Test[]> =>
@@ -40,42 +39,37 @@ import { Test, TestResult } from '../types'
 //       .toPromise()
 
 const getTests =
-  (filesData): Promise<Test[]> =>
+  ({ path, url }: File): Promise<File> =>
     // @ts-ignore
-    ((forkJoin(
-      ...filesData.map(({ sourcePath, distPath, url }) =>
+    (iframe(`${url}`)
+    // @ts-ignore
+    |> tap((iframe: HTMLIFrameElement) =>
+        iframe.contentWindow.postMessage({
+          name: MESSAGE_TYPE.GET_TESTS
+        }, '*'))
       // @ts-ignore
-        iframe(`${url}`)
+    |> switchMap(iframe =>
         // @ts-ignore
-        |> tap((iframe: HTMLIFrameElement) =>
-            iframe.contentWindow.postMessage({
-              name: GET_TESTS
-            }, '*'))
-          // @ts-ignore
-        |> switchMap(iframe =>
-            // @ts-ignore
-            fromEvent(window, 'message')
-            // @ts-ignore
-            |> filter(({ source }) => source === iframe.contentWindow)
-            // @ts-ignore
-            |> map(({ errors, data }) => ({ errors, data }))
-            // @ts-ignore
-            |> map(({ errors, data: testsData }) => ({
-              errors,
-              tests: testsData
-                  .map(([ description, body ]: [ string, string ]) => ({
-                    sourcePath,
-                    distPath,
-                    url,
-                    description,
-                    body
-                  }))
-            })))
+        fromEvent(window, 'message')
         // @ts-ignore
-        |> take(1))
-    )
-      // @ts-ignore
-      |> map(tests => tests.flat())) as Observable)
+        |> filter(({ source }) => source === iframe.contentWindow)
+        // @ts-ignore
+        |> map(({ data: { errors, data } }) => ({ errors, data }))
+        // @ts-ignore
+        |> map(({ errors, data: testsData }) => ({
+          errors,
+          tests: 
+            testsData
+              .map(([ description, body ]: [ string, string ]) => ({
+                path,
+                url,
+                description,
+                body
+              }))
+        })))
+    // @ts-ignore
+    |> take(1))
+    // @ts-ignore
       .toPromise()
 
 const runTests =
@@ -89,7 +83,7 @@ const runTests =
         // @ts-ignore
         |> tap((iframe: HTMLIFrameElement) =>
             iframe.contentWindow.postMessage({
-              name: RUN_TEST,
+              name: MESSAGE_TYPE.RUN_TEST,
               data: description
             }, '*'))
         // @ts-ignore
@@ -117,5 +111,5 @@ const runTests =
     |> map(tests => tests.flat())) as Observable)
       .toPromise()
 
-window[GET_TESTS] = getTests
-window[RUN_TESTS] = runTests
+window[MESSAGE_TYPE.GET_TESTS] = getTests
+window[MESSAGE_TYPE.RUN_TESTS] = runTests

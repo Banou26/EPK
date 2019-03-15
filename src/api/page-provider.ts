@@ -2,20 +2,21 @@ import puppeteer, { Page, Browser } from 'puppeteer'
 import puppeteerFF from 'puppeteer'
 import { switchMap } from 'rxjs/operators'
 import { Observable } from 'rxjs'
-import { BROWSER, Options } from '../types'
+import { ENVIRONMENT, Options } from '../types'
 import { port } from './server'
+import logger from '../cli/logger'
 
 const getChrome = () => puppeteer.launch({ devtools: true })
 const getFirefox = () => puppeteerFF.launch({ devtools: false })
 
 const browsers = {
-  [BROWSER.CHROME]: getChrome,
-  [BROWSER.CHROME_CANARY]: getChrome,
-  [BROWSER.FIREFOX]: getFirefox,
-  [BROWSER.FIREFOX_NIGHTLY]: getFirefox
+  [ENVIRONMENT.CHROME]: getChrome,
+  [ENVIRONMENT.CHROME_CANARY]: getChrome,
+  [ENVIRONMENT.FIREFOX]: getFirefox,
+  [ENVIRONMENT.FIREFOX_NIGHTLY]: getFirefox
 }
 
-const getBrowsers = async (browserList: BROWSER[]) =>
+const getBrowsers = async (browserList: ENVIRONMENT[]) =>
   (await Promise.all(
     browserList
       .map(browser => browsers[browser]())))
@@ -25,19 +26,23 @@ export default async (options: Options) => {
   const browsers = await getBrowsers(options.browsers)
 
   return {
-    [BROWSER.CHROME]: Observable.create(observer => {
+    [ENVIRONMENT.CHROME]: Observable.create(observer => {
       let page
       (async () => {
-        observer.next(page = await browsers[BROWSER.CHROME].newPage())
+        page = await browsers[ENVIRONMENT.CHROME].newPage()
+        // await page.on('console', msg => logger.log(`browser: ${msg.text()}`))
         await page.goto(`http://localhost:${await port}/epk/browser-runner.html`)
+        observer.next(page)
       })()
       return async _ => (await page).close()
     }),
-    [BROWSER.FIREFOX]: Observable.create(observer => {
+    [ENVIRONMENT.FIREFOX]: Observable.create(observer => {
       let page
       (async () => {
-        observer.next(page = await browsers[BROWSER.FIREFOX].newPage())
+        page = await browsers[ENVIRONMENT.CHROME].newPage()
+        // await page.on('console', msg => logger.log(`browser: ${msg.text()}`))
         await page.goto(`http://localhost:${await port}/epk/browser-runner.html`)
+        observer.next(page)
       })()
       return async _ => (await page).close()
     })

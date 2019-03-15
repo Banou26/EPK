@@ -1,12 +1,15 @@
 import chalk from 'chalk'
-import { map, tap, filter, mergeMap, switchMap } from 'rxjs/operators'
+import { merge } from 'rxjs'
+import { map, tap, filter, mergeMap, switchMap, publish } from 'rxjs/operators'
 
-import { Options, Context, Page } from '../types'
+import { Options, Context, Page, AnalyzedContext, TestedContext } from '../types'
 import Bundler from '../runner/bundler'
 import logger from '../cli/logger'
 import { prettifyPath, transformPathToUrl } from './utils'
 import PageProvider from './page-provider'
 import analyze from './analyze'
+import { Observable } from 'rxjs'
+import reporter from './reporter'
 
 export default (options: Options) =>
   // @ts-ignore
@@ -20,14 +23,16 @@ export default (options: Options) =>
   })
     // @ts-ignore
   |> switchMap(({ bundler, entryFiles, buildStartTime }) => {
-    const files: File[] =
-      entryFiles
-        .map(path => ({
-          path,
-          url: transformPathToUrl(path)
-        }))
+    // const files: File[] =
+    //   entryFiles
+    //     .map(path => ({
+    //       path,
+    //       url: transformPathToUrl(path)
+    //     }))
     // @ts-ignore
-    return bundler
+
+    const ctxObservable: Observable<Context> =
+      bundler
       // @ts-ignore
       |> filter(({ name }) => name === 'bundled')
       // @ts-ignore
@@ -36,15 +41,78 @@ export default (options: Options) =>
         pageProvider: await PageProvider(options)
       }))
       // @ts-ignore
-      |> map(ctx => ({
-        ...ctx,
+      |> map(({ bundle, ...rest }) => ({
+        bundle,
+        ...rest,
         browsers: options.browsers,
-        files,
+        files:
+          (bundle.isEmpty
+            ? Array.from(bundle.childBundles)
+            : [bundle])
+              .map(({ name: path }) => ({
+                path,
+                url: transformPathToUrl(path)
+              })),
         entryFiles,
         buildStartTime
       }))
       // @ts-ignore
-      |> analyze
+      |> publish()
+
+    const analyzedObservable: Observable<AnalyzedContext> =
       // @ts-ignore
-      |> tap(res => logger.progress(`${res}`))
+      ctxObservable
+      // @ts-ignore
+      |> publish()
+
+    const testedObservable: Observable<TestedContext> =
+      // @ts-ignore
+      analyzedObservable
+      // @ts-ignore
+      |> publish()
+
+    const reporterObservable =
+      // @ts-ignore
+      merge(
+        ctxObservable,
+        analyzedObservable,
+        testedObservable
+      )
+      // @ts-ignore
+      |> reporter(options)
+
+    testedObservable.connect()
+    analyzedObservable.connect()
+    ctxObservable.connect()
+
+    return reporterObservable
+
+    // return bundler
+    //   // @ts-ignore
+    //   |> filter(({ name }) => name === 'bundled')
+    //   // @ts-ignore
+    //   |> mergeMap(async ctx => ({
+    //     ...ctx,
+    //     pageProvider: await PageProvider(options)
+    //   }))
+    //   // @ts-ignore
+    //   |> map(({ bundle, ...rest }) => ({
+    //     bundle,
+    //     ...rest,
+    //     browsers: options.browsers,
+    //     files:
+    //       (bundle.isEmpty
+    //         ? Array.from(bundle.childBundles)
+    //         : [bundle])
+    //           .map(({ name: path }) => ({
+    //             path,
+    //             url: transformPathToUrl(path)
+    //           })),
+    //     entryFiles,
+    //     buildStartTime
+    //   }))
+    //   // @ts-ignore
+    //   |> analyze
+    //   // @ts-ignore
+    //   |> tap(res => logger.progress(`${res}`))
   })

@@ -1,19 +1,73 @@
 import { Page as PPTRPage } from 'puppeteer'
 import { Observable } from 'rxjs'
 
-// import { Observable } from "rxjs"
+export const NODE_GLOBAL = '__EPK_NODE_GLOBAL'
 
-export enum BROWSER {
-  CHROME = 'Chrome',
-  CHROME_CANARY = 'ChromeCanary',
-  FIREFOX = 'Firefox',
-  FIREFOX_NIGHTLY = 'FirefoxNightly'
+/**
+ * List of different runtimes (available) to test on
+ */
+export enum TARGET {
+  NODE = 'node',
+  ELECTRON = 'electron',
+  DENO = 'deno',
+  CHROME = 'chrome',
+  CHROME_EXTENSION = 'chromeExtension',
+  CHROME_CANARY = 'chromeCanary',
+  CHROME_CANARY_EXTENSION = 'chromeCanaryExtension',
+  FIREFOX = 'firefox',
+  FIREFOX_EXTENSION = 'firefoxExtension',
+  FIREFOX_NIGHTLY = 'firefoxNightly',
+  FIREFOX_NIGHTLY_EXTENSION = 'firefoxNightlyExtension'
 }
+
+export enum BROWSER_TARGET {
+  CHROME = TARGET.CHROME_EXTENSION,
+  CHROME_EXTENSION = TARGET.CHROME_CANARY,
+  CHROME_CANARY = TARGET.CHROME_CANARY_EXTENSION,
+  CHROME_CANARY_EXTENSION = TARGET.FIREFOX,
+  FIREFOX = TARGET.FIREFOX_EXTENSION,
+  FIREFOX_EXTENSION = TARGET.FIREFOX_NIGHTLY,
+  FIREFOX_NIGHTLY = TARGET.FIREFOX_NIGHTLY_EXTENSION,
+  FIREFOX_NIGHTLY_EXTENSION = TARGET.FIREFOX_NIGHTLY_EXTENSION
+}
+
+export enum BUNDLER_TARGET {
+  NODE = 'node',
+  BROWSER = 'browser',
+  ELECTRON = 'electron'
+}
+
+export const targetToBundlerTarget =
+  (target: TARGET): BUNDLER_TARGET =>
+    target in BROWSER_TARGET ? BUNDLER_TARGET.BROWSER
+    : target as unknown as BUNDLER_TARGET === BUNDLER_TARGET.NODE ? BUNDLER_TARGET.NODE
+    : target as unknown as BUNDLER_TARGET === BUNDLER_TARGET.ELECTRON && BUNDLER_TARGET.NODE
+
+export interface Bundler extends Observable<any> {}
+
+export interface TargetRuntime extends Observable<any> {
+  loadFile: Function
+  exec: Function
+}
+export interface TargetRuntimeObservable extends Observable<TargetRuntime> {
+  target: TARGET
+  options: TargetRuntimeOptions
+}
+
+export interface TargetRuntimeOptions {}
+export interface TargetRuntimeProvider extends Observable<TargetRuntimeObservable> {
+  target: TARGET
+  options: TargetRuntimeOptions
+}
+export interface TargetRuntimeProviderOptions {}
 
 export enum MESSAGE_TYPE {
   GET_TESTS = '__EPK_GET_TESTS',
   RUN_TESTS = '__EPK_RUN_TESTS',
-  RUN_TEST = '__EPK_RUN_TEST'
+  RUN_TEST = '__EPK_RUN_TEST',
+  GET_TESTS_RESPONSE = '__EPK_GET_TESTS_RESPONSE',
+  RUN_TESTS_RESPONSE = '__EPK_RUN_TESTS_RESPONSE',
+  RUN_TEST_RESPONSE = '__EPK_RUN_TEST_RESPONSE'
 }
 
 export interface Message {
@@ -22,55 +76,115 @@ export interface Message {
 }
 
 export interface Options {
+  browsers?: BROWSER_TARGET[]
   entryFiles: string[]
-  browsers: BROWSER[]
+  target: BUNDLER_TARGET
+  watch?: Boolean
+  outDir?: string
+  cache?: Boolean
+  cacheDir?: string
+  minify?: Boolean
+  scopeHoist?: Boolean
+  /**
+   * 0 = log nothing
+   * 1 = log errors
+   * 2 = log warnings & errors
+   * 3 = log everything
+   */
+  logLevel?: 0 | 1 | 2 | 3
+  sourceMaps?: Boolean
+  detailedReport?: Boolean
 }
 
+export interface Target {
+  type: TARGET
+  test: Function
+  prepare: Function
+}
+
+/**
+ * Context object of the testing pipeline that contains all the information needed for each testing steps
+ */
 export interface Context {
+  /**
+   * Options passed to epk
+   */
   options: Options
+  /**
+   * Files found by the paths/globs
+   */
   files: File[]
+  /**
+   * entryFiles from Parcel
+   */
   entryFiles: string[]
-  browsers: BROWSER[]
-  pageProvider: Observable<PPTRPage>
+  /**
+   * Array of targets in which the tests will be executed
+   */
+  targets: TARGET[]
   name: string
   bundle: any
   buildStartTime: number
   buildEndTime: number
+  analyzeEndTime?: number
+  analyzeStartTime?: number
+  testStartTime?: number
+  testEndTime?: number
 }
 
-export interface BrowserResult {
-  browser: BROWSER
-  testsResults: TestResult[]
-  errors: Error[]
-}
-
+/**
+ * Representation of a file
+ */
 export interface File {
+  target: TARGET
+  /**
+   * Path of the test file
+   */
   path: string
-  url: string
+  /**
+   * Url by which browsers can access the test file
+   */
+  url?: string
+  /**
+   * Array of tests
+   */
   tests?: Test[]
-  browsersResults?: BrowserResult[]
 }
 
-export interface AnalyzedContext extends Context {
-  analyzeEndTime: number
-  analyzeStartTime: number
-}
-
-export interface TestedContext extends AnalyzedContext {
-  testsCoverage: any
-  testStartTime: number
-  testEndTime: number
-}
-
+/**
+ * Representation of a test
+ */
 export interface Test {
-  path: string
-  url: string
+  /**
+   * Description of the test
+   */
   description: string
-  body: Function
-}
-
-export interface TestResult extends Test {
+  /**
+   * Body of the test (Function stringified)
+   */
+  body: String
+  /**
+   * Type of test
+   */
+  type?: Function | Promise<any> | Observable<any>
+  /**
+   * Value returned by the test
+   */
   value?: any
-  // type: Function | Promise | Observable
-  error?: Error
+  /**
+   * Error thrown by the test
+   */
+  error?: Error,
+  /**
+   * Time of execution in ms
+   */
+  executionTime?: Number,
+  /**
+   * Target
+   */
+  target?: TARGET
+  /**
+   * Code coverage of the test
+   */
+  coverage?: any
 }

@@ -15069,15 +15069,73 @@ var _default = url => _rxjs.Observable.create(observer => {
 
 
 exports.default = _default;
-},{"rxjs":"../../node_modules/rxjs/_esm5/index.js"}],"../utils.ts":[function(require,module,exports) {
+},{"rxjs":"../../node_modules/rxjs/_esm5/index.js"}],"../types.ts":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.isBrowser = void 0;
-const isBrowser = typeof window !== 'undefined';
-exports.isBrowser = isBrowser;
+exports.MESSAGE_TYPE = exports.targetToBundlerTarget = exports.BUNDLER_TARGET = exports.BROWSER_TARGET = exports.TARGET = exports.NODE_GLOBAL = void 0;
+const NODE_GLOBAL = '__EPK_NODE_GLOBAL';
+/**
+ * List of different runtimes (available) to test on
+ */
+
+exports.NODE_GLOBAL = NODE_GLOBAL;
+let TARGET;
+exports.TARGET = TARGET;
+
+(function (TARGET) {
+  TARGET["NODE"] = "node";
+  TARGET["ELECTRON"] = "electron";
+  TARGET["DENO"] = "deno";
+  TARGET["CHROME"] = "chrome";
+  TARGET["CHROME_EXTENSION"] = "chromeExtension";
+  TARGET["CHROME_CANARY"] = "chromeCanary";
+  TARGET["CHROME_CANARY_EXTENSION"] = "chromeCanaryExtension";
+  TARGET["FIREFOX"] = "firefox";
+  TARGET["FIREFOX_EXTENSION"] = "firefoxExtension";
+  TARGET["FIREFOX_NIGHTLY"] = "firefoxNightly";
+  TARGET["FIREFOX_NIGHTLY_EXTENSION"] = "firefoxNightlyExtension";
+})(TARGET || (exports.TARGET = TARGET = {}));
+
+let BROWSER_TARGET;
+exports.BROWSER_TARGET = BROWSER_TARGET;
+
+(function (BROWSER_TARGET) {
+  BROWSER_TARGET[BROWSER_TARGET["CHROME"] = TARGET.CHROME_EXTENSION] = "CHROME";
+  BROWSER_TARGET[BROWSER_TARGET["CHROME_EXTENSION"] = TARGET.CHROME_CANARY] = "CHROME_EXTENSION";
+  BROWSER_TARGET[BROWSER_TARGET["CHROME_CANARY"] = TARGET.CHROME_CANARY_EXTENSION] = "CHROME_CANARY";
+  BROWSER_TARGET[BROWSER_TARGET["CHROME_CANARY_EXTENSION"] = TARGET.FIREFOX] = "CHROME_CANARY_EXTENSION";
+  BROWSER_TARGET[BROWSER_TARGET["FIREFOX"] = TARGET.FIREFOX_EXTENSION] = "FIREFOX";
+  BROWSER_TARGET[BROWSER_TARGET["FIREFOX_EXTENSION"] = TARGET.FIREFOX_NIGHTLY] = "FIREFOX_EXTENSION";
+  BROWSER_TARGET[BROWSER_TARGET["FIREFOX_NIGHTLY"] = TARGET.FIREFOX_NIGHTLY_EXTENSION] = "FIREFOX_NIGHTLY";
+  BROWSER_TARGET[BROWSER_TARGET["FIREFOX_NIGHTLY_EXTENSION"] = TARGET.FIREFOX_NIGHTLY_EXTENSION] = "FIREFOX_NIGHTLY_EXTENSION";
+})(BROWSER_TARGET || (exports.BROWSER_TARGET = BROWSER_TARGET = {}));
+
+let BUNDLER_TARGET;
+exports.BUNDLER_TARGET = BUNDLER_TARGET;
+
+(function (BUNDLER_TARGET) {
+  BUNDLER_TARGET["NODE"] = "node";
+  BUNDLER_TARGET["BROWSER"] = "browser";
+  BUNDLER_TARGET["ELECTRON"] = "electron";
+})(BUNDLER_TARGET || (exports.BUNDLER_TARGET = BUNDLER_TARGET = {}));
+
+const targetToBundlerTarget = target => target in BROWSER_TARGET ? BUNDLER_TARGET.BROWSER : target === BUNDLER_TARGET.NODE ? BUNDLER_TARGET.NODE : target === BUNDLER_TARGET.ELECTRON && BUNDLER_TARGET.NODE;
+
+exports.targetToBundlerTarget = targetToBundlerTarget;
+let MESSAGE_TYPE;
+exports.MESSAGE_TYPE = MESSAGE_TYPE;
+
+(function (MESSAGE_TYPE) {
+  MESSAGE_TYPE["GET_TESTS"] = "__EPK_GET_TESTS";
+  MESSAGE_TYPE["RUN_TESTS"] = "__EPK_RUN_TESTS";
+  MESSAGE_TYPE["RUN_TEST"] = "__EPK_RUN_TEST";
+  MESSAGE_TYPE["GET_TESTS_RESPONSE"] = "__EPK_GET_TESTS_RESPONSE";
+  MESSAGE_TYPE["RUN_TESTS_RESPONSE"] = "__EPK_RUN_TESTS_RESPONSE";
+  MESSAGE_TYPE["RUN_TEST_RESPONSE"] = "__EPK_RUN_TEST_RESPONSE";
+})(MESSAGE_TYPE || (exports.MESSAGE_TYPE = MESSAGE_TYPE = {}));
 },{}],"index.ts":[function(require,module,exports) {
 "use strict";
 
@@ -15087,7 +15145,7 @@ var _operators = require("rxjs/operators");
 
 var _iframe3 = _interopRequireDefault(require("./iframe"));
 
-var _utils = require("../utils");
+var _types = require("../types");
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -15124,64 +15182,57 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 //     )
 //       |> map(tests => tests.flat()))
 //       .toPromise()
-const getTests = filesData => {
-  var _forkJoin;
+const getTests = ({
+  path,
+  url
+} // @ts-ignore
+) => {
+  var _ref, _ref2, _iframe;
 
-  return (// @ts-ignore
-    (_forkJoin = (0, _rxjs.forkJoin)(...filesData.map(({
-      sourcePath,
-      distPath,
-      url
-    }) => {
-      var _ref, _ref2, _iframe;
+  return (_ref = (_ref2 = (_iframe = (0, _iframe3.default)(`${url}`) // @ts-ignore
+  , (0, _operators.tap)(iframe => iframe.contentWindow.postMessage({
+    name: _types.MESSAGE_TYPE.GET_TESTS
+  }, '*'))(_iframe) // @ts-ignore
+  ), (0, _operators.switchMap)(iframe => {
+    var _ref3, _ref4, _fromEvent;
 
-      return (// @ts-ignore
-        _ref = (_ref2 = (_iframe = (0, _iframe3.default)(`${url}`) // @ts-ignore
-        , (0, _operators.tap)(iframe => iframe.contentWindow.postMessage({
-          name: _utils.GET_TESTS
-        }, '*'))(_iframe) // @ts-ignore
-        ), (0, _operators.switchMap)(iframe => {
-          var _ref3, _ref4, _fromEvent;
-
-          return (// @ts-ignore
-            _ref3 = (_ref4 = (_fromEvent = (0, _rxjs.fromEvent)(window, 'message') // @ts-ignore
-            , (0, _operators.filter)(({
-              source
-            }) => source === iframe.contentWindow)(_fromEvent) // @ts-ignore
-            ), (0, _operators.map)(({
-              errors,
-              data
-            }) => ({
-              errors,
-              data
-            }))(_ref4) // @ts-ignore
-            ), (0, _operators.map)(({
-              errors,
-              data: testsData
-            }) => ({
-              errors,
-              tests: testsData.map(([description, body]) => ({
-                sourcePath,
-                distPath,
-                url,
-                description,
-                body
-              }))
-            }))(_ref3)
-          );
-        })(_ref2) // @ts-ignore
-        ), (0, _operators.take)(1)(_ref)
-      );
-    })) // @ts-ignore
-    , (0, _operators.map)(tests => tests.flat())(_forkJoin)).toPromise()
-  );
+    return (// @ts-ignore
+      _ref3 = (_ref4 = (_fromEvent = (0, _rxjs.fromEvent)(window, 'message') // @ts-ignore
+      , (0, _operators.filter)(({
+        source
+      }) => source === iframe.contentWindow)(_fromEvent) // @ts-ignore
+      ), (0, _operators.map)(({
+        data: {
+          errors,
+          data
+        }
+      }) => ({
+        errors,
+        data
+      }))(_ref4) // @ts-ignore
+      ), (0, _operators.map)(({
+        errors,
+        data: testsData
+      }) => ({
+        errors,
+        tests: testsData.map(([description, body]) => ({
+          path,
+          url,
+          description,
+          body
+        }))
+      }))(_ref3)
+    );
+  })(_ref2) // @ts-ignore
+  ), (0, _operators.take)(1)(_ref)). // @ts-ignore
+  toPromise();
 };
 
 const runTests = (tests // @ts-ignore
 ) => {
-  var _forkJoin2;
+  var _forkJoin;
 
-  return (_forkJoin2 = (0, _rxjs.forkJoin)( // @ts-ignore
+  return (_forkJoin = (0, _rxjs.forkJoin)( // @ts-ignore
   ...tests.map(({
     sourcePath,
     distPath,
@@ -15194,7 +15245,7 @@ const runTests = (tests // @ts-ignore
 
     return _ref5 = (_ref6 = (_iframe2 = (0, _iframe3.default)(`${url}?${description}`) // @ts-ignore
     , (0, _operators.tap)(iframe => iframe.contentWindow.postMessage({
-      name: _utils.RUN_TEST,
+      name: _types.MESSAGE_TYPE.RUN_TEST,
       data: description
     }, '*'))(_iframe2) // @ts-ignore
     ), (0, _operators.switchMap)(iframe => {
@@ -15226,10 +15277,10 @@ const runTests = (tests // @ts-ignore
     )(_ref6) // @ts-ignore
     ), (0, _operators.take)(1)(_ref5);
   })) // @ts-ignore
-  , (0, _operators.map)(tests => tests.flat())(_forkJoin2)).toPromise();
+  , (0, _operators.map)(tests => tests.flat())(_forkJoin)).toPromise();
 };
 
-window[_utils.GET_TESTS] = getTests;
-window[_utils.RUN_TESTS] = runTests;
-},{"rxjs":"../../node_modules/rxjs/_esm5/index.js","rxjs/operators":"../../node_modules/rxjs/_esm5/operators/index.js","./iframe":"iframe.ts","../utils":"../utils.ts"}]},{},["index.ts"], null)
+window[_types.MESSAGE_TYPE.GET_TESTS] = getTests;
+window[_types.MESSAGE_TYPE.RUN_TESTS] = runTests;
+},{"rxjs":"../../node_modules/rxjs/_esm5/index.js","rxjs/operators":"../../node_modules/rxjs/_esm5/operators/index.js","./iframe":"iframe.ts","../types":"../types.ts"}]},{},["index.ts"], null)
 //# sourceMappingURL=browser-runner.77de5100.map
