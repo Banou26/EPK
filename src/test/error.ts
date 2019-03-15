@@ -1,4 +1,4 @@
-import { isBrowser } from '../utils'
+import { isBrowser } from '../core/utils'
 
 export const errors = []
 

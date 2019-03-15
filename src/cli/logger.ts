@@ -1,6 +1,6 @@
 // from https://github.com/parcel-bundler/parcel/tree/master/packages/core/logger/src
 
-import Chalk from 'chalk'
+import Chalk from 'Chalk'
 import readline from 'readline'
 import { countBreaks } from 'grapheme-breaker'
 import stripAnsi from 'strip-ansi'

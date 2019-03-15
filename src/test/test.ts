@@ -1,4 +1,7 @@
-import { isBrowser, GET_TESTS, RUN_TEST } from '../utils'
+import { EventEmitter } from 'events'
+import { stringify } from 'flatted/cjs'
+import { isBrowser } from '../core/utils'
+import { File, Test, TestResult, MESSAGE_TYPE, NODE_GLOBAL } from '../types'
 import { errors } from './error'
 
 export const tests = new Map<string, Function>()
@@ -16,40 +19,66 @@ export const test = (desc, func) => {
 
 const initiated = new Promise(resolve => setTimeout(resolve, 0))
 
-if (isBrowser) {
-  window.addEventListener('message', async ({ data: { name, data } }) => {
-    if (name === GET_TESTS) {
-      window.parent
-        .postMessage({
-          name: GET_TESTS,
-          errors,
-          data:
-            Array.from(tests)
-              .map(([desc, func]) => [desc, func.toString()])
-        }, '*')
-    } else if (name === RUN_TEST) {
-      let error
-      try {
-        const result = await tests.get(data)()
-        // console.log(result)
-        // if (result instanceof Error) error = result
-      } catch (err) {
-        // console.log(err)
-        error = err
+const emit = (type, data) =>
+  isBrowser
+    ? window.parent.postMessage({ type, errors, data }, '*')
+    : global[NODE_GLOBAL].emit('message', { type, errors, data })
+
+const getTests = () =>
+  emit(
+    MESSAGE_TYPE.GET_TESTS_RESPONSE,
+    Array
+      .from(tests)
+      .map(([desc, func]) => [
+        desc,
+        func.toString()
+      ])
+  )
+
+const runTest = async description => {
+  // todo: replace by "isBrowser ? window : require('perf_hooks')"
+  const { performance } = window
+  let timeStart, timeEnd, data, error
+
+  try {
+    timeStart = performance.now()
+    data = stringify(await tests.get(description)())
+    timeEnd = performance.now()
+  } catch (err) {
+    error = err
+  }
+
+  emit(
+    MESSAGE_TYPE.RUN_TEST_RESPONSE,
+    {
+      timeStart,
+      timeEnd,
+      data,
+      error: error && {
+        name: error.name,
+        message: error.message
       }
-      
-      //   .then(result => console.log('result', result)).catch(err => console.log('error', err))
-      // setTimeout(_ => console.log(errors), 0)
-      window.parent
-        .postMessage({
-          name: GET_TESTS,
-          data: {
-            error
-            // ...await tests.get(data)()
-            //   .then(value => ({ /*value*/ }))
-            //   .catch(error => console.log('lol', error) || ({ error }))
-          }
-        }, '*')
     }
-  })
+  )
 }
+
+const newEvent = ({ data: { type, description } }) =>
+    type === MESSAGE_TYPE.GET_TESTS ? getTests()
+  : type === MESSAGE_TYPE.RUN_TEST && runTest(description)
+
+if (isBrowser) {
+  window.addEventListener('message', newEvent)
+} else {
+  const events = global[NODE_GLOBAL] = new EventEmitter()
+  events.addListener('message', newEvent)
+}
+
+// const addEventListener =
+//   isBrowser
+//     ? window.addEventListener
+//     : global[NODE_GLOBAL].addListener
+
+// addEventListener('message', ({ data: { type, description } }) =>
+//     type === MESSAGE_TYPE.GET_TESTS ? getTests()
+//   : type === MESSAGE_TYPE.RUN_TEST && runTest(description))
+

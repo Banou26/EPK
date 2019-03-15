@@ -104,15 +104,459 @@ parcelRequire = (function (modules, cache, entry, globalName) {
 
   // Override the current require with this new one
   return newRequire;
-})({"../utils.ts":[function(require,module,exports) {
+})({"../../node_modules/events/events.js":[function(require,module,exports) {
+// Copyright Joyent, Inc. and other Node contributors.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to permit
+// persons to whom the Software is furnished to do so, subject to the
+// following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+// USE OR OTHER DEALINGS IN THE SOFTWARE.
+function EventEmitter() {
+  this._events = this._events || {};
+  this._maxListeners = this._maxListeners || undefined;
+}
+
+module.exports = EventEmitter; // Backwards-compat with node 0.10.x
+
+EventEmitter.EventEmitter = EventEmitter;
+EventEmitter.prototype._events = undefined;
+EventEmitter.prototype._maxListeners = undefined; // By default EventEmitters will print a warning if more than 10 listeners are
+// added to it. This is a useful default which helps finding memory leaks.
+
+EventEmitter.defaultMaxListeners = 10; // Obviously not all Emitters should be limited to 10. This function allows
+// that to be increased. Set to zero for unlimited.
+
+EventEmitter.prototype.setMaxListeners = function (n) {
+  if (!isNumber(n) || n < 0 || isNaN(n)) throw TypeError('n must be a positive number');
+  this._maxListeners = n;
+  return this;
+};
+
+EventEmitter.prototype.emit = function (type) {
+  var er, handler, len, args, i, listeners;
+  if (!this._events) this._events = {}; // If there is no 'error' event listener then throw.
+
+  if (type === 'error') {
+    if (!this._events.error || isObject(this._events.error) && !this._events.error.length) {
+      er = arguments[1];
+
+      if (er instanceof Error) {
+        throw er; // Unhandled 'error' event
+      } else {
+        // At least give some kind of context to the user
+        var err = new Error('Uncaught, unspecified "error" event. (' + er + ')');
+        err.context = er;
+        throw err;
+      }
+    }
+  }
+
+  handler = this._events[type];
+  if (isUndefined(handler)) return false;
+
+  if (isFunction(handler)) {
+    switch (arguments.length) {
+      // fast cases
+      case 1:
+        handler.call(this);
+        break;
+
+      case 2:
+        handler.call(this, arguments[1]);
+        break;
+
+      case 3:
+        handler.call(this, arguments[1], arguments[2]);
+        break;
+      // slower
+
+      default:
+        args = Array.prototype.slice.call(arguments, 1);
+        handler.apply(this, args);
+    }
+  } else if (isObject(handler)) {
+    args = Array.prototype.slice.call(arguments, 1);
+    listeners = handler.slice();
+    len = listeners.length;
+
+    for (i = 0; i < len; i++) listeners[i].apply(this, args);
+  }
+
+  return true;
+};
+
+EventEmitter.prototype.addListener = function (type, listener) {
+  var m;
+  if (!isFunction(listener)) throw TypeError('listener must be a function');
+  if (!this._events) this._events = {}; // To avoid recursion in the case that type === "newListener"! Before
+  // adding it to the listeners, first emit "newListener".
+
+  if (this._events.newListener) this.emit('newListener', type, isFunction(listener.listener) ? listener.listener : listener);
+  if (!this._events[type]) // Optimize the case of one listener. Don't need the extra array object.
+    this._events[type] = listener;else if (isObject(this._events[type])) // If we've already got an array, just append.
+    this._events[type].push(listener);else // Adding the second element, need to change to array.
+    this._events[type] = [this._events[type], listener]; // Check for listener leak
+
+  if (isObject(this._events[type]) && !this._events[type].warned) {
+    if (!isUndefined(this._maxListeners)) {
+      m = this._maxListeners;
+    } else {
+      m = EventEmitter.defaultMaxListeners;
+    }
+
+    if (m && m > 0 && this._events[type].length > m) {
+      this._events[type].warned = true;
+      console.error('(node) warning: possible EventEmitter memory ' + 'leak detected. %d listeners added. ' + 'Use emitter.setMaxListeners() to increase limit.', this._events[type].length);
+
+      if (typeof console.trace === 'function') {
+        // not supported in IE 10
+        console.trace();
+      }
+    }
+  }
+
+  return this;
+};
+
+EventEmitter.prototype.on = EventEmitter.prototype.addListener;
+
+EventEmitter.prototype.once = function (type, listener) {
+  if (!isFunction(listener)) throw TypeError('listener must be a function');
+  var fired = false;
+
+  function g() {
+    this.removeListener(type, g);
+
+    if (!fired) {
+      fired = true;
+      listener.apply(this, arguments);
+    }
+  }
+
+  g.listener = listener;
+  this.on(type, g);
+  return this;
+}; // emits a 'removeListener' event iff the listener was removed
+
+
+EventEmitter.prototype.removeListener = function (type, listener) {
+  var list, position, length, i;
+  if (!isFunction(listener)) throw TypeError('listener must be a function');
+  if (!this._events || !this._events[type]) return this;
+  list = this._events[type];
+  length = list.length;
+  position = -1;
+
+  if (list === listener || isFunction(list.listener) && list.listener === listener) {
+    delete this._events[type];
+    if (this._events.removeListener) this.emit('removeListener', type, listener);
+  } else if (isObject(list)) {
+    for (i = length; i-- > 0;) {
+      if (list[i] === listener || list[i].listener && list[i].listener === listener) {
+        position = i;
+        break;
+      }
+    }
+
+    if (position < 0) return this;
+
+    if (list.length === 1) {
+      list.length = 0;
+      delete this._events[type];
+    } else {
+      list.splice(position, 1);
+    }
+
+    if (this._events.removeListener) this.emit('removeListener', type, listener);
+  }
+
+  return this;
+};
+
+EventEmitter.prototype.removeAllListeners = function (type) {
+  var key, listeners;
+  if (!this._events) return this; // not listening for removeListener, no need to emit
+
+  if (!this._events.removeListener) {
+    if (arguments.length === 0) this._events = {};else if (this._events[type]) delete this._events[type];
+    return this;
+  } // emit removeListener for all listeners on all events
+
+
+  if (arguments.length === 0) {
+    for (key in this._events) {
+      if (key === 'removeListener') continue;
+      this.removeAllListeners(key);
+    }
+
+    this.removeAllListeners('removeListener');
+    this._events = {};
+    return this;
+  }
+
+  listeners = this._events[type];
+
+  if (isFunction(listeners)) {
+    this.removeListener(type, listeners);
+  } else if (listeners) {
+    // LIFO order
+    while (listeners.length) this.removeListener(type, listeners[listeners.length - 1]);
+  }
+
+  delete this._events[type];
+  return this;
+};
+
+EventEmitter.prototype.listeners = function (type) {
+  var ret;
+  if (!this._events || !this._events[type]) ret = [];else if (isFunction(this._events[type])) ret = [this._events[type]];else ret = this._events[type].slice();
+  return ret;
+};
+
+EventEmitter.prototype.listenerCount = function (type) {
+  if (this._events) {
+    var evlistener = this._events[type];
+    if (isFunction(evlistener)) return 1;else if (evlistener) return evlistener.length;
+  }
+
+  return 0;
+};
+
+EventEmitter.listenerCount = function (emitter, type) {
+  return emitter.listenerCount(type);
+};
+
+function isFunction(arg) {
+  return typeof arg === 'function';
+}
+
+function isNumber(arg) {
+  return typeof arg === 'number';
+}
+
+function isObject(arg) {
+  return typeof arg === 'object' && arg !== null;
+}
+
+function isUndefined(arg) {
+  return arg === void 0;
+}
+},{}],"../../node_modules/flatted/cjs/index.js":[function(require,module,exports) {
+var Flatted = (function (Primitive, primitive) {
+
+  /*!
+   * ISC License
+   *
+   * Copyright (c) 2018, Andrea Giammarchi, @WebReflection
+   *
+   * Permission to use, copy, modify, and/or distribute this software for any
+   * purpose with or without fee is hereby granted, provided that the above
+   * copyright notice and this permission notice appear in all copies.
+   *
+   * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+   * REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+   * AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+   * INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+   * LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE
+   * OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+   * PERFORMANCE OF THIS SOFTWARE.
+   */
+
+  var Flatted = {
+
+    parse: function parse(text, reviver) {
+      var input = JSON.parse(text, Primitives).map(primitives);
+      var value = input[0];
+      var $ = reviver || noop;
+      var tmp = typeof value === 'object' && value ?
+                  revive(input, new Set, value, $) :
+                  value;
+      return $.call({'': tmp}, '', tmp);
+    },
+
+    stringify: function stringify(value, replacer, space) {
+      for (var
+        firstRun,
+        known = new Map,
+        input = [],
+        output = [],
+        $ = replacer && typeof replacer === typeof input ?
+              function (k, v) {
+                if (k === '' || -1 < replacer.indexOf(k)) return v;
+              } :
+              (replacer || noop),
+        i = +set(known, input, $.call({'': value}, '', value)),
+        replace = function (key, value) {
+          if (firstRun) {
+            firstRun = !firstRun;
+            return value;
+            // this was invoking twice each root object
+            // return i < 1 ? value : $.call(this, key, value);
+          }
+          var after = $.call(this, key, value);
+          switch (typeof after) {
+            case 'object':
+              if (after === null) return after;
+            case primitive:
+              return known.get(after) || set(known, input, after);
+          }
+          return after;
+        };
+        i < input.length; i++
+      ) {
+        firstRun = true;
+        output[i] = JSON.stringify(input[i], replace, space);
+      }
+      return '[' + output.join(',') + ']';
+    }
+
+  };
+
+  return Flatted;
+
+  function noop(key, value) {
+    return value;
+  }
+
+  function revive(input, parsed, output, $) {
+    return Object.keys(output).reduce(
+      function (output, key) {
+        var value = output[key];
+        if (value instanceof Primitive) {
+          var tmp = input[value];
+          if (typeof tmp === 'object' && !parsed.has(tmp)) {
+            parsed.add(tmp);
+            output[key] = $.call(output, key, revive(input, parsed, tmp, $));
+          } else {
+            output[key] = $.call(output, key, tmp);
+          }
+        } else
+          output[key] = $.call(output, key, value);
+        return output;
+      },
+      output
+    );
+  }
+
+  function set(known, input, value) {
+    var index = Primitive(input.push(value) - 1);
+    known.set(value, index);
+    return index;
+  }
+
+  // the two kinds of primitives
+  //  1. the real one
+  //  2. the wrapped one
+
+  function primitives(value) {
+    return value instanceof Primitive ? Primitive(value) : value;
+  }
+
+  function Primitives(key, value) {
+    return typeof value === primitive ? new Primitive(value) : value;
+  }
+
+}(String, 'string'));
+module.exports = Flatted;
+
+},{}],"../core/utils.ts":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.isBrowser = void 0;
+exports.isBrowser = exports.prettifyTime = exports.stringify = void 0;
+
+const stringify = (strings, ...vals) => strings.reduce((finalStr, str, i) => `${finalStr}${str}${vals.length > i ? JSON.stringify(vals[i]) : ''}`, '');
+
+exports.stringify = stringify;
+
+const prettifyTime = time => time < 1000 ? `${time.toFixed()}ms` : `${(time / 1000).toFixed(2)}s`;
+
+exports.prettifyTime = prettifyTime;
 const isBrowser = typeof window !== 'undefined';
 exports.isBrowser = isBrowser;
+},{}],"../types.ts":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.MESSAGE_TYPE = exports.targetToBundlerTarget = exports.BUNDLER_TARGET = exports.BROWSER_TARGET = exports.TARGET = exports.NODE_GLOBAL = void 0;
+const NODE_GLOBAL = '__EPK_NODE_GLOBAL';
+/**
+ * List of different runtimes (available) to test on
+ */
+
+exports.NODE_GLOBAL = NODE_GLOBAL;
+let TARGET;
+exports.TARGET = TARGET;
+
+(function (TARGET) {
+  TARGET["NODE"] = "node";
+  TARGET["ELECTRON"] = "electron";
+  TARGET["DENO"] = "deno";
+  TARGET["CHROME"] = "chrome";
+  TARGET["CHROME_EXTENSION"] = "chromeExtension";
+  TARGET["CHROME_CANARY"] = "chromeCanary";
+  TARGET["CHROME_CANARY_EXTENSION"] = "chromeCanaryExtension";
+  TARGET["FIREFOX"] = "firefox";
+  TARGET["FIREFOX_EXTENSION"] = "firefoxExtension";
+  TARGET["FIREFOX_NIGHTLY"] = "firefoxNightly";
+  TARGET["FIREFOX_NIGHTLY_EXTENSION"] = "firefoxNightlyExtension";
+})(TARGET || (exports.TARGET = TARGET = {}));
+
+let BROWSER_TARGET;
+exports.BROWSER_TARGET = BROWSER_TARGET;
+
+(function (BROWSER_TARGET) {
+  BROWSER_TARGET[BROWSER_TARGET["CHROME"] = TARGET.CHROME_EXTENSION] = "CHROME";
+  BROWSER_TARGET[BROWSER_TARGET["CHROME_EXTENSION"] = TARGET.CHROME_CANARY] = "CHROME_EXTENSION";
+  BROWSER_TARGET[BROWSER_TARGET["CHROME_CANARY"] = TARGET.CHROME_CANARY_EXTENSION] = "CHROME_CANARY";
+  BROWSER_TARGET[BROWSER_TARGET["CHROME_CANARY_EXTENSION"] = TARGET.FIREFOX] = "CHROME_CANARY_EXTENSION";
+  BROWSER_TARGET[BROWSER_TARGET["FIREFOX"] = TARGET.FIREFOX_EXTENSION] = "FIREFOX";
+  BROWSER_TARGET[BROWSER_TARGET["FIREFOX_EXTENSION"] = TARGET.FIREFOX_NIGHTLY] = "FIREFOX_EXTENSION";
+  BROWSER_TARGET[BROWSER_TARGET["FIREFOX_NIGHTLY"] = TARGET.FIREFOX_NIGHTLY_EXTENSION] = "FIREFOX_NIGHTLY";
+  BROWSER_TARGET[BROWSER_TARGET["FIREFOX_NIGHTLY_EXTENSION"] = TARGET.FIREFOX_NIGHTLY_EXTENSION] = "FIREFOX_NIGHTLY_EXTENSION";
+})(BROWSER_TARGET || (exports.BROWSER_TARGET = BROWSER_TARGET = {}));
+
+let BUNDLER_TARGET;
+exports.BUNDLER_TARGET = BUNDLER_TARGET;
+
+(function (BUNDLER_TARGET) {
+  BUNDLER_TARGET["NODE"] = "node";
+  BUNDLER_TARGET["BROWSER"] = "browser";
+  BUNDLER_TARGET["ELECTRON"] = "electron";
+})(BUNDLER_TARGET || (exports.BUNDLER_TARGET = BUNDLER_TARGET = {}));
+
+const targetToBundlerTarget = target => target in BROWSER_TARGET ? BUNDLER_TARGET.BROWSER : target === BUNDLER_TARGET.NODE ? BUNDLER_TARGET.NODE : target === BUNDLER_TARGET.ELECTRON && BUNDLER_TARGET.NODE;
+
+exports.targetToBundlerTarget = targetToBundlerTarget;
+let MESSAGE_TYPE;
+exports.MESSAGE_TYPE = MESSAGE_TYPE;
+
+(function (MESSAGE_TYPE) {
+  MESSAGE_TYPE["GET_TESTS"] = "__EPK_GET_TESTS";
+  MESSAGE_TYPE["RUN_TESTS"] = "__EPK_RUN_TESTS";
+  MESSAGE_TYPE["RUN_TEST"] = "__EPK_RUN_TEST";
+  MESSAGE_TYPE["GET_TESTS_RESPONSE"] = "__EPK_GET_TESTS_RESPONSE";
+  MESSAGE_TYPE["RUN_TESTS_RESPONSE"] = "__EPK_RUN_TESTS_RESPONSE";
+  MESSAGE_TYPE["RUN_TEST_RESPONSE"] = "__EPK_RUN_TEST_RESPONSE";
+})(MESSAGE_TYPE || (exports.MESSAGE_TYPE = MESSAGE_TYPE = {}));
 },{}],"../../node_modules/process/browser.js":[function(require,module,exports) {
 
 // shim for using process in browser
@@ -332,7 +776,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.errors = void 0;
 
-var _utils = require("../utils");
+var _utils = require("../core/utils");
 
 const errors = [];
 exports.errors = errors;
@@ -342,7 +786,8 @@ if (_utils.isBrowser) {
 } else {
   process.on('uncaughtException', err => errors.push(err));
 }
-},{"../utils":"../utils.ts","process":"../../node_modules/process/browser.js"}],"test.ts":[function(require,module,exports) {
+},{"../core/utils":"../core/utils.ts","process":"../../node_modules/process/browser.js"}],"test.ts":[function(require,module,exports) {
+var global = arguments[3];
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -350,7 +795,13 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.test = exports.fail = exports.pass = exports.todo = exports.tests = void 0;
 
-var _utils = require("../utils");
+var _events = require("events");
+
+var _cjs = require("flatted/cjs");
+
+var _utils = require("../core/utils");
+
+var _types = require("../types");
 
 var _error = require("./error");
 
@@ -379,45 +830,64 @@ const test = (desc, func) => {
 exports.test = test;
 const initiated = new Promise(resolve => setTimeout(resolve, 0));
 
-if (_utils.isBrowser) {
-  window.addEventListener('message', async ({
-    data: {
-      name,
-      data
-    }
-  }) => {
-    if (name === _utils.GET_TESTS) {
-      window.parent.postMessage({
-        name: _utils.GET_TESTS,
-        errors: _error.errors,
-        data: Array.from(tests).map(([desc, func]) => [desc, func.toString()])
-      }, '*');
-    } else if (name === _utils.RUN_TEST) {
-      let error;
+const emit = (type, data) => _utils.isBrowser ? window.parent.postMessage({
+  type,
+  errors: _error.errors,
+  data
+}, '*') : global[_types.NODE_GLOBAL].emit('message', {
+  type,
+  errors: _error.errors,
+  data
+});
 
-      try {
-        const result = await tests.get(data)(); // console.log(result)
-        // if (result instanceof Error) error = result
-      } catch (err) {
-        // console.log(err)
-        error = err;
-      } //   .then(result => console.log('result', result)).catch(err => console.log('error', err))
-      // setTimeout(_ => console.log(errors), 0)
+const getTests = () => emit(_types.MESSAGE_TYPE.GET_TESTS_RESPONSE, Array.from(tests).map(([desc, func]) => [desc, func.toString()]));
 
+const runTest = async description => {
+  // todo: replace by "isBrowser ? window : require('perf_hooks')"
+  const {
+    performance
+  } = window;
+  let timeStart, timeEnd, data, error;
 
-      window.parent.postMessage({
-        name: _utils.GET_TESTS,
-        data: {
-          error // ...await tests.get(data)()
-          //   .then(value => ({ /*value*/ }))
-          //   .catch(error => console.log('lol', error) || ({ error }))
+  try {
+    timeStart = performance.now();
+    data = (0, _cjs.stringify)((await tests.get(description)()));
+    timeEnd = performance.now();
+  } catch (err) {
+    error = err;
+  }
 
-        }
-      }, '*');
+  emit(_types.MESSAGE_TYPE.RUN_TEST_RESPONSE, {
+    timeStart,
+    timeEnd,
+    data,
+    error: error && {
+      name: error.name,
+      message: error.message
     }
   });
-}
-},{"../utils":"../utils.ts","./error":"error.ts"}],"../../node_modules/base64-js/index.js":[function(require,module,exports) {
+};
+
+const newEvent = ({
+  data: {
+    type,
+    description
+  }
+}) => type === _types.MESSAGE_TYPE.GET_TESTS ? getTests() : type === _types.MESSAGE_TYPE.RUN_TEST && runTest(description);
+
+if (_utils.isBrowser) {
+  window.addEventListener('message', newEvent);
+} else {
+  const events = global[_types.NODE_GLOBAL] = new _events.EventEmitter();
+  events.addListener('message', newEvent);
+} // const addEventListener =
+//   isBrowser
+//     ? window.addEventListener
+//     : global[NODE_GLOBAL].addListener
+// addEventListener('message', ({ data: { type, description } }) =>
+//     type === MESSAGE_TYPE.GET_TESTS ? getTests()
+//   : type === MESSAGE_TYPE.RUN_TEST && runTest(description))
+},{"events":"../../node_modules/events/events.js","flatted/cjs":"../../node_modules/flatted/cjs/index.js","../core/utils":"../core/utils.ts","../types":"../types.ts","./error":"error.ts"}],"../../node_modules/base64-js/index.js":[function(require,module,exports) {
 'use strict'
 
 exports.byteLength = byteLength
@@ -5309,258 +5779,7 @@ function buildPowerAssertText (formatter, message, context) {
 empower.defaultOptions = defaultOptions;
 module.exports = empower;
 
-},{"empower-core":"../../node_modules/empower-core/index.js","./lib/default-options":"../../node_modules/empower/lib/default-options.js","./lib/capturable":"../../node_modules/empower/lib/capturable.js","core-js/library/fn/object/assign":"../../node_modules/core-js/library/fn/object/assign.js","./lib/define-properties":"../../node_modules/empower-core/lib/define-properties.js"}],"../../node_modules/events/events.js":[function(require,module,exports) {
-// Copyright Joyent, Inc. and other Node contributors.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the
-// "Software"), to deal in the Software without restriction, including
-// without limitation the rights to use, copy, modify, merge, publish,
-// distribute, sublicense, and/or sell copies of the Software, and to permit
-// persons to whom the Software is furnished to do so, subject to the
-// following conditions:
-//
-// The above copyright notice and this permission notice shall be included
-// in all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
-// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
-// USE OR OTHER DEALINGS IN THE SOFTWARE.
-function EventEmitter() {
-  this._events = this._events || {};
-  this._maxListeners = this._maxListeners || undefined;
-}
-
-module.exports = EventEmitter; // Backwards-compat with node 0.10.x
-
-EventEmitter.EventEmitter = EventEmitter;
-EventEmitter.prototype._events = undefined;
-EventEmitter.prototype._maxListeners = undefined; // By default EventEmitters will print a warning if more than 10 listeners are
-// added to it. This is a useful default which helps finding memory leaks.
-
-EventEmitter.defaultMaxListeners = 10; // Obviously not all Emitters should be limited to 10. This function allows
-// that to be increased. Set to zero for unlimited.
-
-EventEmitter.prototype.setMaxListeners = function (n) {
-  if (!isNumber(n) || n < 0 || isNaN(n)) throw TypeError('n must be a positive number');
-  this._maxListeners = n;
-  return this;
-};
-
-EventEmitter.prototype.emit = function (type) {
-  var er, handler, len, args, i, listeners;
-  if (!this._events) this._events = {}; // If there is no 'error' event listener then throw.
-
-  if (type === 'error') {
-    if (!this._events.error || isObject(this._events.error) && !this._events.error.length) {
-      er = arguments[1];
-
-      if (er instanceof Error) {
-        throw er; // Unhandled 'error' event
-      } else {
-        // At least give some kind of context to the user
-        var err = new Error('Uncaught, unspecified "error" event. (' + er + ')');
-        err.context = er;
-        throw err;
-      }
-    }
-  }
-
-  handler = this._events[type];
-  if (isUndefined(handler)) return false;
-
-  if (isFunction(handler)) {
-    switch (arguments.length) {
-      // fast cases
-      case 1:
-        handler.call(this);
-        break;
-
-      case 2:
-        handler.call(this, arguments[1]);
-        break;
-
-      case 3:
-        handler.call(this, arguments[1], arguments[2]);
-        break;
-      // slower
-
-      default:
-        args = Array.prototype.slice.call(arguments, 1);
-        handler.apply(this, args);
-    }
-  } else if (isObject(handler)) {
-    args = Array.prototype.slice.call(arguments, 1);
-    listeners = handler.slice();
-    len = listeners.length;
-
-    for (i = 0; i < len; i++) listeners[i].apply(this, args);
-  }
-
-  return true;
-};
-
-EventEmitter.prototype.addListener = function (type, listener) {
-  var m;
-  if (!isFunction(listener)) throw TypeError('listener must be a function');
-  if (!this._events) this._events = {}; // To avoid recursion in the case that type === "newListener"! Before
-  // adding it to the listeners, first emit "newListener".
-
-  if (this._events.newListener) this.emit('newListener', type, isFunction(listener.listener) ? listener.listener : listener);
-  if (!this._events[type]) // Optimize the case of one listener. Don't need the extra array object.
-    this._events[type] = listener;else if (isObject(this._events[type])) // If we've already got an array, just append.
-    this._events[type].push(listener);else // Adding the second element, need to change to array.
-    this._events[type] = [this._events[type], listener]; // Check for listener leak
-
-  if (isObject(this._events[type]) && !this._events[type].warned) {
-    if (!isUndefined(this._maxListeners)) {
-      m = this._maxListeners;
-    } else {
-      m = EventEmitter.defaultMaxListeners;
-    }
-
-    if (m && m > 0 && this._events[type].length > m) {
-      this._events[type].warned = true;
-      console.error('(node) warning: possible EventEmitter memory ' + 'leak detected. %d listeners added. ' + 'Use emitter.setMaxListeners() to increase limit.', this._events[type].length);
-
-      if (typeof console.trace === 'function') {
-        // not supported in IE 10
-        console.trace();
-      }
-    }
-  }
-
-  return this;
-};
-
-EventEmitter.prototype.on = EventEmitter.prototype.addListener;
-
-EventEmitter.prototype.once = function (type, listener) {
-  if (!isFunction(listener)) throw TypeError('listener must be a function');
-  var fired = false;
-
-  function g() {
-    this.removeListener(type, g);
-
-    if (!fired) {
-      fired = true;
-      listener.apply(this, arguments);
-    }
-  }
-
-  g.listener = listener;
-  this.on(type, g);
-  return this;
-}; // emits a 'removeListener' event iff the listener was removed
-
-
-EventEmitter.prototype.removeListener = function (type, listener) {
-  var list, position, length, i;
-  if (!isFunction(listener)) throw TypeError('listener must be a function');
-  if (!this._events || !this._events[type]) return this;
-  list = this._events[type];
-  length = list.length;
-  position = -1;
-
-  if (list === listener || isFunction(list.listener) && list.listener === listener) {
-    delete this._events[type];
-    if (this._events.removeListener) this.emit('removeListener', type, listener);
-  } else if (isObject(list)) {
-    for (i = length; i-- > 0;) {
-      if (list[i] === listener || list[i].listener && list[i].listener === listener) {
-        position = i;
-        break;
-      }
-    }
-
-    if (position < 0) return this;
-
-    if (list.length === 1) {
-      list.length = 0;
-      delete this._events[type];
-    } else {
-      list.splice(position, 1);
-    }
-
-    if (this._events.removeListener) this.emit('removeListener', type, listener);
-  }
-
-  return this;
-};
-
-EventEmitter.prototype.removeAllListeners = function (type) {
-  var key, listeners;
-  if (!this._events) return this; // not listening for removeListener, no need to emit
-
-  if (!this._events.removeListener) {
-    if (arguments.length === 0) this._events = {};else if (this._events[type]) delete this._events[type];
-    return this;
-  } // emit removeListener for all listeners on all events
-
-
-  if (arguments.length === 0) {
-    for (key in this._events) {
-      if (key === 'removeListener') continue;
-      this.removeAllListeners(key);
-    }
-
-    this.removeAllListeners('removeListener');
-    this._events = {};
-    return this;
-  }
-
-  listeners = this._events[type];
-
-  if (isFunction(listeners)) {
-    this.removeListener(type, listeners);
-  } else if (listeners) {
-    // LIFO order
-    while (listeners.length) this.removeListener(type, listeners[listeners.length - 1]);
-  }
-
-  delete this._events[type];
-  return this;
-};
-
-EventEmitter.prototype.listeners = function (type) {
-  var ret;
-  if (!this._events || !this._events[type]) ret = [];else if (isFunction(this._events[type])) ret = [this._events[type]];else ret = this._events[type].slice();
-  return ret;
-};
-
-EventEmitter.prototype.listenerCount = function (type) {
-  if (this._events) {
-    var evlistener = this._events[type];
-    if (isFunction(evlistener)) return 1;else if (evlistener) return evlistener.length;
-  }
-
-  return 0;
-};
-
-EventEmitter.listenerCount = function (emitter, type) {
-  return emitter.listenerCount(type);
-};
-
-function isFunction(arg) {
-  return typeof arg === 'function';
-}
-
-function isNumber(arg) {
-  return typeof arg === 'number';
-}
-
-function isObject(arg) {
-  return typeof arg === 'object' && arg !== null;
-}
-
-function isUndefined(arg) {
-  return arg === void 0;
-}
-},{}],"../../node_modules/util/util.js":[function(require,module,exports) {
+},{"empower-core":"../../node_modules/empower-core/index.js","./lib/default-options":"../../node_modules/empower/lib/default-options.js","./lib/capturable":"../../node_modules/empower/lib/capturable.js","core-js/library/fn/object/assign":"../../node_modules/core-js/library/fn/object/assign.js","./lib/define-properties":"../../node_modules/empower-core/lib/define-properties.js"}],"../../node_modules/util/util.js":[function(require,module,exports) {
 var global = arguments[3];
 var process = require("process");
 // Copyright Joyent, Inc. and other Node contributors.
