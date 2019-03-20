@@ -1,5 +1,5 @@
 import { switchMap, map, mergeMap, take, delay } from 'rxjs/operators'
-import { TargetRuntime, BUNDLER_TARGET, NODE_GLOBAL, MESSAGE_TYPE } from '../types'
+import { TargetRuntime, BUNDLER_TARGET, NODE_GLOBAL, MESSAGE_TYPE, File, FileType } from '../types'
 import { stringify } from './utils'
 
 const browserStr = data => stringify`
@@ -27,16 +27,19 @@ const analyzeStr = (options, data) =>
 
 export default
   (targetRuntimeProvider, options) =>
-    switchMap(file =>
+    // @ts-ignore
+    switchMap((file: File) =>
       // @ts-ignore
       targetRuntimeProvider
       // @ts-ignore
       |> mergeMap(async (targetRuntime: TargetRuntime) => {
         await targetRuntime.loadFile(file)
-        // console.log(analyzeStr(options, { type: MESSAGE_TYPE.GET_TESTS }))
-        const tests = await targetRuntime.exec(analyzeStr(options, { type: MESSAGE_TYPE.GET_TESTS }))
+        const { data: tests, errors } = await targetRuntime.exec(analyzeStr(options, { type: MESSAGE_TYPE.GET_TESTS }))
         return {
-          ...file
+          type: FileType.ANALYZE,
+          ...file,
+          tests,
+          errors
         }
       })
       // @ts-ignore

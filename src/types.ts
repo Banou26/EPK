@@ -132,13 +132,25 @@ export interface Context {
   testEndTime?: number
 }
 
+export enum FileType  {
+  ANALYZE = 'ANALYZE',
+  TEST = 'TEST',
+  DONE = 'DONE'
+}
+
 /**
  * Representation of a file
  */
 export interface File {
+  type?: FileType
+
   target: TARGET
   /**
-   * Path of the test file
+   * Path of the source test file
+   */
+  name: string
+  /**
+   * Path of the bundled test file
    */
   path: string
   /**
@@ -146,9 +158,17 @@ export interface File {
    */
   url?: string
   /**
-   * Array of tests
+   * Test ran
+   */
+  test?: Test
+  /**
+   * Array of analyzed tests
    */
   tests?: Test[]
+  /**
+   * Array of errors
+   */
+  errors?: string[]
 }
 
 /**
@@ -166,7 +186,8 @@ export interface Test {
   /**
    * Type of test
    */
-  type?: Function | Promise<any> | Observable<any>
+  // type?: Function | Promise<any> | Observable<any>
+  type?: string
   /**
    * Value returned by the test
    */
@@ -174,11 +195,12 @@ export interface Test {
   /**
    * Error thrown by the test
    */
-  error?: Error,
-  /**
-   * Time of execution in ms
-   */
-  executionTime?: Number,
+  error?: Error
+
+  timeStart?: Number
+
+  timeEnd?: Number
+  
   /**
    * Target
    */

@@ -15,10 +15,10 @@ export default
     targetRuntimeProvider.options = options
     // @ts-ignore
     return targetRuntimeProvider
-            // @ts-ignore
-            |> map((targetRuntime: TargetRuntimeObservable) => {
-              targetRuntime.target = target
-              targetRuntime.options = options
-              return targetRuntime
-            })
+      // @ts-ignore
+      |> map((targetRuntime: TargetRuntimeObservable) => {
+        targetRuntime.target = target
+        targetRuntime.options = options
+        return targetRuntime
+      })
   }

@@ -6,7 +6,7 @@ import localRequire from '../utils/localRequire'
 let imports
 
 export default options =>
-  switchMap(val => 
+  switchMap(val =>
     Observable.create(observer => {
       const { port } = options
       if (!imports) imports = localRequire(['koa', 'koa-static', 'koa-mount'], __filename)
@@ -20,10 +20,11 @@ export default options =>
         
         app.use(mount('/epk', epk))
         app.use(mount('/tests', tests))
-        
-        app.listen(port)
-        observer.next(val)
-        return app
+        try {
+          return app.listen(port)
+        } finally {
+          observer.next(val)
+        }
       })
 
       return _ => app.then(app => app.close())
