@@ -7,6 +7,9 @@
   "repository": "https://github.com/banou26/steins-gate",
   "author": "Banou",
   "license": "MIT",
+  "bin": {
+    "epk": "dist/index.js"
+  },
   "scripts": {
     "index": "parcel src/index.ts --target node --public-url ./",
     "build": "parcel build src/index.ts --target node --public-url ./",
