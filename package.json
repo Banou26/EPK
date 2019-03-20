@@ -9,8 +9,8 @@
   "license": "MIT",
   "scripts": {
     "index": "parcel src/index.ts --target node --public-url ./",
+    "build": "parcel build src/index.ts --target node --public-url ./",
     "test": "parcel src/test/index.ts --out-file test.js --no-hmr --public-url ./",
-    "browser-runner": "parcel src/browser-runner/index.html --out-file browser-runner.html --no-hmr --public-url ./",
     "dev": "concurrently \"yarn run index\" \"yarn run test\""
   },
   "dependencies": {
