@@ -9,25 +9,33 @@ import { prettifyPath } from '../utils'
   //   logger.progress(`\n${chalk.grey(`Building ${entryFiles.map(prettifyPath).join(', ')}`)}`)
   // })
 
+
+
+
+
+
+
+
 const formatTest = ({ description, error: { message } }: Test) => `\
- ${description}
- ${chalk.gray(
+  ${description}
+   ${chalk.gray(
    message
-     .split('\n')
-     .shift()
-     .trim())}
+    .split('\n')
+    .shift()
+    .trim())}
 
 ${chalk.red(
    message
-     .split('\n')
-     .splice(2)
-     .join('\n'))}`
+    .split('\n')
+    .splice(2)
+    .map(str => `  ${str}`)
+    .join('\n'))}`
  
  
 const formatTests = ({ name, tests = [] }: File) =>
   tests.length
   ? `\
-${chalk.underline(prettifyPath(name))}
+ ${chalk.underline(prettifyPath(name))}
 
 ${tests
     .map(formatTest)
@@ -49,9 +57,8 @@ const formatAnalyzing = (files: File[]) => {
     : ''
 }
 
-const formatErrors = (files: File[]) =>
-`${chalk.reset.red(`Errors:`)}
-
+const formatErrors = (files: File[]) => `\
+${chalk.reset.red(`Errors:`)}
 ${chalk.reset(
   files
     .map(({ tests, ...rest }) => ({
@@ -62,20 +69,20 @@ ${chalk.reset(
     .join('\n'))}`
 
 const formatFileStatus = (files: File[]) => `
-${chalk.reset.bold.gray(`Files:`)}
-
+${chalk.reset(`Files:`)}
 ${files
   .map(({ name, tests }) => {
     const isFinished = tests.every(({ type }) => !!type)
     const finishedTests = tests.filter(({ type }) => type)
     const erroredTests = tests.filter(({ error }) => error)
     const hasErrors = erroredTests.length
+    const successful = hasErrors ? `(${finishedTests.length - erroredTests.length})` : ''
     return chalk.reset[
       !isFinished ? 'gray'
       : hasErrors ? 'red'
-      : 'green'](`${prettifyPath(name)} ${finishedTests.length}(${finishedTests.length - erroredTests.length})/${tests.length}`)
+      : 'green'](`${prettifyPath(name)} ${finishedTests.length}${successful}/${tests.length}`)
   })
-  .map(str => `  ${str}`)
+  .map(str => ` ${str}`)
   .join('\n')}`
 
 
