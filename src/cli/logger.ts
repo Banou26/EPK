@@ -50,7 +50,7 @@ const countLines = str =>
     .reduce((p, line) =>
       process.stdout.columns
         ? p + Math.ceil((line.length || 1) / process.stdout.columns)
-        : p + 1)
+        : p + 1, 0)
 
 // Pad a string with spaces on either side
 const pad = (text, length, align = 'left') => {
