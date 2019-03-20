@@ -11,7 +11,6 @@ import { isBrowser } from './utils'
 import server from './server'
 import localRequire from '../utils/localRequire'
 
-let getPort
 
 export default (_options: Options) => {
   // remove undefined values
@@ -40,14 +39,13 @@ export default (_options: Options) => {
               .then(getPort => getPort({ port: 10485 }))
               .then(port => (options.port = port))
   }
-  
   // @ts-ignore
   return of([
             Bundler(options),
             (!isBrowser && options.target === BUNDLER_TARGET.BROWSER
               ? options.browsers as unknown as TARGET[]
               : [options.target] as unknown as TARGET[])
-                .map(target => TargetRuntimeProvider(target, {}))
+                .map(target => TargetRuntimeProvider(target, options))
           ])
           // @ts-ignore
           |> (!isBrowser && options.target === BUNDLER_TARGET.BROWSER ? delayWhen(() => from(_port)) : tap())
@@ -88,111 +86,57 @@ export default (_options: Options) => {
                       ? Array.from(bundle.childBundles)
                       : [bundle])
                         .map(({ name: path }) => path))
+                    // @ts-ignore
+                    |> mergeMap(path => {
+                      // @ts-ignore
+                      const newContextObservable: ConnectableObservable<File> =
                         // @ts-ignore
-                        |> mergeMap(path => {
-                          // @ts-ignore
-                          const newContextObservable: ConnectableObservable<File> =
-                            // @ts-ignore
-                            of({
-                              target: targetRuntimeProvider.target,
-                              path,
-                              url: options.target === BUNDLER_TARGET.BROWSER && transformPathToTestUrl(path, options.port)
-                            })
-                            // @ts-ignore
-                            |> publish()
-
-                          // @ts-ignore
-                          const analyzedObservable: ConnectableObservable<File> =
-                            // @ts-ignore
-                            newContextObservable
-                            // @ts-ignore
-                            |> analyze(targetRuntimeProvider, options)
-                            // @ts-ignore
-                            |> publish()
-              
-                          // @ts-ignore
-                          const testedObservable: ConnectableObservable<File> =
-                            // @ts-ignore
-                            analyzedObservable
-                            // @ts-ignore
-                            |> test(targetRuntimeProvider, options)
-                            // @ts-ignore
-                            |> publish()
-              
-                          const testerObservable =
-                            merge(
-                              newContextObservable,
-                              analyzedObservable,
-                              testedObservable
-                            )
-              
-                          testedObservable.connect()
-                          analyzedObservable.connect()
-                          newContextObservable.connect()
-              
-                          return testerObservable
+                        of({
+                          target: targetRuntimeProvider.target,
+                          name: bundle.entryAsset.name,
+                          path,
+                          url: options.target === BUNDLER_TARGET.BROWSER && transformPathToTestUrl(path, options.port)
                         })
+                        // @ts-ignore
+                        |> publish()
+
+                      // @ts-ignore
+                      const analyzedObservable: ConnectableObservable<File> =
+                        // @ts-ignore
+                        newContextObservable
+                        // @ts-ignore
+                        |> analyze(targetRuntimeProvider, options)
+                        // @ts-ignore
+                        |> publish()
+          
+                      // @ts-ignore
+                      const testedObservable: ConnectableObservable<File> =
+                        // @ts-ignore
+                        analyzedObservable
+                        // @ts-ignore
+                        |> filter(file => !file.errors.length)
+                        // @ts-ignore
+                        |> switchMap(file =>
+                          // @ts-ignore
+                          from(file.tests)
+                          // @ts-ignore
+                          |> test(file, targetRuntimeProvider, options))
+                        // @ts-ignore
+                        |> publish()
+          
+                      const testerObservable =
+                        merge(
+                          newContextObservable,
+                          analyzedObservable,
+                          testedObservable
+                        )
+          
+                      testedObservable.connect()
+                      analyzedObservable.connect()
+                      newContextObservable.connect()
+          
+                      return testerObservable
+                    })
                 ))
             ))
 }
-
-          // // @ts-ignore
-          // return Bundler(options)
-          // // @ts-ignore
-          // |> filter(({ name }) => name === 'buildStart')
-          //   // @ts-ignore
-          // |> switchMap(({ bundler, entryFiles, buildStartTime }) => {
-          //   // @ts-ignore
-          //   const newContextObservable: ConnectableObservable<Context> =
-          //     bundler
-          //     // @ts-ignore
-          //     |> filter(({ name }) => name === 'bundled')
-          //     // @ts-ignore
-          //     |> map(({ bundle, ...rest }) => ({
-          //       bundle,
-          //       ...rest,
-          //       files:
-          //         (bundle.isEmpty
-          //           ? Array.from(bundle.childBundles)
-          //           : [bundle])
-          //             .map(({ name: path }) => ({
-          //               path,
-          //               url: options.target === BUNDLER_TARGET.BROWSER && transformPathToUrl(path)
-          //             })),
-          //       entryFiles,
-          //       buildStartTime
-          //     }))
-          //     // @ts-ignore
-          //     |> publish()
-
-          //   // @ts-ignore
-          //   const analyzedObservable: ConnectableObservable<Context> =
-          //     // @ts-ignore
-          //     newContextObservable
-          //     // @ts-ignore
-          //     |> analyze(options)
-          //     // @ts-ignore
-          //     |> publish()
-
-          //   // @ts-ignore
-          //   const testedObservable: ConnectableObservable<Context> =
-          //     // @ts-ignore
-          //     analyzedObservable
-          //     // @ts-ignore
-          //     |> test(options)
-          //     // @ts-ignore
-          //     |> publish()
-
-          //   const testerObservable =
-          //     merge(
-          //       newContextObservable,
-          //       analyzedObservable,
-          //       testedObservable
-          //     )
-
-          //   testedObservable.connect()
-          //   analyzedObservable.connect()
-          //   newContextObservable.connect()
-
-          //   return testerObservable
-          // })

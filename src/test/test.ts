@@ -3,6 +3,7 @@ import { stringify } from 'flatted/cjs'
 import { isBrowser } from '../core/utils'
 import { File, Test, TestResult, MESSAGE_TYPE, NODE_GLOBAL } from '../types'
 import { errors } from './error'
+import { isObservable } from 'rxjs';
 
 export const tests = new Map<string, Function>()
 
@@ -29,31 +30,36 @@ const getTests = () =>
     MESSAGE_TYPE.GET_TESTS_RESPONSE,
     Array
       .from(tests)
-      .map(([desc, func]) => [
-        desc,
-        func.toString()
-      ])
+      .map(([description, func]) => ({
+        description,
+        body: func.toString()
+      }))
   )
 
 const runTest = async description => {
   // todo: replace by "isBrowser ? window : require('perf_hooks')"
   const { performance } = window
-  let timeStart, timeEnd, data, error
+  let timeStart, timeEnd, value, error
 
   try {
     timeStart = performance.now()
-    data = stringify(await tests.get(description)())
-    timeEnd = performance.now()
+    value = await tests.get(description)()
   } catch (err) {
     error = err
+  } finally {
+    timeEnd = performance.now()
   }
-
+  
   emit(
     MESSAGE_TYPE.RUN_TEST_RESPONSE,
     {
       timeStart,
       timeEnd,
-      data,
+      type:
+        isObservable(value) ? 'observable'
+        : value instanceof Promise ? 'promise'
+        : 'function',
+      value: stringify(value),
       error: error && {
         name: error.name,
         message: error.message
@@ -81,4 +87,3 @@ if (isBrowser) {
 // addEventListener('message', ({ data: { type, description } }) =>
 //     type === MESSAGE_TYPE.GET_TESTS ? getTests()
 //   : type === MESSAGE_TYPE.RUN_TEST && runTest(description))
-

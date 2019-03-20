@@ -17,6 +17,11 @@ test('desc2', async _ => {
   assert(true === false)
 })
 
+test('desc3', async _ => {
+  // console.log('second')
+  assert(true === true)
+})
+
 // Array(10)
 //   .fill()
 //   .forEach((_, i) =>
