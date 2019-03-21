@@ -17,11 +17,11 @@ export default (options): TargetRuntimeObservable =>
       if (closed) return
       observer.next(Observable.create(observer => {
         const page = browser.newPage()
-        const a = path.resolve(__dirname, '..', 'dist', 'empty.html')
-        const _path = transformPathToEpkUrl(path.resolve(__dirname, '..', 'dist', 'empty.html'), options.port)
+        const emptyHTMLFilePath = path.resolve(__dirname, '..', 'dist', 'empty.html')
+        const url = transformPathToEpkUrl(emptyHTMLFilePath, options.port)
         page.then(page => {
           observer.next({
-            loadFile: file => page.goto(transformPathToEpkUrl(path.resolve(process.cwd(), 'dist/empty.html'), options.port)).then(() => page.addScriptTag({ url: file.url })),
+            loadFile: file => page.goto(url).then(() => page.addScriptTag({ url: file.url })),
             exec: str => page.evaluate(str)
           })
         })
