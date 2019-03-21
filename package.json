@@ -1,6 +1,6 @@
 {
   "name": "epk",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "JS testing tool for a world without problems",
   "main": "dist/index.js",
   "browser": "dist/test.js",
@@ -8,7 +8,7 @@
   "author": "Banou",
   "license": "MIT",
   "bin": {
-    "epk": "dist/index.js"
+    "epk": "bin/cli.js"
   },
   "scripts": {
     "index": "parcel src/index.ts --target node --public-url ./",
