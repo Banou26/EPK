@@ -8,7 +8,7 @@ let pptr
 
 export default (options): TargetRuntimeObservable =>
   Observable.create(observer => {
-    if (!pptr) pptr = localRequire('puppeteer', __filename)
+    if (!pptr) pptr = localRequire('puppeteer')
 
     let closed
     const browser = pptr.then(pptr => pptr.launch({ devtools: true }))
