@@ -37,7 +37,7 @@ export default (_options: Options) => {
   }
   let _port
   if (!isBrowser && options.target === BUNDLER_TARGET.BROWSER) {
-    _port = localRequire('get-port', __filename)
+    _port = localRequire('get-port')
               .then(getPort => getPort({ port: 10485 }))
               .then(port => (options.port = port))
   }

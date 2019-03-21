@@ -9,7 +9,7 @@ export default options =>
   switchMap(val =>
     Observable.create(observer => {
       const { port } = options
-      if (!imports) imports = localRequire(['koa', 'koa-static', 'koa-mount'], __filename)
+      if (!imports) imports = localRequire(['koa', 'koa-static', 'koa-mount'])
 
       const app = imports.then(([Koa, serve, mount]) => {
         const app = new Koa()

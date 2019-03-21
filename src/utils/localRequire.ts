@@ -1,5 +1,5 @@
 // https://github.com/parcel-bundler/parcel/blob/master/packages/core/parcel-bundler/src/utils/localRequire.js
-import { dirname } from 'path'
+import Path, { dirname } from 'path'
 import utils from '@parcel/utils'
 import Resolve from 'resolve'
 import installPackage from './installPackage'
@@ -35,7 +35,7 @@ export const resolve = async (name, path, triedInstall = false) => {
   return resolved
 }
 
-export default async (packages, path = __filename) =>
+export default async (packages, path = __dirname.includes('node_modules') ? Path.resolve(__dirname, '..', '..', '..') : __dirname) =>
   typeof packages === 'string'
     ? localRequire(packages, path)
     : Promise.all(packages.map(pkg => localRequire(pkg, path)))
