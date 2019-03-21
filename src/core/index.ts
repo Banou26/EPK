@@ -30,6 +30,8 @@ export default (_options: Options) => {
     logLevel: 0, // 3 = log everything, 2 = log warnings & errors, 1 = log errors
     sourceMaps: true, // Enable or disable sourcemaps, defaults to enabled (minified builds currently always create sourcemaps)
     detailedReport: false,
+    throwErrors: true,
+    hmr: false,
     // apply options
     ..._options
   }
