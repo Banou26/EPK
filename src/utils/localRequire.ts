@@ -35,7 +35,7 @@ export const resolve = async (name, path, triedInstall = false) => {
   return resolved
 }
 
-export default async (packages, path = __dirname.includes('node_modules') ? Path.resolve(__dirname, '..', '..', '..') : __dirname) =>
+export default async (packages, path = __dirname.includes('node_modules') ? Path.resolve(__dirname, '..', '..') : __dirname) =>
   typeof packages === 'string'
     ? localRequire(packages, path)
     : Promise.all(packages.map(pkg => localRequire(pkg, path)))
