@@ -57,31 +57,32 @@ export default (_options: Options) => {
           |> mergeMap(([ bundler, targetRuntimeProviders ]) =>
             merge(
               // @ts-ignore
-              bundler
+              bundler |> filter(({ name }) => name === 'buildStart'),
               // @ts-ignore
-              |> filter(({ name }) => name === 'buildStart'),
+              bundler |> filter(({ name }) => name === 'bundled'),
               // @ts-ignore
-              bundler
+              merge(...targetRuntimeProviders)
               // @ts-ignore
-              |> filter(({ name }) => name === 'buildStart')
-              // @ts-ignore
-              |> switchMap(({ entryFiles, buildStartTime }) =>
+              |> mergeMap((targetRuntimeProvider: TargetRuntimeProviderType) =>
                 // @ts-ignore
                 bundler
                 // @ts-ignore
-                |> filter(({ name }) => name === 'bundled')
+                |> filter(({ name }) => name === 'buildStart')
                 // @ts-ignore
-                |> map(bundleContainer => ({
-                  ...bundleContainer,
-                  entryFiles,
-                  buildStartTime
-                })))
-              // @ts-ignore
-              |> switchMap(({ bundle }) =>
+                |> switchMap(({ entryFiles, buildStartTime }) =>
+                  // @ts-ignore
+                  bundler
+                  // @ts-ignore
+                  |> filter(({ name }) => name === 'bundled')
+                  // @ts-ignore
+                  |> map(bundleContainer => ({
+                    ...bundleContainer,
+                    entryFiles,
+                    buildStartTime
+                  }))
+                )
                 // @ts-ignore
-                merge(...targetRuntimeProviders)
-                // @ts-ignore
-                |> mergeMap((targetRuntimeProvider: TargetRuntimeProviderType) =>
+                |> switchMap(({ bundle }) =>
                   // @ts-ignore
                   from(
                     (bundle.isEmpty
@@ -139,6 +140,8 @@ export default (_options: Options) => {
           
                       return testerObservable
                     })
-                ))
-            ))
+              )
+            )
+          )
+        )
 }
