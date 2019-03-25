@@ -1,7 +1,7 @@
-import { merge, ConnectableObservable, from, of, zip, Observable } from 'rxjs'
+import { merge, ConnectableObservable, from, of } from 'rxjs'
 import { map, filter, mergeMap, switchMap, publish, tap, delayWhen } from 'rxjs/operators'
 
-import { Options, Context, BUNDLER_TARGET, TARGET, File, TargetRuntimeProvider as TargetRuntimeProviderType } from '../types'
+import { Options, BUNDLER_TARGET, TARGET, File, TargetRuntimeProvider as TargetRuntimeProviderType } from '../types'
 import Bundler from './bundler'
 import { transformPathToTestUrl } from '../utils/index'
 import TargetRuntimeProvider from './target-runtime-provider'
@@ -89,7 +89,7 @@ export default (_options: Options) => {
                       ? Array.from(bundle.childBundles)
                       : [bundle]))
                     // @ts-ignore
-                    |> mergeMap(childBundle => {
+                    |> mergeMap((childBundle: any) => {
                       const { name: path } = childBundle
                       // @ts-ignore
                       const newContextObservable: ConnectableObservable<File> =
