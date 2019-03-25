@@ -87,16 +87,16 @@ export default (_options: Options) => {
                   from(
                     (bundle.isEmpty
                       ? Array.from(bundle.childBundles)
-                      : [bundle])
-                        .map(({ name: path }) => path))
+                      : [bundle]))
                     // @ts-ignore
-                    |> mergeMap(path => {
+                    |> mergeMap(childBundle => {
+                      const { name: path } = childBundle
                       // @ts-ignore
                       const newContextObservable: ConnectableObservable<File> =
                         // @ts-ignore
                         of({
                           target: targetRuntimeProvider.target,
-                          name: bundle.entryAsset.name,
+                          name: childBundle.entryAsset.name,
                           path,
                           url: options.target === BUNDLER_TARGET.BROWSER && transformPathToTestUrl(path, options.port)
                         })
