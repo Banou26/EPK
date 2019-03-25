@@ -2,9 +2,11 @@ import Path from 'path'
 import ParcelBundler from 'parcel-bundler'
 import { Observable } from 'rxjs'
 import { Bundler } from '../types'
+import { publish } from 'rxjs/operators'
 
 export default (options): Bundler =>
-  Observable.create(observer => {
+  // @ts-ignore
+  (Observable.create(observer => {
     const bundler = new ParcelBundler(options.entryFiles, options)
     bundler.addAssetType('js', Path.resolve(__dirname, '../src/core/js-asset.ts'))
     bundler.addAssetType('ts', Path.resolve(__dirname, '../src/core/ts-asset.ts'))
@@ -20,3 +22,7 @@ export default (options): Bundler =>
     bundler.bundle()
     return _ => bundler.stop()
   })
+  // @ts-ignore
+  |> publish())
+  // @ts-ignore
+  .refCount()
