@@ -1,4 +1,4 @@
-import { test, assert } from '../../src/test/index'
+import { test, assert } from '../../dist/test.js'
 // const assert = require('assert')
 // import { test } from '../../dist/test.js'
 // const assert = _ => {}
@@ -19,7 +19,7 @@ test('desc2', async _ => {
 
 test('desc3', async _ => {
   // console.log('second')
-  assert(true === true)
+  assert(a === true)
 })
 
 // Array(10)
