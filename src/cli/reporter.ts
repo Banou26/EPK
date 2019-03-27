@@ -9,35 +9,40 @@ import { prettifyPath } from '../utils'
   //   logger.progress(`\n${chalk.grey(`Building ${entryFiles.map(prettifyPath).join(', ')}`)}`)
   // })
 
-
-
-
-
-
-
-
-const formatTest = ({ description, error: { message } }: Test) => `\
-  ${description}
+const showAssertError = message => `\
    ${chalk.gray(
-   message
-    .split('\n')
-    .shift()
-    .trim())}
+      message
+        .split('\n')
+        .shift()
+        .trim())}
 
 ${chalk.red(
-   message
-    .split('\n')
-    .splice(2)
-    .map(str => `  ${str}`)
-    .join('\n'))}`
+    message
+      .split('\n')
+      .splice(2)
+      .map(str => `  ${str}`)
+      .join('\n'))}`
+
+const showStackError = stack =>
+  chalk.red(
+    stack
+      .split('\n')
+      .map(str => `    ${str.trim()}`)
+      .join('\n'))
+
 const formatTest = ({ description, errors }: Test) => `\
+  ${description}
 ${errors
   .map(({ name, message, stack }) =>
+    name === 'AssertionError'
+      ? showAssertError(message)
+      : showStackError(stack))
+  .join('\n\n')}`
  
  
 const formatTests = ({ name, tests = [] }: File) =>
   tests.length
-  ? `\
+  ? `
  ${chalk.underline(prettifyPath(name))}
 
 ${tests
