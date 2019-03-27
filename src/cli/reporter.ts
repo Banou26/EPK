@@ -100,7 +100,7 @@ export default
         return { files: [] }
       } else if (val.name === 'bundled') {
         logger.progress(`\n${chalk.grey(`Bundled`)}`)
-        return state
+        return { bundle: val.bundle, ...state }
       }
       const file: File = val
       const { files }: { files: File[] } = state
@@ -137,4 +137,4 @@ export default
       logger[isFinished ? 'success' : 'progress'](format(files))
       
       return state
-    }, {})
+    }, undefined)
