@@ -117,7 +117,7 @@ export default (_options: Options) => {
                         // @ts-ignore
                         analyzedObservable
                         // @ts-ignore
-                        |> filter(file => !file.errors.length)
+                        |> filter(({ errors }) => !errors.length)
                         // @ts-ignore
                         |> switchMap(file =>
                           // @ts-ignore

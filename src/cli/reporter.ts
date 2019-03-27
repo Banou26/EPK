@@ -30,6 +30,9 @@ ${chalk.red(
     .splice(2)
     .map(str => `  ${str}`)
     .join('\n'))}`
+const formatTest = ({ description, errors }: Test) => `\
+${errors
+  .map(({ name, message, stack }) =>
  
  
 const formatTests = ({ name, tests = [] }: File) =>
@@ -62,7 +65,7 @@ ${chalk.reset.red(`Errors:`)}
 ${chalk.reset(
   files
     .map(({ tests, ...rest }) => ({
-      tests: tests.filter(({ error }) => !!error),
+      tests: tests.filter(({ errors }) => !!(errors && errors.length)),
       ...rest
     }))
     .map(formatTests)
@@ -74,7 +77,7 @@ ${files
   .map(({ name, tests }) => {
     const isFinished = tests.every(({ type }) => !!type)
     const finishedTests = tests.filter(({ type }) => type)
-    const erroredTests = tests.filter(({ error }) => error)
+    const erroredTests = tests.filter(({ errors }) => errors)
     const hasErrors = erroredTests.length
     const successful = hasErrors ? `(${finishedTests.length - erroredTests.length})` : ''
     return chalk.reset[

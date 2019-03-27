@@ -60,10 +60,16 @@ const runTest = async description => {
         : value instanceof Promise ? 'promise'
         : 'function',
       value: stringify(value),
-      error: error && {
-        name: error.name,
-        message: error.message
-      }
+      errors:
+        (error
+          ? [error, ...errors]
+          : errors).map(err => ({
+            name: err.name,
+            message: err.message,
+            toString: err.toString(),
+            stack: err.stack,
+            stackFrame: ErrorStackParser.parse(err)
+          }))
     }
   )
 }
