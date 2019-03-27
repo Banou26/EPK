@@ -195,7 +195,7 @@ export interface Test {
   /**
    * Error thrown by the test
    */
-  error?: Error
+  errors?: Error[]
 
   timeStart?: Number
 
