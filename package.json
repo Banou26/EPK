@@ -1,6 +1,6 @@
 {
   "name": "epk",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "JS testing tool for a world without problems",
   "main": "dist/index.js",
   "browser": "dist/test.js",
@@ -13,7 +13,9 @@
   "scripts": {
     "browser": "parcel src/index.ts --out-dir dist-browser --public-url ./",
     "node": "parcel src/index.ts --target node --public-url ./",
-    "build": "parcel build src/index.ts --target node --public-url ./",
+    "buildTest": "parcel build src/test/index.ts --out-file test.js --public-url ./",
+    "buildNode": "parcel build src/index.ts --target node --public-url ./",
+    "build": "concurrently \"yarn run buildTest\" \"yarn run buildNode\"",
     "test": "parcel src/test/index.ts --out-file test.js --no-hmr --public-url ./",
     "dev": "concurrently \"yarn run node\" \"yarn run test\"",
     "devtest": "parcel src/index.ts --target node --public-url ./ --out-dir C:\\Users\\Banou\\Desktop\\hnk\\packages\\reactivity\\node_modules\\epk\\dist --out-file index.js"
@@ -23,7 +25,6 @@
     "babel-plugin-espower": "^3.0.0",
     "babylon-walk": "^1.0.2",
     "chalk": "^2.4.1",
-    "error-stack-parser": "^2.0.2",
     "fast-glob": "^2.2.4",
     "flatted": "^2.0.0",
     "koa": "^2.6.2",
@@ -35,7 +36,7 @@
     "perf_hooks": "^0.0.1",
     "power-assert": "^1.6.1",
     "rxjs": "6",
-    "stacktrace-gps": "^3.0.2",
+    "stacktrace-parser": "^0.1.4",
     "strip-ansi": "^5.0.0"
   },
   "devDependencies": {

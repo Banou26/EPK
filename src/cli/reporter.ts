@@ -33,10 +33,10 @@ const showStackError = stack =>
 const formatTest = ({ description, errors }: Test) => `\
   ${description}
 ${errors
-  .map(({ name, message, stack }) =>
+  .map(({ name, message, stack, originalStack }) =>
     name === 'AssertionError'
       ? showAssertError(message)
-      : showStackError(stack))
+      : showStackError(originalStack || stack))
   .join('\n\n')}`
  
  
@@ -131,10 +131,20 @@ export default
         if (foundTest) Object.assign(foundTest, test)
         else if (!foundTest) currentFile.tests.push(test)
 
+      } else if(file.type === FileType.POST_ANALYZE) {
+
+        if (!currentFile.tests) currentFile.tests = []
+
+        const test: Test = file.test
+        const foundTest = currentFile.tests.find(({ description }) => test.description === description)
+
+        if (foundTest) Object.assign(foundTest, test)
+        else if (!foundTest) currentFile.tests.push(test)
+
         const fileIsDone =
           currentFile.tests.every(test => 'value' in test)
 
-        currentFile.type = fileIsDone ? FileType.DONE : FileType.TEST
+        currentFile.type = fileIsDone ? FileType.DONE : FileType.POST_ANALYZE
       }
 
       const isFinished =

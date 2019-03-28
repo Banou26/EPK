@@ -49,7 +49,7 @@ const runTest = async description => {
   } finally {
     timeEnd = performance.now()
   }
-  
+
   emit(
     MESSAGE_TYPE.RUN_TEST_RESPONSE,
     {
@@ -66,9 +66,8 @@ const runTest = async description => {
           : errors).map(err => ({
             name: err.name,
             message: err.message,
-            toString: err.toString(),
-            stack: err.stack,
-            stackFrame: ErrorStackParser.parse(err)
+            string: err.toString(),
+            stack: err.stack
           }))
     }
   )
