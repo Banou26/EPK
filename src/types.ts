@@ -1,4 +1,3 @@
-import { Page as PPTRPage } from 'puppeteer'
 import { Observable } from 'rxjs'
 
 export const NODE_GLOBAL = '__EPK_NODE_GLOBAL'
@@ -135,7 +134,29 @@ export interface Context {
 export enum FileType  {
   ANALYZE = 'ANALYZE',
   TEST = 'TEST',
+  POST_ANALYZE = 'POST_ANALYZE',
   DONE = 'DONE'
+}
+
+export interface MetaStack {
+  file: string
+  source: string
+  name: string
+  line: Number
+  column: Number
+  originalSource: string
+  OriginalName: string
+  originalLine: Number
+  originalColumn: Number
+}
+
+export interface TestError {
+  message: string
+  name: string
+  stack: string
+  metaStack: MetaStack[]
+  string: string
+  originalStack: string
 }
 
 /**
@@ -168,7 +189,7 @@ export interface File {
   /**
    * Array of errors
    */
-  errors?: string[]
+  errors?: TestError[]
 }
 
 /**
@@ -182,7 +203,7 @@ export interface Test {
   /**
    * Body of the test (Function stringified)
    */
-  body: String
+  body: string
   /**
    * Type of test
    */
@@ -195,7 +216,7 @@ export interface Test {
   /**
    * Error thrown by the test
    */
-  errors?: Error[]
+  errors?: TestError[]
 
   timeStart?: Number
 

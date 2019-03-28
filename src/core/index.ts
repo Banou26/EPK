@@ -7,6 +7,7 @@ import { transformPathToTestUrl } from '../utils/index'
 import TargetRuntimeProvider from './target-runtime-provider'
 import analyze from './analyze'
 import test from './test'
+import postAnalyze from './post-analyze'
 import { isBrowser } from './utils'
 import server from './server'
 import localRequire from '../utils/localRequire'
@@ -126,18 +127,29 @@ export default (_options: Options) => {
                           |> test(file, targetRuntimeProvider, options))
                         // @ts-ignore
                         |> publish()
+
+                      // @ts-ignore
+                      const postAnalyzeObservable: ConnectableObservable<File> =
+                        // @ts-ignore
+                        testedObservable
+                        // @ts-ignore
+                        |> postAnalyze(childBundle)
+                        // @ts-ignore
+                        |> publish()
           
                       const testerObservable =
                         merge(
                           newContextObservable,
                           analyzedObservable,
-                          testedObservable
+                          testedObservable,
+                          postAnalyzeObservable
                         )
           
+                      postAnalyzeObservable.connect()
                       testedObservable.connect()
                       analyzedObservable.connect()
                       newContextObservable.connect()
-          
+
                       return testerObservable
                     })
               )
