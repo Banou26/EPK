@@ -19,8 +19,8 @@ export default (options): Bundler =>
     bundler.on('buildError', error =>
       observer.next({ name:'error', error }))
     
-    bundler.bundle()
-    return _ => bundler.stop()
+    bundler.bundle().catch(err => observer.error(err))
+    return _ => bundler.stop().catch(err => observer.error(err))
   })
   // @ts-ignore
   |> publish())
