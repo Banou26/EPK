@@ -116,15 +116,15 @@ export interface Context {
   /**
    * entryFiles from Parcel
    */
-  entryFiles: string[]
+  entryFiles?: string[]
   /**
    * Array of targets in which the tests will be executed
    */
   targets: TARGET[]
   name: string
   bundle: any
-  buildStartTime: number
-  buildEndTime: number
+  buildStartTime?: number
+  buildEndTime?: number
   analyzeEndTime?: number
   analyzeStartTime?: number
   testStartTime?: number
