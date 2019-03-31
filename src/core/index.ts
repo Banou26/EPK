@@ -68,20 +68,7 @@ export default (_options: Options) => {
                 // @ts-ignore
                 bundler
                 // @ts-ignore
-                |> filter(({ name }) => name === 'buildStart')
-                // @ts-ignore
-                |> switchMap(({ entryFiles, buildStartTime }) =>
-                  // @ts-ignore
-                  bundler
-                  // @ts-ignore
-                  |> filter(({ name }) => name === 'bundled')
-                  // @ts-ignore
-                  |> map(bundleContainer => ({
-                    ...bundleContainer,
-                    entryFiles,
-                    buildStartTime
-                  }))
-                )
+                |> filter(({ name }) => name === 'bundled')
                 // @ts-ignore
                 |> switchMap(({ bundle }) =>
                   // @ts-ignore
