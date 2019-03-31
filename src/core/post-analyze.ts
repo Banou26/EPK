@@ -25,7 +25,7 @@ ${error
 `
 
 
-export default bundle => {
+export default (options, bundle) => {
   const files = new Map()
   const sourceMapConsumers = new Map()
 
@@ -45,7 +45,7 @@ export default bundle => {
       }
     }
 
-    const sourceMapPath = `${path.slice(0, -3)}.map`
+    const sourceMapPath = files.has(`${path.slice(0, -3)}.map`) ? `${path.slice(0, -3)}.map` : `${path}.map` // weird parcel bug
     const sourceMap = JSON.parse(files.get(sourceMapPath))
 
     const sourceMapConsumer = sourceMapConsumers.get(file.url) || new SourceMap.SourceMapConsumer(sourceMap)
@@ -63,7 +63,7 @@ export default bundle => {
                     ? error.stack.replace(error.string, '')
                     : error.stack)
                 .map(async ({ lineNumber: line, column, file, methodName: name }) => {
-                  const { line: originalLine, column: originalColumn, name: originalName, source } = await sourceMapConsumer.originalPositionFor({ line, column: column === null ? 0 : column })
+                  const { line: originalLine, column: originalColumn, name: originalName, source } = await sourceMapConsumer.originalPositionFor({ source: file, line, column: column === null ? 0 : column })
                   return {
                     file,
                     name,
@@ -72,7 +72,7 @@ export default bundle => {
                     originalLine,
                     originalColumn,
                     originalName,
-                    source: prettifyPath(Path.resolve(Path.dirname(path), source.replace('tests\\unit/..', '')))
+                    source: prettifyPath(Path.resolve(source.includes(sourceMapConsumer.sourceRoot) ? Path.resolve(process.cwd(), options.outDir) : process.cwd(), source))
                   }
                 })
             )

@@ -120,7 +120,7 @@ export default (_options: Options) => {
                         // @ts-ignore
                         testedObservable
                         // @ts-ignore
-                        |> postAnalyze(childBundle)
+                        |> postAnalyze(options, childBundle)
                         // @ts-ignore
                         |> publish()
           
