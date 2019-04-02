@@ -145,7 +145,7 @@ export interface MetaStack {
   line: Number
   column: Number
   originalSource: string
-  OriginalName: string
+  originalName: string
   originalLine: Number
   originalColumn: Number
 }
