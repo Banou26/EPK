@@ -3,7 +3,8 @@ import { stringify } from 'flatted/cjs'
 import { isBrowser } from '../core/utils'
 import { File, Test, TestResult, MESSAGE_TYPE, NODE_GLOBAL } from '../types'
 import { errors } from './error'
-import { isObservable } from 'rxjs';
+import { isObservable } from 'rxjs'
+import { toArray } from 'rxjs/operators'
 
 export const tests = new Map<string, Function>()
 
@@ -44,6 +45,8 @@ const runTest = async description => {
   try {
     timeStart = performance.now()
     value = await tests.get(description)()
+    // @ts-ignore
+    if (isObservable(value)) value = await (value |> toArray()).toPromise()
   } catch (err) {
     error = err
   } finally {
