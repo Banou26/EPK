@@ -4,7 +4,7 @@
   "description": "JS testing tool for a world without problems",
   "main": "dist/index.js",
   "browser": "dist/test.js",
-  "repository": "https://github.com/banou26/steins-gate",
+  "repository": "https://github.com/FKN48/EPK",
   "author": "Banou",
   "license": "MIT",
   "bin": {
