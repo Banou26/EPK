@@ -1,6 +1,7 @@
 /* eslint-disable no-unused-vars */
 
 import { Observable } from 'rxjs'
+import { ElementHandle } from 'puppeteer'
 
 export const NODE_GLOBAL = '__EPK_NODE_GLOBAL'
 
@@ -49,8 +50,8 @@ export const targetToBundlerTarget =
 export interface Bundler extends Observable<any> {}
 
 export interface TargetRuntime extends Observable<any> {
-  loadFile: Function
-  exec: Function
+  loadFile(file: File): Promise<ElementHandle>
+  exec(str: string): Promise<any>
 }
 export interface TargetRuntimeObservable extends Observable<TargetRuntime> {
   target: TARGET
@@ -82,12 +83,12 @@ export interface Options {
   browsers?: BROWSER_TARGET[]
   entryFiles: string[]
   target: BUNDLER_TARGET
-  watch?: Boolean
+  watch?: boolean
   outDir?: string
-  cache?: Boolean
+  cache?: boolean
   cacheDir?: string
-  minify?: Boolean
-  scopeHoist?: Boolean
+  minify?: boolean
+  scopeHoist?: boolean
   /**
    * 0 = log nothing
    * 1 = log errors
@@ -95,8 +96,8 @@ export interface Options {
    * 3 = log everything
    */
   logLevel?: 0 | 1 | 2 | 3
-  sourceMaps?: Boolean
-  detailedReport?: Boolean
+  sourceMaps?: boolean
+  detailedReport?: boolean
 }
 
 export interface Target {
@@ -146,12 +147,12 @@ export interface MetaStack {
   file: string
   source: string
   name: string
-  line: Number
-  column: Number
+  line: number
+  column: number
   originalSource: string
   originalName: string
-  originalLine: Number
-  originalColumn: Number
+  originalLine: number
+  originalColumn: number
 }
 
 export interface TestError {
@@ -222,10 +223,10 @@ export interface Test {
    */
   errors?: TestError[]
 
-  timeStart?: Number
+  timeStart?: number
 
+  timeEnd?: number
 
-  timeEnd?: Number
   /**
    * Target
    */
