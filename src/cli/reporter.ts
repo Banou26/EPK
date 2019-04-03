@@ -82,7 +82,7 @@ ${files
   .map(({ name, tests }) => {
     const isFinished = tests.every(({ type }) => !!type)
     const finishedTests = tests.filter(({ type }) => type)
-    const erroredTests = tests.filter(({ errors }) => errors)
+    const erroredTests = tests.filter(({ errors }) => errors?.length)
     const hasErrors = erroredTests.length
     const successful = hasErrors ? `(${finishedTests.length - erroredTests.length})` : ''
     return chalk.reset[
