@@ -1,3 +1,5 @@
+/* eslint-disable no-unused-vars */
+
 import { Observable } from 'rxjs'
 
 export const NODE_GLOBAL = '__EPK_NODE_GLOBAL'
@@ -38,9 +40,11 @@ export enum BUNDLER_TARGET {
 
 export const targetToBundlerTarget =
   (target: TARGET): BUNDLER_TARGET =>
-    target in BROWSER_TARGET ? BUNDLER_TARGET.BROWSER
-    : target as unknown as BUNDLER_TARGET === BUNDLER_TARGET.NODE ? BUNDLER_TARGET.NODE
-    : target as unknown as BUNDLER_TARGET === BUNDLER_TARGET.ELECTRON && BUNDLER_TARGET.NODE
+    target in BROWSER_TARGET
+      ? BUNDLER_TARGET.BROWSER
+      : target as unknown as BUNDLER_TARGET === BUNDLER_TARGET.NODE
+        ? BUNDLER_TARGET.NODE
+        : target as unknown as BUNDLER_TARGET === BUNDLER_TARGET.ELECTRON && BUNDLER_TARGET.NODE
 
 export interface Bundler extends Observable<any> {}
 
@@ -131,7 +135,7 @@ export interface Context {
   testEndTime?: number
 }
 
-export enum FileType  {
+export enum FileType {
   ANALYZE = 'ANALYZE',
   TEST = 'TEST',
   POST_ANALYZE = 'POST_ANALYZE',
@@ -220,8 +224,8 @@ export interface Test {
 
   timeStart?: Number
 
+
   timeEnd?: Number
-  
   /**
    * Target
    */
