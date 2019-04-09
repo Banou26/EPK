@@ -1,7 +1,7 @@
 import { parse } from 'stacktrace-parser'
 import SourceMap from 'source-map'
 import { mergeMap } from 'rxjs/operators'
-import { File, FileType, Test, TestError } from '../types'
+import { File, FileType, TestError } from '../types'
 import Path from 'path'
 import fs from 'fs'
 import { promisify } from 'util'
@@ -19,11 +19,10 @@ const makeStack = (error: TestError) => `\
 ${error.name}: ${error.message}
 
 ${error
-  .metaStack
-  .map(makeStackLines)
-  .join('\n')}
+    .metaStack
+    .map(makeStackLines)
+    .join('\n')}
 `
-
 
 export default (options, bundle) => {
   const files = new Map()
@@ -31,7 +30,7 @@ export default (options, bundle) => {
 
   return mergeMap(async (file: File) => {
     const { name: path } = bundle
-    
+
     if (!files.has(path)) {
       const content = await readFile(path, { encoding: 'utf8' })
       files.set(path, content)
@@ -49,7 +48,7 @@ export default (options, bundle) => {
     const sourceMap = JSON.parse(files.get(sourceMapPath))
 
     const sourceMapConsumer = sourceMapConsumers.get(file.url) || new SourceMap.SourceMapConsumer(sourceMap)
-    if(!sourceMapConsumers.has(file.url)) sourceMapConsumers.set(file.url, sourceMapConsumer)
+    if (!sourceMapConsumers.has(file.url)) sourceMapConsumers.set(file.url, sourceMapConsumer)
 
     const { test: { errors } } = file
     const errorsWithMetadata =
@@ -57,10 +56,10 @@ export default (options, bundle) => {
         errors.map(async error => {
           const metaStack =
             await Promise.all(
-                  error.name === 'AssertionError'
-                    ? error.stack.replace(error.string, '')
-                    : error.stack)
               parse(
+                error.name === 'AssertionError'
+                  ? error.stack.replace(error.string, '')
+                  : error.stack)
                 .map(async ({ lineNumber: line, column, file, methodName: name }) => {
                   const { line: originalLine, column: originalColumn, name: originalName, source } = await sourceMapConsumer.originalPositionFor({ source: file, line, column: column === null ? 0 : column })
                   return {
