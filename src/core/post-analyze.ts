@@ -1,4 +1,4 @@
-import stackTraceParser from 'stacktrace-parser'
+import { parse } from 'stacktrace-parser'
 import SourceMap from 'source-map'
 import { mergeMap } from 'rxjs/operators'
 import { File, FileType, Test, TestError } from '../types'
@@ -57,11 +57,10 @@ export default (options, bundle) => {
         errors.map(async error => {
           const metaStack =
             await Promise.all(
-              stackTraceParser
-                .parse(
                   error.name === 'AssertionError'
                     ? error.stack.replace(error.string, '')
                     : error.stack)
+              parse(
                 .map(async ({ lineNumber: line, column, file, methodName: name }) => {
                   const { line: originalLine, column: originalColumn, name: originalName, source } = await sourceMapConsumer.originalPositionFor({ source: file, line, column: column === null ? 0 : column })
                   return {
