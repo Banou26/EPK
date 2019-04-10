@@ -11,14 +11,22 @@
     "epk": "bin/cli.js"
   },
   "scripts": {
-    "__browser__": "parcel src/index.ts --no-source-maps --out-dir dist-browser --public-url ./",
-    "node": "parcel watch src/index.ts --target node --no-source-maps --public-url ./",
-    "buildTest": "parcel build src/test/index.ts --no-source-maps --out-file test.js --public-url ./",
+    "_buildBrowser": "parcel src/index.ts --no-source-maps --out-dir dist-browser --public-url ./",
+
     "buildNode": "parcel build src/index.ts --no-source-maps --target node --public-url ./",
-    "build": "concurrently \"yarn run buildTest\" \"yarn run buildNode\"",
-    "testBundle": "parcel watch src/test/index.ts --no-source-maps --out-file test.js --no-hmr --public-url ./",
-    "test": "node bin/cli.js ./tests/unit/*.spec.*s",
-    "dev": "concurrently \"yarn run node\" \"yarn run testBundle\""
+    "buildTest": "parcel build src/test/index.ts --no-source-maps --out-file test.js --public-url ./",
+    "buildEmptyPage": "parcel build src/empty.html --out-file empty.html --public-url ./",
+
+    "clearDist": "rimraf ./dist",
+    "build": "yarn run clearDist && yarn run buildTest && yarn run buildNode && yarn run buildEmptyPage",
+
+    "watchNode": "parcel watch src/index.ts --target node --public-url ./",
+    "watchTest": "parcel watch src/test/index.ts --no-source-maps --out-file test.js --no-hmr --public-url ./",
+    "watchEmptyPage": "parcel watch src/empty.html --out-file empty.html --public-url ./",
+
+    "dev": "concurrently \"yarn run watchNode\" \"yarn run watchTest\" \"yarn run watchEmptyPage\"",
+
+    "test": "node bin/cli.js ./tests/unit/*.spec.*s"
   },
   "dependencies": {
     "@babel/preset-typescript": "^7.1.0",
@@ -51,6 +59,7 @@
     "nodemon": "^1.18.10",
     "puppeteer": "^1.13.0",
     "puppeteer-firefox": "^0.5.0",
+    "rimraf": "^2.6.3",
     "standard": "^12.0.1",
     "typescript": "^3.4.1"
   },
