@@ -1,4 +1,4 @@
-export * from './core/index'
-export * from './test/index'
+export * from './core/index.ts'
+export * from './test/index.ts'
 
-if (!module.parent) import('./cli/index').then(() => {}) // keep the then because parcel lazy-load imports
+if (!module.parent) import('./cli/index.ts').then(() => {}) // keep the then because parcel lazy-load imports

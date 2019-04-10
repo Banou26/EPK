@@ -1,16 +1,16 @@
 import { merge, ConnectableObservable, from, of } from 'rxjs'
 import { map, filter, mergeMap, switchMap, publish, tap, delayWhen } from 'rxjs/operators'
 
-import { Options, BUNDLER_TARGET, TARGET, File, TargetRuntimeProvider as TargetRuntimeProviderType } from '../types'
-import Bundler from './bundler'
-import { transformPathToTestUrl } from '../utils/index'
-import TargetRuntimeProvider from './target-runtime-provider'
-import analyze from './analyze'
-import test from './test'
-import postAnalyze from './post-analyze'
-import { isBrowser } from './utils'
-import server from './server'
-import localRequire from '../utils/localRequire'
+import { Options, BUNDLER_TARGET, TARGET, File, TargetRuntimeProvider as TargetRuntimeProviderType } from '../types.ts'
+import Bundler from './bundler.ts'
+import { transformPathToTestUrl } from '../utils/index.ts'
+import TargetRuntimeProvider from './target-runtime-provider.ts'
+import analyze from './analyze.ts'
+import test from './test.ts'
+import postAnalyze from './post-analyze.ts'
+import { isBrowser } from './utils.ts'
+import server from './server.ts'
+import localRequire from '../utils/localRequire.ts'
 
 
 export default (_options: Options) => {
