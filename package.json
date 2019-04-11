@@ -15,14 +15,14 @@
 
     "buildNode": "parcel build src/index.ts --no-source-maps --target node --public-url ./",
     "buildTest": "parcel build src/test/index.ts --no-source-maps --out-file test.js --public-url ./",
-    "buildEmptyPage": "parcel build src/empty.html --out-file empty.html --public-url ./",
+    "buildEmptyPage": "parcel build src/environment/empty.html --out-file empty.html --public-url ./",
 
     "clearDist": "rimraf ./dist",
     "build": "yarn run clearDist && yarn run buildTest && yarn run buildNode && yarn run buildEmptyPage",
 
     "watchNode": "parcel watch src/index.ts --target node --public-url ./",
     "watchTest": "parcel watch src/test/index.ts --no-source-maps --out-file test.js --no-hmr --public-url ./",
-    "watchEmptyPage": "parcel watch src/empty.html --out-file empty.html --public-url ./",
+    "watchEmptyPage": "parcel watch src/environment/empty.html --out-file empty.html --public-url ./",
 
     "dev": "concurrently \"yarn run watchNode\" \"yarn run watchTest\" \"yarn run watchEmptyPage\"",
 
