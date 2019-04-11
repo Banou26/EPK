@@ -1,8 +1,9 @@
 import Path from 'path'
-import ParcelBundler from 'parcel-bundler'
 import { Observable } from 'rxjs'
-import { Bundler } from '../types'
 import { publish } from 'rxjs/operators'
+import ParcelBundler from 'parcel-bundler'
+
+import { Bundler } from '../types.ts'
 
 export default (options): Bundler =>
   // @ts-ignore

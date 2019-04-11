@@ -1,11 +1,13 @@
-import { parse } from 'stacktrace-parser'
+import fs from 'fs'
+import Path from 'path'
+import { promisify } from 'util'
+
 import SourceMap from 'source-map'
 import { mergeMap } from 'rxjs/operators'
-import { File, FileType, TestError } from '../types'
-import Path from 'path'
-import fs from 'fs'
-import { promisify } from 'util'
-import { prettifyPath } from '../utils/index'
+import { parse } from 'stacktrace-parser'
+
+import { prettifyPath } from '../utils/index.ts'
+import { File, FileType, TestError, LogType } from '../types.ts'
 
 const readFile = promisify(fs.readFile)
 

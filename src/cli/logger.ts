@@ -1,12 +1,13 @@
 // from https://github.com/parcel-bundler/parcel/tree/master/packages/core/logger/src
 
+import fs from 'fs'
+import path from 'path'
+
+import ora from 'ora'
 import Chalk from 'Chalk'
 import readline from 'readline'
-import { countBreaks } from 'grapheme-breaker'
 import stripAnsi from 'strip-ansi'
-import ora from 'ora'
-import path from 'path'
-import fs from 'fs'
+import { countBreaks } from 'grapheme-breaker'
 
 const prettyError = (err, { color } = { color: undefined }) => {
   let message = typeof err === 'string' ? err : err.message

@@ -1,7 +1,7 @@
-import epk from '../core/index'
-import { action, options, args } from './parser'
-import CliReporter from './reporter'
-import logger from './logger'
+import logger from './logger.ts'
+import epk from '../core/index.ts'
+import CliReporter from './reporter.ts'
+import { action, options, args } from './parser.ts'
 
 // @ts-ignore
 const cliReporter =
@@ -14,4 +14,5 @@ const cliReporter =
   // @ts-ignore
   |> CliReporter({})
 
+// @ts-ignore
 cliReporter.subscribe(() => {}, err => logger.error(err))

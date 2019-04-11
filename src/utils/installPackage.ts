@@ -1,22 +1,23 @@
 // https://github.com/parcel-bundler/parcel/blob/master/packages/core/parcel-bundler/src/utils/installPackage.js
 
-import config from 'parcel-bundler/src/utils/config'
-import commandExists from 'command-exists'
-import logger from '../cli/logger'
-import pipeSpawn from 'parcel-bundler/src/utils/pipeSpawn'
-import PromiseQueue from 'parcel-bundler/src/utils/PromiseQueue'
 import path from 'path'
 import fs from '@parcel/fs'
-import WorkerFarm from '@parcel/workers'
-import utils from '@parcel/utils'
 import _resolve from 'resolve'
+import utils from '@parcel/utils'
+import WorkerFarm from '@parcel/workers'
+import commandExists from 'command-exists'
+import config from 'parcel-bundler/src/utils/config'
+import pipeSpawn from 'parcel-bundler/src/utils/pipeSpawn'
+import PromiseQueue from 'parcel-bundler/src/utils/PromiseQueue'
+
+import logger from '../cli/logger.ts'
 
 const { promisify } = utils
-const resolve  = promisify(_resolve)
+const resolve = promisify(_resolve)
 
 const YARN_LOCK = 'yarn.lock'
 
-async function install(modules, filepath, options = { installPeers: true, saveDev: true, packageManager: undefined }) {
+async function install (modules, filepath, options = { installPeers: true, saveDev: true, packageManager: undefined }) {
   let { installPeers = true, saveDev = true, packageManager } = options
   if (typeof modules === 'string') {
     modules = [modules]
@@ -46,7 +47,7 @@ async function install(modules, filepath, options = { installPeers: true, saveDe
   }
 
   try {
-    await pipeSpawn(packageManager, args, {cwd})
+    await pipeSpawn(packageManager, args, { cwd })
   } catch (err) {
     throw new Error(`Failed to install ${modules.join(', ')}.`)
   }
@@ -58,9 +59,9 @@ async function install(modules, filepath, options = { installPeers: true, saveDe
   }
 }
 
-async function installPeerDependencies(filepath, name, options) {
+async function installPeerDependencies (filepath, name, options) {
   let basedir = path.dirname(filepath)
-  const [resolved] = await resolve(name, {basedir})
+  const [resolved] = await resolve(name, { basedir })
   const pkg = await config.load(resolved, ['package.json'])
   const peers = pkg.peerDependencies || {}
 
@@ -73,12 +74,12 @@ async function installPeerDependencies(filepath, name, options) {
     await install(
       modules,
       filepath,
-      Object.assign({}, options, {installPeers: false})
+      Object.assign({}, options, { installPeers: false })
     )
   }
 }
 
-async function determinePackageManager(filepath) {
+async function determinePackageManager (filepath) {
   const yarnLockFile = await config.resolve(filepath, [YARN_LOCK])
 
   /**
@@ -98,7 +99,7 @@ async function determinePackageManager(filepath) {
 }
 
 let hasYarn = null
-async function checkForYarnCommand() {
+async function checkForYarnCommand () {
   if (hasYarn != null) {
     return hasYarn
   }
@@ -112,8 +113,8 @@ async function checkForYarnCommand() {
   return hasYarn
 }
 
-let queue = new PromiseQueue(install, {maxConcurrent: 1, retry: false})
-export default async function(...args) {
+let queue = new PromiseQueue(install, { maxConcurrent: 1, retry: false })
+export default async function (...args) {
   // Ensure that this function is always called on the master process so we
   // don't call multiple installs in parallel.
   if (WorkerFarm.isWorker()) {
@@ -127,10 +128,3 @@ export default async function(...args) {
   queue.add(...args)
   return queue.run()
 }
-
-// export default async (...names) => {
-//   await _installPackage(names)
-//   return names.length === 1
-//           ? import(name)
-//           : Promise.all(names.map(name => import(name)))
-// }

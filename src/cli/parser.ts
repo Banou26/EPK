@@ -1,5 +1,5 @@
-import program from 'commander'
 import chalk from 'chalk'
+import program from 'commander'
 
 const helpMessage = `
 Run \`${chalk.bold('epk help <command>')}\` for more information on specific commands
@@ -25,9 +25,9 @@ program
   .description('display help information for a command')
   .action(command =>
     (program
-        .commands
-        .find(c =>
-          c.name() === command) ||
+      .commands
+      .find(c =>
+        c.name() === command) ||
     program).help())
 
 program.on('--help', _ => console.log(helpMessage))

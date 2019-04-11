@@ -1,7 +1,8 @@
 import path from 'path'
 import { Observable } from 'rxjs'
 import { switchMap } from 'rxjs/operators'
-import localRequire from '../utils/localRequire'
+
+import localRequire from '../utils/localRequire.ts'
 
 let imports
 
