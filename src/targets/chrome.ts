@@ -1,8 +1,9 @@
 import path from 'path'
 import { Observable } from 'rxjs'
-import localRequire from '../utils/localRequire'
-import { TargetRuntimeObservable } from '../types'
-import { transformPathToEpkUrl } from '../utils'
+
+import localRequire from '../utils/localRequire.ts'
+import { transformPathToEpkUrl } from '../utils/index.ts'
+import { TargetRuntimeObservable } from '../types.ts'
 
 let pptr
 

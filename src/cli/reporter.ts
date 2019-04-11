@@ -1,13 +1,9 @@
-import { tap, scan } from 'rxjs/operators'
-import { Context, File, Test, FileType } from '../types'
 import chalk from 'chalk'
-import logger from './logger'
-import { prettifyPath } from '../utils'
+import { scan } from 'rxjs/operators'
 
-  // |> tap(({ entryFiles  }: Context) => {
-  //   logger.clear()
-  //   logger.progress(`\n${chalk.grey(`Building ${entryFiles.map(prettifyPath).join(', ')}`)}`)
-  // })
+import logger from './logger.ts'
+import { prettifyPath } from '../utils.ts'
+import { Context, File, Test, FileType, LogType } from '../types.ts'
 
 const showAssertError = message => `\
    ${chalk.gray(
@@ -115,6 +111,7 @@ export default
 
       const foundFile = files.find(({ name }) => val.name === name)
       const currentFile = foundFile || file
+
       if (file.type === FileType.ANALYZE) {
 
         const foundFile = files.find(({ name }) => val.name === name)

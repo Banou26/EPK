@@ -1,10 +1,12 @@
 import { EventEmitter } from 'events'
+
 import { stringify } from 'flatted/cjs'
-import { isBrowser } from '../core/utils'
-import { File, Test, TestResult, MESSAGE_TYPE, NODE_GLOBAL } from '../types'
-import { errors } from './error'
 import { isObservable } from 'rxjs'
 import { toArray } from 'rxjs/operators'
+
+import { isBrowser } from '../core/utils.ts'
+import { MESSAGE_TYPE, NODE_GLOBAL } from '../types.ts'
+import { init as initLogging, logs } from './logging.ts'
 
 export const tests = new Map<string, Function>()
 
@@ -86,12 +88,3 @@ if (isBrowser) {
   const events = global[NODE_GLOBAL] = new EventEmitter()
   events.addListener('message', newEvent)
 }
-
-// const addEventListener =
-//   isBrowser
-//     ? window.addEventListener
-//     : global[NODE_GLOBAL].addListener
-
-// addEventListener('message', ({ data: { type, description } }) =>
-//     type === MESSAGE_TYPE.GET_TESTS ? getTests()
-//   : type === MESSAGE_TYPE.RUN_TEST && runTest(description))

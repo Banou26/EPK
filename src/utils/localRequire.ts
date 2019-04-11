@@ -1,14 +1,16 @@
 // https://github.com/parcel-bundler/parcel/blob/master/packages/core/parcel-bundler/src/utils/localRequire.js
-import Path, { dirname } from 'path'
-import utils from '@parcel/utils'
+
 import Resolve from 'resolve'
-import installPackage from './installPackage'
-import getModuleParts from './getModuleParts'
+import utils from '@parcel/utils'
+import Path, { dirname } from 'path'
+
+import installPackage from './installPackage.ts'
+import getModuleParts from './getModuleParts.ts'
 
 const { promisify } = utils
 const _resolve = promisify(Resolve)
 
-const cache = new Map();
+const cache = new Map()
 
 export const localRequire = async (name, path, triedInstall = false) => {
   const [resolved] = await resolve(name, path, triedInstall)
@@ -21,7 +23,7 @@ export const resolve = async (name, path, triedInstall = false) => {
   let resolved = cache.get(key)
   if (!resolved) {
     try {
-      resolved = await _resolve(name, {basedir})
+      resolved = await _resolve(name, { basedir })
     } catch (e) {
       if (e.code === 'MODULE_NOT_FOUND' && !triedInstall) {
         const packageName = getModuleParts(name)[0]

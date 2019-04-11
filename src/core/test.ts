@@ -1,6 +1,7 @@
 import { switchMap, mergeMap, take } from 'rxjs/operators'
-import { TargetRuntime, BUNDLER_TARGET, NODE_GLOBAL, MESSAGE_TYPE, FileType } from '../types'
-import { stringify } from './utils'
+
+import { stringify } from './utils.ts'
+import { TargetRuntime, BUNDLER_TARGET, NODE_GLOBAL, MESSAGE_TYPE, FileType, Test } from '../types.ts'
 
 const browserStr = data => stringify`
 new Promise(resolve => {

@@ -1,17 +1,16 @@
 import { merge, ConnectableObservable, from, of } from 'rxjs'
-import { map, filter, mergeMap, switchMap, publish, tap, delayWhen } from 'rxjs/operators'
+import { filter, mergeMap, switchMap, publish, tap, delayWhen } from 'rxjs/operators'
 
-import { Options, BUNDLER_TARGET, TARGET, File, TargetRuntimeProvider as TargetRuntimeProviderType } from '../types.ts'
+import test from './test.ts'
+import server from './server.ts'
+import analyze from './analyze.ts'
 import Bundler from './bundler.ts'
+import { isBrowser } from './utils.ts'
+import postAnalyze from './post-analyze.ts'
+import localRequire from '../utils/localRequire.ts'
 import { transformPathToTestUrl } from '../utils/index.ts'
 import TargetRuntimeProvider from './target-runtime-provider.ts'
-import analyze from './analyze.ts'
-import test from './test.ts'
-import postAnalyze from './post-analyze.ts'
-import { isBrowser } from './utils.ts'
-import server from './server.ts'
-import localRequire from '../utils/localRequire.ts'
-
+import { Options, BUNDLER_TARGET, TARGET, File, TargetRuntimeProvider as TargetRuntimeProviderType, LogType } from '../types.ts'
 
 export default (_options: Options) => {
   // remove undefined values

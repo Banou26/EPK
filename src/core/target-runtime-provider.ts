@@ -1,7 +1,8 @@
-import { TARGET, TargetRuntimeProviderOptions, TargetRuntimeProvider, TargetRuntimeObservable } from '../types'
-import ChromeRuntime from '../targets/chrome'
 import { map } from 'rxjs/operators'
-// import FirefoxRuntime from '../targets/firefox'
+
+import ChromeRuntime from '../targets/chrome.ts'
+// import FirefoxRuntime from '../targets/firefox.ts'
+import { TARGET, TargetRuntimeProviderOptions, TargetRuntimeProvider, TargetRuntimeObservable } from '../types.ts'
 
 const targetRuntimes = new Map([
   [TARGET.CHROME, ChromeRuntime],
