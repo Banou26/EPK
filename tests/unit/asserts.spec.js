@@ -8,7 +8,10 @@ import { test, assert } from '../../dist/test.js'
 test('desc1', _ => {
   // console.log('first')
   // assert(true === false)
-  // console.log('kkk')
+  console.log(`EPK now support logs`)
+  console.info(`And info logs`)
+  console.warn(`Also warns logs`)
+  console.error(`With errors logs`)
   assert([1, 2, 3].includes(4))
 })
 
@@ -20,6 +23,11 @@ test('desc2', async _ => {
 test('desc3', async _ => {
   // console.log('second')
   assert(a === true)
+})
+
+test('desc4', async _ => {
+  // console.log('second')
+  assert(true === true)
 })
 
 // Array(10)

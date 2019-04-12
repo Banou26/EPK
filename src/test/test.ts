@@ -6,7 +6,7 @@ import { toArray } from 'rxjs/operators'
 
 import { isBrowser } from '../core/utils.ts'
 import { MESSAGE_TYPE, NODE_GLOBAL } from '../types.ts'
-import { init as initLogging, logs } from './logging.ts'
+import { logs } from './logging.ts'
 
 export const tests = new Map<string, Function>()
 
@@ -21,12 +21,10 @@ export const test = (desc, func) => {
   tests.set(desc, func)
 }
 
-const initiated = new Promise(resolve => setTimeout(resolve, 0))
-
 const emit = (type, data) =>
   isBrowser
-    ? window.parent.postMessage({ type, errors, data }, '*')
-    : global[NODE_GLOBAL].emit('message', { type, errors, data })
+    ? window.parent.postMessage({ type, logs, data }, '*')
+    : global[NODE_GLOBAL].emit('message', { type, logs, data })
 
 const getTests = () =>
   emit(
@@ -40,47 +38,44 @@ const getTests = () =>
   )
 
 const runTest = async description => {
+  // Empty the logs
+  // logs.splice(0, logs.length)
+
   // todo: replace by "isBrowser ? window : require('perf_hooks')"
   const { performance } = window
-  let timeStart, timeEnd, value, error
+  let timeStart, timeEnd, value
 
   try {
     timeStart = performance.now()
     value = await tests.get(description)()
-    // @ts-ignore
-    if (isObservable(value)) value = await (value |> toArray()).toPromise()
-  } catch (err) {
-    error = err
+    if (isObservable(value)) {
+      // @ts-ignore
+      value = await (value |> toArray()).toPromise()
+    }
   } finally {
     timeEnd = performance.now()
-  }
 
-  emit(
-    MESSAGE_TYPE.RUN_TEST_RESPONSE,
-    {
-      timeStart,
-      timeEnd,
-      type:
-        isObservable(value) ? 'observable'
-        : value instanceof Promise ? 'promise'
-        : 'function',
-      value: stringify(value),
-      errors:
-        (error
-          ? [error, ...errors]
-          : errors).map(err => ({
-            name: err.name,
-            message: err.message,
-            string: err.toString(),
-            stack: err.stack
-          }))
-    }
-  )
+    setTimeout(() =>
+      emit(
+        MESSAGE_TYPE.RUN_TEST_RESPONSE,
+        {
+          timeStart,
+          timeEnd,
+          type:
+            isObservable(value) ? 'observable'
+              : value instanceof Promise ? 'promise'
+              : 'function',
+          value: stringify(value),
+          logs
+        }
+      ))
+  }
 }
 
-const newEvent = ({ data: { type, description } }) =>
-    type === MESSAGE_TYPE.GET_TESTS ? getTests()
-  : type === MESSAGE_TYPE.RUN_TEST && runTest(description)
+const newEvent = ({ data: { type, description } }) => {
+  if (type === MESSAGE_TYPE.GET_TESTS) getTests()
+  if (type === MESSAGE_TYPE.RUN_TEST) runTest(description)
+}
 
 if (isBrowser) {
   window.addEventListener('message', newEvent)

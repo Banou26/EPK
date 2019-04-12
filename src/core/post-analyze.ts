@@ -52,7 +52,13 @@ export default (options, bundle) => {
     const sourceMapConsumer = sourceMapConsumers.get(file.url) || new SourceMap.SourceMapConsumer(sourceMap)
     if (!sourceMapConsumers.has(file.url)) sourceMapConsumers.set(file.url, sourceMapConsumer)
 
-    const { test: { errors } } = file
+    const { test: { logs } } = file
+
+    const errors =
+      logs
+        .filter(({ type }) => type === LogType.uncaughtError)
+        .map(({ error }) => error)
+
     const errorsWithMetadata =
       await Promise.all(
         errors.map(async error => {
@@ -85,12 +91,21 @@ export default (options, bundle) => {
         })
       )
 
+    const logsWithMetadataErrors =
+      logs.map(log =>
+        log.type === LogType.uncaughtError
+          ? {
+            type: log.type,
+            error: errorsWithMetadata[errors.indexOf(log.error)]
+          }
+          : log)
+
     return {
       ...file,
       type: FileType.POST_ANALYZE,
       test: {
         ...file.test,
-        errors: errorsWithMetadata
+        logs: logsWithMetadataErrors
       }
     }
   })

@@ -155,13 +155,27 @@ export interface MetaStack {
   originalColumn: number
 }
 
-export interface TestError {
+export interface Error {
   message: string
   name: string
   stack: string
-  metaStack: MetaStack[]
   string: string
-  originalStack: string
+  metaStack?: MetaStack[]
+  originalStack?: string
+}
+
+export enum LogType {
+  log = 'log',
+  info = 'info',
+  warn = 'warn',
+  error = 'error',
+  uncaughtError = 'uncaughtError'
+}
+
+export interface Log {
+  type: LogType
+  arguments?: any[]
+  error?: Error
 }
 
 /**
@@ -194,7 +208,7 @@ export interface File {
   /**
    * Array of errors
    */
-  errors?: TestError[]
+  logs?: Log[]
 }
 
 /**
@@ -221,7 +235,7 @@ export interface Test {
   /**
    * Error thrown by the test
    */
-  errors?: TestError[]
+  logs?: Log[]
 
   timeStart?: number
 
