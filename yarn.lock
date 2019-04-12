@@ -4273,9 +4273,9 @@ parcel-bundler@^1.11.0, parcel-bundler@^1.12.3:
     v8-compile-cache "^2.0.0"
     ws "^5.1.1"
 
-parcel-plugin-babel-typescript@^0.0.3:
-  version "0.0.3"
-  resolved "https://registry.yarnpkg.com/parcel-plugin-babel-typescript/-/parcel-plugin-babel-typescript-0.0.3.tgz#489d1b5a95d84696d871e60b0087c2c28ceeee5b"
+parcel-plugin-babel-typescript@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/parcel-plugin-babel-typescript/-/parcel-plugin-babel-typescript-1.0.0.tgz#6f450bab4b177ef029f83b2675373095b2d563cf"
   dependencies:
     "@babel/plugin-transform-modules-commonjs" "^7.2.0"
     "@babel/plugin-transform-typescript" "^7.2.0"

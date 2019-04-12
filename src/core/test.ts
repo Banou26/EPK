@@ -28,7 +28,8 @@ const testStr = (options, data) =>
 
 export default
   (file, targetRuntimeProvider, options) =>
-    mergeMap(test =>
+    // @ts-ignore
+    mergeMap((test: Test) =>
       // @ts-ignore
       targetRuntimeProvider
       // @ts-ignore

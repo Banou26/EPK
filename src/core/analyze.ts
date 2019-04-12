@@ -35,12 +35,12 @@ export default
       // @ts-ignore
       |> mergeMap(async (targetRuntime: TargetRuntime) => {
         await targetRuntime.loadFile(file)
-        const { data: tests, errors } = await targetRuntime.exec(analyzeStr(options, { type: MESSAGE_TYPE.GET_TESTS }))
+        const { data: tests, logs } = await targetRuntime.exec(analyzeStr(options, { type: MESSAGE_TYPE.GET_TESTS }))
         return {
           type: FileType.ANALYZE,
           ...file,
           tests,
-          errors
+          logs
         }
       })
       // @ts-ignore

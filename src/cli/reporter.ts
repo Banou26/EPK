@@ -2,11 +2,11 @@ import chalk from 'chalk'
 import { scan } from 'rxjs/operators'
 
 import logger from './logger.ts'
-import { prettifyPath } from '../utils.ts'
+import { prettifyPath } from '../utils/index.ts'
 import { Context, File, Test, FileType, LogType } from '../types.ts'
 
 const showAssertError = message => `\
-   ${chalk.gray(
+  ${chalk.gray(
       message
         .split('\n')
         .shift()
@@ -16,30 +16,40 @@ ${chalk.red(
     message
       .split('\n')
       .splice(2)
-      .map(str => `  ${str}`)
+      .map(str => ` ${str}`)
       .join('\n'))}`
 
 const showStackError = stack =>
   chalk.red(
     stack
       .split('\n')
-      .map(str => `    ${str.trim()}`)
+      .map(str => `  ${str.trim()}`)
       .join('\n'))
 
-const formatTest = ({ description, errors }: Test) => `\
-  ${description}
-${errors
-  .map(({ name, message, stack, originalStack }) =>
-    name === 'AssertionError'
-      ? showAssertError(message)
-      : showStackError(originalStack || stack))
-  .join('\n\n')}`
+const LogTypeColor = new Map([
+  [LogType.log, chalk.white],
+  [LogType.info, chalk.blue],
+  [LogType.warn, chalk.yellow],
+  [LogType.error, chalk.redBright],
+  [LogType.uncaughtError, chalk.red]
+])
+      
+const formatTest = ({ description, logs }: Test) => `\
+ ${description}
+${logs
+  .map(({ type, arguments: args, error, error: { name, message, stack, originalStack } = {} }) => {
+    if (error) {
+      if (name === 'AssertionError') return showAssertError(message)
+      else return showStackError(originalStack || stack)
+    } else return `  ${LogTypeColor.get(type)(args.join(', '))}`
+  })
+  .join('\n')}`
  
  
 const formatTests = ({ name, tests = [] }: File) =>
   tests.length
   ? `
- ${chalk.underline(prettifyPath(name))}
+${chalk.underline(prettifyPath(name))}
 
 ${tests
     .map(formatTest)
@@ -61,24 +71,26 @@ const formatAnalyzing = (files: File[]) => {
     : ''
 }
 
-const formatErrors = (files: File[]) => `\
-${chalk.reset.red(`Errors:`)}
+const formatLogs = (files: File[]) => `\
 ${chalk.reset(
   files
     .map(({ tests, ...rest }) => ({
-      tests: tests.filter(({ errors }) => !!(errors && errors.length)),
+      tests:
+        tests.filter(({ logs }) => logs?.length),
       ...rest
     }))
     .map(formatTests)
     .join('\n'))}`
 
-const formatFileStatus = (files: File[]) => `
-${chalk.reset(`Files:`)}
+const formatFileSummary = (files: File[]) => `
+${chalk.reset(`Summary:`)}
 ${files
   .map(({ name, tests }) => {
     const isFinished = tests.every(({ type }) => !!type)
     const finishedTests = tests.filter(({ type }) => type)
-    const erroredTests = tests.filter(({ errors }) => errors?.length)
+    const erroredTests =
+      tests.filter(({ logs }) =>
+        logs?.some(({ error }) => !!error))
     const hasErrors = erroredTests.length
     const successful = hasErrors ? `(${finishedTests.length - erroredTests.length})` : ''
     return chalk.reset[
@@ -92,22 +104,22 @@ ${files
 
 const format = (files: File[]) => `
 ${formatAnalyzing(files)}\
-${formatErrors(files)}\
-${formatFileStatus(files)}`
+${formatLogs(files)}\
+${formatFileSummary(files)}`
 
 export default
   options =>
-    scan((state, val: any) => { // File | Context
+    scan((state: { bundle, files: File[] }, val: File | Context) => {
       if (val.name === 'buildStart') {
         logger.clear()
         logger.progress(`\n${chalk.grey(`Bundling...`)}`)
         return { files: [] }
       } else if (val.name === 'bundled') {
         logger.progress(`\n${chalk.grey(`Bundled`)}`)
-        return { bundle: val.bundle, ...state }
+        return { bundle: (<Context>val).bundle, ...state }
       }
-      const file: File = val
-      const { files }: { files: File[] } = state
+      const file = <File>val
+      const { files } = state
 
       const foundFile = files.find(({ name }) => val.name === name)
       const currentFile = foundFile || file
@@ -150,6 +162,6 @@ export default
           FileType.DONE === type)
 
       logger[isFinished ? 'success' : 'progress'](format(files))
-      
+
       return state
     }, undefined)

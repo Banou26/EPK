@@ -1,6 +1,6 @@
 {
   "name": "epk",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "JS testing tool for a world without problems",
   "main": "dist/index.js",
   "browser": "dist/test.js",
@@ -12,20 +12,15 @@
   },
   "scripts": {
     "_buildBrowser": "parcel src/index.ts --no-source-maps --out-dir dist-browser --public-url ./",
-
     "buildNode": "parcel build src/index.ts --no-source-maps --target node --public-url ./",
     "buildTest": "parcel build src/test/index.ts --no-source-maps --out-file test.js --public-url ./",
     "buildEmptyPage": "parcel build src/environment/empty.html --out-file empty.html --public-url ./",
-
     "clearDist": "rimraf ./dist",
     "build": "yarn run clearDist && yarn run buildTest && yarn run buildNode && yarn run buildEmptyPage",
-
     "watchNode": "parcel watch src/index.ts --target node --public-url ./",
     "watchTest": "parcel watch src/test/index.ts --no-source-maps --out-file test.js --no-hmr --public-url ./",
     "watchEmptyPage": "parcel watch src/environment/empty.html --out-file empty.html --public-url ./",
-
     "dev": "concurrently \"yarn run watchNode\" \"yarn run watchTest\" \"yarn run watchEmptyPage\"",
-
     "test": "node bin/cli.js ./tests/unit/*.spec.*s"
   },
   "dependencies": {
@@ -40,7 +35,7 @@
     "koa-static": "^5.0.0",
     "ora": "^3.0.0",
     "parcel-bundler": "^1.12.3",
-    "parcel-plugin-babel-typescript": "^0.0.3",
+    "parcel-plugin-babel-typescript": "^1.0.0",
     "perf_hooks": "^0.0.1",
     "power-assert": "^1.6.1",
     "rxjs": "6",
