@@ -1,3 +1,5 @@
+import util from 'util'
+
 import chalk from 'chalk'
 import { scan } from 'rxjs/operators'
 
@@ -41,7 +43,21 @@ ${logs
     if (error) {
       if (name === 'AssertionError') return showAssertError(message)
       else return showStackError(originalStack || stack)
-    } else return `  ${LogTypeColor.get(type)(args.join(', '))}`
+    } else return `  ${
+      LogTypeColor.get(type)(
+        args
+          .map((val, i) =>
+            util
+              .inspect(
+                val,
+                {
+                  compact: false,
+                  breakLength: process.stdout.columns
+                })
+              .split('\n')
+              .map((str, i) => `${i > 0 ? '  ' : ''}${str}`)
+              .join('\n'))
+          .join(' '))}`
   })
   .join('\n')}`
  
