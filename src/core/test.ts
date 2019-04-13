@@ -1,7 +1,8 @@
 import { switchMap, mergeMap, take } from 'rxjs/operators'
 
 import { stringify } from './utils.ts'
-import { TargetRuntime, BUNDLER_TARGET, NODE_GLOBAL, MESSAGE_TYPE, FileType, Test } from '../types.ts'
+import { TargetRuntime, BUNDLER_TARGET, NODE_GLOBAL, MESSAGE_TYPE, FileType, Test, FUNCTION_PROPERTY } from '../types.ts'
+import { parse } from 'flatted'
 
 const browserStr = data => stringify`
 new Promise(resolve => {
@@ -41,7 +42,16 @@ export default
           type: FileType.TEST,
           test: {
             ...test,
-            ...result
+            ...result,
+            logs: parse(
+              result.logs,
+              (_, val) =>
+                val[FUNCTION_PROPERTY]
+                  // Way to dynamically set a function name (to render via `util.inspect` from the reporter)
+                  ? {
+                    [val[FUNCTION_PROPERTY]]: () => {}
+                  }[val[FUNCTION_PROPERTY]]
+                  : val)
           }
         }
       })

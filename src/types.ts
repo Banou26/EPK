@@ -3,7 +3,9 @@
 import { Observable } from 'rxjs'
 import { ElementHandle } from 'puppeteer'
 
-export const NODE_GLOBAL = '__EPK_NODE_GLOBAL'
+export const NODE_GLOBAL = '__EPK_NODE_GLOBAL__'
+
+export const FUNCTION_PROPERTY = '__EPK__FUNCTION__PLACEHOLDER__'
 
 /**
  * List of different runtimes (available) to test on

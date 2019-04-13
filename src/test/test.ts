@@ -1,11 +1,11 @@
 import { EventEmitter } from 'events'
 
-import { stringify } from 'flatted/cjs'
+import { stringify } from 'flatted'
 import { isObservable } from 'rxjs'
 import { toArray } from 'rxjs/operators'
 
 import { isBrowser } from '../core/utils.ts'
-import { MESSAGE_TYPE, NODE_GLOBAL } from '../types.ts'
+import { MESSAGE_TYPE, NODE_GLOBAL, FUNCTION_PROPERTY } from '../types.ts'
 import { logs } from './logging.ts'
 
 export const tests = new Map<string, Function>()
@@ -23,8 +23,8 @@ export const test = (desc, func) => {
 
 const emit = (type, data) =>
   isBrowser
-    ? window.parent.postMessage({ type, logs, data }, '*')
-    : global[NODE_GLOBAL].emit('message', { type, logs, data })
+    ? window.parent.postMessage({ type, data }, '*')
+    : global[NODE_GLOBAL].emit('message', { type, data })
 
 const getTests = () =>
   emit(
@@ -36,6 +36,16 @@ const getTests = () =>
         body: func.toString()
       }))
   )
+
+const stringifyFunctions = val =>
+  stringify(
+    val,
+    (key, val) =>
+      typeof val === 'function'
+        ? {
+          [FUNCTION_PROPERTY]: val.name
+        }
+        : val)
 
 const runTest = async description => {
   // Empty the logs
@@ -65,8 +75,8 @@ const runTest = async description => {
             isObservable(value) ? 'observable'
               : value instanceof Promise ? 'promise'
               : 'function',
-          value: stringify(value),
-          logs
+          value: stringifyFunctions(value),
+          logs: stringifyFunctions(logs)
         }
       ))
   }

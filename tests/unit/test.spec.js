@@ -6,6 +6,8 @@ test('desc1', _ => {
   // console.log('first')
   // assert(true === false)
   // console.log('kkk')
+  console.log('hmm some log')
+  console.log({ foo: 'bar', func () { return 1 } })
   assert([1, 2, 3].includes(3))
 })
 
