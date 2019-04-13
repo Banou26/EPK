@@ -46,7 +46,7 @@ export default
             logs: parse(
               result.logs,
               (_, val) =>
-                val[FUNCTION_PROPERTY]
+                val?.[FUNCTION_PROPERTY]
                   // Way to dynamically set a function name (to render via `util.inspect` from the reporter)
                   ? {
                     [val[FUNCTION_PROPERTY]]: () => {}
