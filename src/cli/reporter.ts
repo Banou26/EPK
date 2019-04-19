@@ -42,7 +42,7 @@ ${logs
   .map(({ type, arguments: args, error, error: { name, message, stack, originalStack } = {} }) => {
     if (error) {
       if (name === 'AssertionError') return showAssertError(message)
-      else return showStackError(originalStack || stack)
+      else return showStackError(originalStack || stack || message)
     } else return `  ${
       LogTypeColor.get(type)(
         args
