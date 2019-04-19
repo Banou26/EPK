@@ -67,7 +67,7 @@ export default (options, bundle) => {
               parse(
                 error.name === 'AssertionError'
                   ? error.stack.replace(error.string, '')
-                  : error.stack)
+                  : error.stack || error.string)
                 .map(async ({ lineNumber: line, column, file, methodName: name }) => {
                   const { line: originalLine, column: originalColumn, name: originalName, source } = await sourceMapConsumer.originalPositionFor({ source: file, line, column: column === null ? 0 : column })
                   return {
