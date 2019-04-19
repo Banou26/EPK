@@ -1,6 +1,6 @@
 {
   "name": "epk",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "JS testing tool for a world without problems",
   "main": "dist/index.js",
   "browser": "dist/test.js",
