@@ -78,7 +78,11 @@ export default (options, bundle) => {
                     originalLine,
                     originalColumn,
                     originalName,
-                    source: prettifyPath(Path.resolve(source.includes(sourceMapConsumer.sourceRoot) ? Path.resolve(process.cwd(), options.outDir) : process.cwd(), source))
+                    source:
+                      prettifyPath(
+                        Path.resolve(source.includes(sourceMapConsumer.sourceRoot)
+                          ? Path.resolve(process.cwd(), options.outDir)
+                          : process.cwd(), source))
                   }
                 })
             )
