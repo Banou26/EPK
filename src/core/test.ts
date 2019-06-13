@@ -1,59 +1,77 @@
+import { from, OperatorFunction } from 'rxjs'
 import { switchMap, mergeMap, take } from 'rxjs/operators'
 
-import { stringify } from './utils.ts'
-import { TargetRuntime, BUNDLER_TARGET, NODE_GLOBAL, MESSAGE_TYPE, FileType, Test, FUNCTION_PROPERTY } from '../types.ts'
-import { parse } from 'flatted'
+import {
+  TargetRuntime,
+  MESSAGE,
+  Test,
+  EPK_FUNCTION_PROPERTY_PLACEHOLDER,
+  BROWSER,
+  AnalyzedTestFile,
+  TestResult,
+  RuntimeProvider,
+  Runtime,
+  TestFile
+} from '../types.ts'
+import { parse, Observable as AsyncObservable } from '../utils/index.ts'
 
-const browserStr = data => stringify`
-new Promise(resolve => {
-  window.addEventListener('message', ({ data }) =>
-    data.type === ${MESSAGE_TYPE.RUN_TEST_RESPONSE}
-    && resolve(data))
-  window.postMessage(${data}, '*')
-})
-`
 
-const nodeStr = data => stringify`
-new Promise(resolve => {
-  global[${NODE_GLOBAL}].addListener('message', ({ data }) =>
-    data.type === ${MESSAGE_TYPE.RUN_TEST_RESPONSE}
-    && resolve(data))
-  global[${NODE_GLOBAL}].emit('message', ${data})
-})
-`
+export default (test: Test): OperatorFunction<Runtime, TestResult> =>
+  mergeMap(({ loadFile, inMessages, outMessages }: Runtime) =>
+    AsyncObservable<TestResult>(async observer => {
+      await loadFile(test.testFile)
 
-const testStr = (options, data) =>
-  options.target === BUNDLER_TARGET.BROWSER
-    ? browserStr(data)
-    : nodeStr(data)
+      const tests =
+        // @ts-ignore
+        inMessages
+        // @ts-ignore
+        |> filter(({ type }) => type === MESSAGE.RUN_TEST_RESPONSE)
+        // @ts-ignore
+        |> pluck('test')
+        // @ts-ignore
+        |> take(1)
+        // @ts-ignore
+        |> startWith(undefined)
 
-export default
-  (file, targetRuntimeProvider, options) =>
-    // @ts-ignore
-    mergeMap((test: Test) =>
+      const logs =
+        // @ts-ignore
+        inMessages
+        // @ts-ignore
+        |> takeUntil(tests |> skip(1))
+        // @ts-ignore
+        |> filter(({ type }) => type === MESSAGE.LOG)
+        // @ts-ignore
+        |> pluck('log')
+        // @ts-ignore
+        |> scan((arr, log) => [...arr, log] , [])
+        // @ts-ignore
+        |> startWith([])
+
+      const result =
+        tests
+        // @ts-ignore
+        |> take(2)
+        // @ts-ignore
+        |> combineLatest(logs)
+        // @ts-ignore
+        |> map(([testResult, logs]): TestResult => ({
+          parcelBundle: test.parcelBundle,
+          bundle: test.bundle,
+          analyzedTestFile: test.analyzedTestFile,
+          test,
+          type: testResult?.type,
+          value: testResult?.value,
+          logs: logs,
+          timeStart: testResult?.timeStart,
+          timeEnd: testResult?.timeEnd
+        }))
+
       // @ts-ignore
-      targetRuntimeProvider
-      // @ts-ignore
-      |> mergeMap(async (targetRuntime: TargetRuntime) => {
-        await targetRuntime.loadFile(file)
-        const { data: result } = await targetRuntime.exec(testStr(options, { type: MESSAGE_TYPE.RUN_TEST, description: test.description }))
-        return {
-          ...file,
-          type: FileType.TEST,
-          test: {
-            ...test,
-            ...result,
-            logs: parse(
-              result.logs,
-              (_, val) =>
-                val?.[FUNCTION_PROPERTY]
-                  // Way to dynamically set a function name (to render via `util.inspect` from the reporter)
-                  ? {
-                    [val[FUNCTION_PROPERTY]]: () => {}
-                  }[val[FUNCTION_PROPERTY]]
-                  : val)
-          }
-        }
-      })
-      // @ts-ignore
-      |> take(1))
+      result.subscribe(
+        testResult => observer.next(testResult),
+        err => observer.error(err),
+        () => observer.complete()
+      )
+
+      outMessages.next({ type: MESSAGE.RUN_TEST, description: test.description })
+    }))
