@@ -6,8 +6,8 @@
       "request": "launch",
       "name": "nodemon",
       "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/nodemon",
-      "program": "${workspaceFolder}/src/index.ts",
-      "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+      "program": "${workspaceFolder}/lib/cli.js",
+      "sourceMaps": true,
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen",
       "restart": true,
@@ -16,7 +16,31 @@
       ],
       "runtimeArgs": [
         "--watch",
-        "dist"
+        "lib",
+        "--watch",
+        "tests"
+      ]
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "bruh",
+      "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/nodemon",
+      "program_": "${workspaceFolder}/src/cli/index.ts",
+      "program": "${workspaceFolder}/bin/cli.js",
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "restart": true,
+      "args": [
+        "./tests/unit/*.spec.*s"
+      ],
+      "remoteRoot": "${workspaceRoot}/dist",
+      "__": "--experimental-modules",
+      "runtimeArgs": [
+        "--watch",
+        "lib",
+        "--watch",
+        "tests"
       ]
     }
   ]

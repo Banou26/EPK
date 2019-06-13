@@ -1,148 +1,235 @@
-/* eslint-disable no-unused-vars */
 
-import { Observable } from 'rxjs'
-import { ElementHandle } from 'puppeteer'
+import { Observable, Subject } from 'rxjs'
+import { ParcelBundle } from 'parcel-bundler'
+import { CoverageEntry, ElementHandle } from 'puppeteer'
 
-export const NODE_GLOBAL = '__EPK_NODE_GLOBAL__'
-
-export const FUNCTION_PROPERTY = '__EPK__FUNCTION__PLACEHOLDER__'
-
-/**
- * List of different runtimes (available) to test on
- */
-export enum TARGET {
-  NODE = 'node',
-  ELECTRON = 'electron',
-  DENO = 'deno',
-  CHROME = 'chrome',
-  CHROME_EXTENSION = 'chromeExtension',
-  CHROME_CANARY = 'chromeCanary',
-  CHROME_CANARY_EXTENSION = 'chromeCanaryExtension',
-  FIREFOX = 'firefox',
-  FIREFOX_EXTENSION = 'firefoxExtension',
-  FIREFOX_NIGHTLY = 'firefoxNightly',
-  FIREFOX_NIGHTLY_EXTENSION = 'firefoxNightlyExtension'
-}
-
-export enum BROWSER_TARGET {
-  CHROME = TARGET.CHROME_EXTENSION,
-  CHROME_EXTENSION = TARGET.CHROME_CANARY,
-  CHROME_CANARY = TARGET.CHROME_CANARY_EXTENSION,
-  CHROME_CANARY_EXTENSION = TARGET.FIREFOX,
-  FIREFOX = TARGET.FIREFOX_EXTENSION,
-  FIREFOX_EXTENSION = TARGET.FIREFOX_NIGHTLY,
-  FIREFOX_NIGHTLY = TARGET.FIREFOX_NIGHTLY_EXTENSION,
-  FIREFOX_NIGHTLY_EXTENSION = TARGET.FIREFOX_NIGHTLY_EXTENSION
-}
-
-export enum BUNDLER_TARGET {
-  NODE = 'node',
-  BROWSER = 'browser',
-  ELECTRON = 'electron'
-}
-
-export const targetToBundlerTarget =
-  (target: TARGET): BUNDLER_TARGET =>
-    target in BROWSER_TARGET
-      ? BUNDLER_TARGET.BROWSER
-      : target as unknown as BUNDLER_TARGET === BUNDLER_TARGET.NODE
-        ? BUNDLER_TARGET.NODE
-        : target as unknown as BUNDLER_TARGET === BUNDLER_TARGET.ELECTRON && BUNDLER_TARGET.NODE
+// Subject that is sent data from the tester to the runtime
+export const EPK_SUBJECT = '__EPK__SUBJECT__'
+// Subject that is sent data from the runtime to the tester
+export const EPK_RUNTIME_SUBJECT = '__EPK__RUNTIME__SUBJECT__'
+export const EPK_FUNCTION_PROPERTY_PLACEHOLDER = '__EPK__FUNCTION__PLACEHOLDER__'
 
 export interface Bundler extends Observable<any> {}
 
-export interface TargetRuntime extends Observable<any> {
-  loadFile(file: File): Promise<ElementHandle>
-  exec(str: string): Promise<any>
-}
-export interface TargetRuntimeObservable extends Observable<TargetRuntime> {
-  target: TARGET
-  options: TargetRuntimeOptions
-}
-
-export interface TargetRuntimeOptions {}
-export interface TargetRuntimeProvider extends Observable<TargetRuntimeObservable> {
-  target: TARGET
-  options: TargetRuntimeOptions
-}
-export interface TargetRuntimeProviderOptions {}
-
-export enum MESSAGE_TYPE {
-  GET_TESTS = '__EPK_GET_TESTS',
-  RUN_TESTS = '__EPK_RUN_TESTS',
-  RUN_TEST = '__EPK_RUN_TEST',
-  GET_TESTS_RESPONSE = '__EPK_GET_TESTS_RESPONSE',
-  RUN_TESTS_RESPONSE = '__EPK_RUN_TESTS_RESPONSE',
-  RUN_TEST_RESPONSE = '__EPK_RUN_TEST_RESPONSE'
-}
-
-export interface Message {
-  type: MESSAGE_TYPE,
-  payload: any
-}
-
+// Going to change when Parcel 2 get released
 export interface Options {
-  browsers?: BROWSER_TARGET[]
-  entryFiles: string[]
-  target: BUNDLER_TARGET
+  outDir: string
+  entryFiles: string | string[]
+  target: TARGET
   watch?: boolean
-  outDir?: string
-  cache?: boolean
-  cacheDir?: string
-  minify?: boolean
-  scopeHoist?: boolean
-  /**
-   * 0 = log nothing
-   * 1 = log errors
-   * 2 = log warnings & errors
-   * 3 = log everything
-   */
-  logLevel?: 0 | 1 | 2 | 3
-  sourceMaps?: boolean
-  detailedReport?: boolean
+  browsers?: BROWSER[]
+  port?: number
 }
 
-export interface Target {
-  type: TARGET
-  test: Function
-  prepare: Function
+export interface installImportOptions {
+  path: string
+  dev: boolean
+}
+
+export interface TestBundle {
+  /**
+   * Parcel bundle
+   */
+  parcelBundle: ParcelBundle
+  /**
+   * Entry files
+   */
+  entryFiles: string[]
+  /**
+   * Time at which the bundling started(high precision timestamp)
+   */
+  buildStartTime: number
+  /**
+   * Time at which the bundling ended(high precision timestamp)
+   */
+  buildEndTime: number
 }
 
 /**
- * Context object of the testing pipeline that contains all the information needed for each testing steps
+ * Representation of a file
  */
-export interface Context {
+export interface TestFile {
   /**
-   * Options passed to epk
+   * Bundle
    */
-  options: Options
+  bundle: TestBundle
   /**
-   * Files found by the paths/globs
+   * Hashes of all the parcel assets
    */
-  files: File[]
+  hashes: Set<string>,
   /**
-   * entryFiles from Parcel
+   * Path of the source test file
    */
-  entryFiles?: string[]
-  /**
-   * Array of targets in which the tests will be executed
-   */
-  targets: TARGET[]
   name: string
-  bundle: any
-  buildStartTime?: number
-  buildEndTime?: number
-  analyzeEndTime?: number
-  analyzeStartTime?: number
-  testStartTime?: number
-  testEndTime?: number
+  /**
+   * Path of the bundled test file
+   */
+  path: string
+  /**
+   * Target
+   */
+  target: TARGET | RUNTIME
+  /**
+   * Url by which browsers can access the test file
+   * Not defined if target is node
+   */
+  url?: string
+  /**
+   * Array of analyzed tests
+   */
+  tests?: Test[] | undefined
+  /**
+   * Array of logs logged without running the tests
+   */
+  logs?: Log[]
+  /**
+   * Time at which the test preprocessing started(high precision timestamp)
+   */
+  preprocessingStart?: number
+  /**
+   * Time at which the test preprocessing ended(high precision timestamp)
+   */
+  preprocessingEnd?: number
 }
 
-export enum FileType {
-  ANALYZE = 'ANALYZE',
-  TEST = 'TEST',
-  POST_ANALYZE = 'POST_ANALYZE',
-  DONE = 'DONE'
+/**
+ * Representation of a test
+ */
+export interface Test {
+  /**
+   * Description of the test
+   */
+  description: string
+  /**
+   * Body of the test (Stringified function)
+   */
+  body: string
+  /**
+   * String type of test: Function | Promise<any> | Observable<any>
+   */
+
+  //** Properties from the test when executed
+  
+  type?: string
+  /**
+   * Flatted(https://github.com/WebReflection/flatted) value returned by the test
+   */
+  value?: any
+  /**
+   * Array of logs logged while running the test
+   */
+  logs?: Log[]
+  /**
+   * Time at which the test started(high precision timestamp)
+   */
+  executionStart?: number
+  /**
+   * Time at which the test ended(high precision timestamp)
+   */
+  executionEnd?: number
+  /**
+   * Code coverage of the test
+   * Can be undefined if environment doesn't support native Coverage (in browser)
+   * todo: think of using instanbul for in browser coverage when parcel v2 will be released
+   */
+  coverage?: CoverageEntry
+
+  //** Properties from the test when analyzed
+  /**
+   * Percent of code run by the test from the file
+   */
+  codeCoverage?: number
+  /**
+   * Time at which the test analyze started(high precision timestamp)
+   */
+  analyzeStart?: number
+  /**
+   * Time at which the test analyze ended(high precision timestamp)
+   */
+  analyzeEnd?: number
+}
+
+export interface Analyze {
+
+}
+
+export enum MESSAGE {
+  GET_TESTS,
+  GET_TESTS_RESPONSE,
+  
+  RUN_TESTS,
+  RUN_TESTS_RESPONSE,
+
+  RUN_TEST,
+  RUN_TEST_RESPONSE
+}
+
+const messageMap = new Map<MESSAGE, MESSAGE>([
+  [MESSAGE.GET_TESTS, MESSAGE.GET_TESTS_RESPONSE],
+  [MESSAGE.RUN_TESTS, MESSAGE.RUN_TESTS_RESPONSE],
+  [MESSAGE.RUN_TEST, MESSAGE.RUN_TEST_RESPONSE]
+])
+
+export const getMessageResponse = message => messageMap.get(message)
+
+// https://github.com/parcel-bundler/parcel/issues/2574#issuecomment-459694774
+export enum PARCEL_REPORTER_EVENT {
+  BUILD_START = 'buildStart',
+  BUILD_PROGRESS = 'buildProgress',
+  BUILD_SUCCESS = 'buildSuccess',
+  BUILD_FAILURE = 'buildFailure',
+  LOG = 'log'
+}
+
+export enum REPORTER_EVENT {
+  BUILD_START = 'buildStart',
+  BUILD_PROGRESS = 'buildProgress',
+  BUILD_SUCCESS = 'buildSuccess',
+  BUILD_FAILURE = 'buildFailure',
+  LOG = 'log',
+  PORT_SEARCH = 'portSearch',
+  PORT_FOUND = 'portFound',
+  WEB_SERVER_START = 'webServerStart',
+  WEB_SERVER_READY = 'webServerReady',
+  STATE = 'state'
+}
+
+export enum TARGET {
+  BROWSER = 'browser',
+  NODE = 'node'
+}
+
+export enum BROWSER {
+  FIREFOX = 'firefox',
+  FIREFOX_NIGHTLY = 'firefoxNightly',
+  CHROME = 'chrome',
+  CHROME_CANARY = 'chromeCanary'
+}
+
+export enum RUNTIME {
+  FIREFOX = 'firefox',
+  FIREFOX_NIGHTLY = 'firefoxNightly',
+  CHROME = 'chrome',
+  CHROME_CANARY = 'chromeCanary',
+  NODE = 'node'
+}
+
+export interface RuntimeProvider extends Observable<Runtime> {
+  runtimeName: RUNTIME
+}
+
+export interface Runtime extends Observable<any> {
+  loadFile(file: TestFile): Promise<ElementHandle>
+  inMessages: Subject<any>
+  outMessages: Subject<any>
+}
+
+export enum LOG {
+  log = 'log',
+  info = 'info',
+  warn = 'warn',
+  error = 'error',
+  uncaughtError = 'uncaughtError'
 }
 
 export interface MetaStack {
@@ -166,89 +253,8 @@ export interface Error {
   originalStack?: string
 }
 
-export enum LogType {
-  log = 'log',
-  info = 'info',
-  warn = 'warn',
-  error = 'error',
-  uncaughtError = 'uncaughtError'
-}
-
 export interface Log {
-  type: LogType
+  type: LOG
   arguments?: any[]
   error?: Error
-}
-
-/**
- * Representation of a file
- */
-export interface File {
-  type?: FileType
-
-  target: TARGET
-  /**
-   * Path of the source test file
-   */
-  name: string
-  /**
-   * Path of the bundled test file
-   */
-  path: string
-  /**
-   * Url by which browsers can access the test file
-   */
-  url?: string
-  /**
-   * Test ran
-   */
-  test?: Test
-  /**
-   * Array of analyzed tests
-   */
-  tests?: Test[]
-  /**
-   * Array of errors
-   */
-  logs?: Log[]
-}
-
-/**
- * Representation of a test
- */
-export interface Test {
-  /**
-   * Description of the test
-   */
-  description: string
-  /**
-   * Body of the test (Function stringified)
-   */
-  body: string
-  /**
-   * Type of test
-   */
-  // type?: Function | Promise<any> | Observable<any>
-  type?: string
-  /**
-   * Value returned by the test
-   */
-  value?: any
-  /**
-   * Error thrown by the test
-   */
-  logs?: Log[]
-
-  timeStart?: number
-
-  timeEnd?: number
-
-  /**
-   * Target
-   */
-  target?: TARGET
-  /**
-   * Code coverage of the test
-   */
-  coverage?: any
 }

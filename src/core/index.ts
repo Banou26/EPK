@@ -1,143 +1,267 @@
-import { merge, ConnectableObservable, from, of } from 'rxjs'
-import { filter, mergeMap, switchMap, publish, tap, delayWhen } from 'rxjs/operators'
+import { Observable, Subject, from, merge, of } from 'rxjs'
+import { publish, switchMap, filter, map, tap, takeUntil, mergeMap, shareReplay, share, scan, takeWhile } from 'rxjs/operators'
 
+import './polyfills.ts'
+import Parcel from './parcel/index.ts'
+import getRuntimeProvider from '../runtimes/index.ts'
+import { REPORTER_EVENT, Options, TARGET, BROWSER, RUNTIME, TestFile, TestBundle, RuntimeProvider, Test } from '../types.ts'
+import preprocessor from './preprocessor.ts'
 import test from './test.ts'
-import server from './server.ts'
-import analyze from './analyze.ts'
-import Bundler from './bundler.ts'
-import { isBrowser } from './utils.ts'
-import postAnalyze from './post-analyze.ts'
-import localRequire from '../utils/localRequire.ts'
-import { transformPathToTestUrl } from '../utils/index.ts'
-import TargetRuntimeProvider from './target-runtime-provider.ts'
-import { Options, BUNDLER_TARGET, TARGET, File, TargetRuntimeProvider as TargetRuntimeProviderType, LogType } from '../types.ts'
+import analyze from './analyzer.ts'
+import { pathToTestUrl } from '../utils/index.ts'
 
-export default (_options: Options) => {
-  // remove undefined values
-  Object.keys(_options).forEach(key => _options[key] === undefined && delete _options[key])
+export default
+  (options: Options) =>
+    Observable.create(observer => {
+      const { watch, target = TARGET.BROWSER, entryFiles, port, outDir = '.epk' } = options
 
-  const target = _options.target || BUNDLER_TARGET.BROWSER
-  const options = {
-    browsers: ['chrome'],
-    target,
-    outDir: `.epk/dist/${target}`,
-    watch: true,
-    cache: true,
-    cacheDir: `.epk/cache/${target}`,
-    port: undefined,
-    minify: false,
-    scopeHoist: false,
-    logLevel: 0, // 3 = log everything, 2 = log warnings & errors, 1 = log errors
-    sourceMaps: true, // Enable or disable sourcemaps, defaults to enabled (minified builds currently always create sourcemaps)
-    detailedReport: false,
-    throwErrors: true,
-    hmr: false,
-    // apply options
-    ..._options
-  }
-  let _port
-  if (!isBrowser && options.target === BUNDLER_TARGET.BROWSER) {
-    _port = localRequire('get-port')
-              .then(getPort => getPort({ port: 10485 }))
-              .then(port => (options.port = port))
-  }
-  // @ts-ignore
-  return of([
-            Bundler(options),
-            (!isBrowser && options.target === BUNDLER_TARGET.BROWSER
-              ? options.browsers as unknown as TARGET[]
-              : [options.target] as unknown as TARGET[])
-                .map(target => TargetRuntimeProvider(target, options))
-          ])
+      const unsubscribe = new Subject()
+
+      const parcel =
+        // @ts-ignore
+        (Parcel({
+          entryFiles: entryFiles,
+          target: target,
+          outDir: `${outDir}/dist/${target}`,
+          watch: true,
+          cache: true,
+          cacheDir: `${outDir}/cache/${target}`
+        })
+        // @ts-ignore
+        |> takeUntil(unsubscribe)
+        // @ts-ignore
+        |> publish())
           // @ts-ignore
-          |> (!isBrowser && options.target === BUNDLER_TARGET.BROWSER ? delayWhen(() => from(_port)) : tap())
+          .refCount()
+
+      // @ts-ignore
+      const bundle =
+        // @ts-ignore
+        parcel
+        // @ts-ignore
+        |> filter(({ name }) => name === 'buildStart')
+        // @ts-ignore
+        |> tap(() => observer.next({ type: REPORTER_EVENT.BUILD_START }))
+        // @ts-ignore
+        |> switchMap(({ entryFiles, buildStartTime }) =>
           // @ts-ignore
-          |> (!isBrowser && options.target === BUNDLER_TARGET.BROWSER ? server(options) : tap())
+          parcel
           // @ts-ignore
-          |> mergeMap(([ bundler, targetRuntimeProviders ]) =>
-            merge(
+          |> filter(({ name }) => name === 'bundled')
+          // @ts-ignore
+          |> tap(() => observer.next({ type: REPORTER_EVENT.BUILD_SUCCESS }))
+          // @ts-ignore
+          |> map(bundle => ({ ...bundle, entryFiles, buildStartTime })))
+        // @ts-ignore
+        |> shareReplay(1) // needed for slow runtimes to start working on initial bundle
+
+      const runtimeNames =
+        options.target === TARGET.NODE
+          ? [RUNTIME.NODE]
+          : options.browsers as unknown as RUNTIME[] || [RUNTIME.CHROME]
+
+      const runtimeProvider =
+        // @ts-ignore
+        from(
+          runtimeNames
+            .map(runtimeName => getRuntimeProvider(runtimeName))
+            .map(makeRuntimeProvider => makeRuntimeProvider(options)))
+        // @ts-ignore
+        |> mergeMap(runtimeProvider => runtimeProvider) // todo: check how to remove that
+        // @ts-ignore
+        |> takeUntil(unsubscribe)
+
+      const testFileCache = new Map<string, TestFile>()
+
+      // @ts-ignore
+      const tests =
+        // @ts-ignore
+        runtimeProvider
+        // @ts-ignore
+        |> mergeMap((runtimeProvider: RuntimeProvider) =>
+          bundle
+          // @ts-ignore
+          |> switchMap((testBundle: TestBundle): Observable<TestFile> => {
+            const { parcelBundle } = testBundle
+            const childBundles =
               // @ts-ignore
-              bundler |> filter(({ name }) => name === 'buildStart'),
+              parcelBundle.isEmpty
+                ? Array.from(parcelBundle.childBundles)
+                : [parcelBundle]
+
+            const testFiles =
+              childBundles.map(({ name: path, entryAsset: { name }}): TestFile => ({
+                bundle: testBundle,
+                hashes: new Set(
+                  Array.from(
+                    testBundle.parcelBundle.assets,
+                    asset => asset.hash
+                  )
+                ),
+                name,
+                path,
+                url:
+                  TARGET.BROWSER === target &&
+                  pathToTestUrl(path, options),
+                target: runtimeProvider.runtimeName
+              }))
+
+            // @ts-ignore
+            return from(testFiles)
               // @ts-ignore
-              bundler |> filter(({ name }) => name === 'bundled'),
-              // @ts-ignore
-              merge(...targetRuntimeProviders)
-              // @ts-ignore
-              |> mergeMap((targetRuntimeProvider: TargetRuntimeProviderType) =>
-                // @ts-ignore
-                bundler
-                // @ts-ignore
-                |> filter(({ name }) => name === 'bundled')
-                // @ts-ignore
-                |> switchMap(({ bundle }) =>
+              |> mergeMap((testFile: TestFile) => {
+                // filename
+                const { name } = testFile
+
+                // todo: load file from on drive cache
+                // cached state of this file
+                const cachedTestFile =
+                  testFileCache.get(name) ||
+                  testFileCache
+                    .set(name, {...testFile, hashes: new Set()})
+                    // .set(name, testFile)
+                    .get(name)
+
+                const hashDifference = testFile.hashes.difference(cachedTestFile.hashes)
+
+                const updateCache =
+                  tap((test: Test) => {
+                    // replace the unexecuted test by the executed one
+                    const cachedTestFile = testFileCache.get(name)
+                    cachedTestFile.tests =
+                      cachedTestFile.tests.map(_test =>
+                        _test.description === test.description
+                          ? test
+                          : _test)
+                  })
+
+                // Get metadata about the needed test files
+                const preprocessed =
                   // @ts-ignore
-                  from(
-                    (bundle.isEmpty
-                      ? Array.from(bundle.childBundles)
-                      : [bundle]))
+                  of(testFile)
+                  // @ts-ignore
+                  |> filter(() => hashDifference.size)
+                  // @ts-ignore
+                  |> switchMap((testFile: TestFile) =>
                     // @ts-ignore
-                    |> mergeMap((childBundle: any) => {
-                      const { name: path } = childBundle
-                      // @ts-ignore
-                      const newContextObservable: ConnectableObservable<File> =
-                        // @ts-ignore
-                        of({
-                          target: targetRuntimeProvider.target,
-                          name: childBundle.entryAsset.name,
-                          path,
-                          url: options.target === BUNDLER_TARGET.BROWSER && transformPathToTestUrl(path, options.port)
-                        })
-                        // @ts-ignore
-                        |> publish()
+                    runtimeProvider
+                    // @ts-ignore
+                    |> preprocessor(testFile)
+                    // @ts-ignore
+                    |> takeWhile(({ preprocessingEnd }) => !preprocessingEnd, true)
+                  )
+                  // @ts-ignore
+                  |> tap(testFile => testFileCache.set(name, testFile))
+                  // @ts-ignore
+                  |> share()
 
+                const tested =
+                  // @ts-ignore
+                  merge(
+                    preprocessed
+                    // @ts-ignore
+                    |> filter(({ preprocessingEnd }) => preprocessingEnd),
+                    // @ts-ignore
+                    of(cachedTestFile)
+                    // @ts-ignore
+                    |> filter(() => !hashDifference.size)
+                  )
+                  // @ts-ignore
+                  |> switchMap((testFile: TestFile) =>
+                    // @ts-ignore
+                    from(testFile.tests)
+                    // @ts-ignore
+                    |> mergeMap((_test: Test) =>
+                      // test hasn't changed and is in the cache
+                      (!hashDifference.size &&
+                      cachedTestFile.tests.find((test) =>
+                        test.description === _test.description &&
+                        'executionEnd' in test)) ||
+                      // test has changed or wasn't in the cache
                       // @ts-ignore
-                      const analyzedObservable: ConnectableObservable<File> =
-                        // @ts-ignore
-                        newContextObservable
-                        // @ts-ignore
-                        |> analyze(targetRuntimeProvider, options)
-                        // @ts-ignore
-                        |> publish()
-          
+                      runtimeProvider
                       // @ts-ignore
-                      const testedObservable: ConnectableObservable<File> =
-                        // @ts-ignore
-                        analyzedObservable
-                        // @ts-ignore
-                        |> switchMap(file =>
-                          // @ts-ignore
-                          from(file.tests)
-                          // @ts-ignore
-                          |> test(file, targetRuntimeProvider, options))
-                        // @ts-ignore
-                        |> publish()
+                      |> test(_test)
+                      // @ts-ignore
+                      |> takeWhile(({ executionEnd }) => !executionEnd, true)
+                    )
+                  )
+                  // @ts-ignore
+                  |> updateCache
+                  // @ts-ignore
+                  |> share()
+      
+                const analyzed =
+                  // @ts-ignore
+                  merge(
+                    tested,
+                    // @ts-ignore
+                    of(cachedTestFile)
+                    // @ts-ignore
+                    |> filter(() => !hashDifference.size)
+                    // @ts-ignore
+                    |> mergeMap(({ tests }) => from(tests))
+                  )
+                  // @ts-ignore
+                  |> mergeMap((test: Test) =>
+                    // test hasn't changed and is in the cache
+                    (!hashDifference.size &&
+                      cachedTestFile.tests.find((test) =>
+                        test.description === _test.description &&
+                        'analyzeEnd' in test)) ||
+                    // @ts-ignore
+                    runtimeProvider
+                    // @ts-ignore
+                    |> analyze(test)
+                    // @ts-ignore
+                    |> takeWhile(({ analyzeEnd }) => !analyzeEnd, true)
+                  )
+                  // @ts-ignore
+                  |> updateCache
 
-                      // @ts-ignore
-                      const postAnalyzeObservable: ConnectableObservable<File> =
-                        // @ts-ignore
-                        testedObservable
-                        // @ts-ignore
-                        |> postAnalyze(options, childBundle)
-                        // @ts-ignore
-                        |> publish()
-          
-                      const testerObservable =
-                        merge(
-                          newContextObservable,
-                          analyzedObservable,
-                          testedObservable,
-                          postAnalyzeObservable
-                        )
-          
-                      postAnalyzeObservable.connect()
-                      testedObservable.connect()
-                      analyzedObservable.connect()
-                      newContextObservable.connect()
-
-                      return testerObservable
-                    })
+                // @ts-ignore
+                return merge(
+                  of(hashDifference.size ? testFile : cachedTestFile),
+                  preprocessed,
+                  tested,
+                  analyzed
+                )
+                // @ts-ignore
+                |> map(() => testFileCache.get(name))
+              })
+              // @ts-ignore
+              |> scan(
+                (testFiles, testFile: TestFile) => testFiles.set(testFile.name, testFile),
+                new Map<string, TestFile>()
               )
-            )
-          )
+              // @ts-ignore
+              |> map(testFiles => [
+                runtimeProvider.runtimeName,
+                testFiles
+              ])
+          })
         )
-}
+        // @ts-ignore
+        // |> scan((runtimes, [runtime, fileTests]) =>
+        //   runtimes.has(runtime)
+        //     ? runtimes.get(runtime)
+        //     : undefined
+        // )
+        // @ts-ignore
+        |> map(runtimes => ({
+          type: REPORTER_EVENT.STATE,
+          runtimes
+        }))
+
+      // @ts-ignore
+      tests.subscribe(
+        value => observer.next(value),
+        error => observer.error(error),
+        () => observer.complete()
+      )
+
+      return () => {
+        unsubscribe.next()
+        unsubscribe.complete()
+      }
+    })
