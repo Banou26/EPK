@@ -56,7 +56,7 @@ export interface TestFile {
   /**
    * Hashes of all the parcel assets
    */
-  hashes: Set<string>,
+  hashes: Set<string>
   /**
    * Path of the source test file
    */
@@ -90,6 +90,31 @@ export interface TestFile {
    * Time at which the test preprocessing ended(high precision timestamp)
    */
   preprocessingEnd?: number
+}
+
+export interface TestFileRuntimeAggregation {
+/**
+   * Bundle
+   */
+  bundle: TestBundle
+  /**
+   * Hashes of all the parcel assets
+   */
+  hashes: Set<string>
+  /**
+   * Path of the source test file
+   */
+  name: string
+  /**
+   * Path of the bundled test file
+   */
+  path: string
+  /**
+   * Url by which browsers can access the test file
+   * Not defined if target is node
+   */
+  url?: string
+  testFiles: Map<RUNTIME, TestFile>
 }
 
 /**

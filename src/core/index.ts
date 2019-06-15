@@ -4,11 +4,12 @@ import { publish, switchMap, filter, map, tap, takeUntil, mergeMap, shareReplay,
 import './polyfills.ts'
 import Parcel from './parcel/index.ts'
 import getRuntimeProvider from '../runtimes/index.ts'
-import { REPORTER_EVENT, Options, TARGET, BROWSER, RUNTIME, TestFile, TestBundle, RuntimeProvider, Test } from '../types.ts'
+import { REPORTER_EVENT, Options, TARGET, BROWSER, RUNTIME, TestFile, TestBundle, RuntimeProvider, Test, TestFileRuntimeAggregation, Runtime } from '../types.ts'
 import preprocessor from './preprocessor.ts'
 import test from './test.ts'
 import analyze from './analyzer.ts'
 import { pathToTestUrl } from '../utils/index.ts'
+import { string } from 'prop-types';
 
 export default
   (options: Options) =>
@@ -181,7 +182,7 @@ export default
                       // @ts-ignore
                       runtimeProvider
                       // @ts-ignore
-                      |> test(_test)
+                      |> test(testFile, _test)
                       // @ts-ignore
                       |> takeWhile(({ executionEnd }) => !executionEnd, true)
                     )
@@ -191,40 +192,40 @@ export default
                   // @ts-ignore
                   |> share()
       
-                const analyzed =
-                  // @ts-ignore
-                  merge(
-                    tested,
-                    // @ts-ignore
-                    of(cachedTestFile)
-                    // @ts-ignore
-                    |> filter(() => !hashDifference.size)
-                    // @ts-ignore
-                    |> mergeMap(({ tests }) => from(tests))
-                  )
-                  // @ts-ignore
-                  |> mergeMap((test: Test) =>
-                    // test hasn't changed and is in the cache
-                    (!hashDifference.size &&
-                      cachedTestFile.tests.find((test) =>
-                        test.description === _test.description &&
-                        'analyzeEnd' in test)) ||
-                    // @ts-ignore
-                    runtimeProvider
-                    // @ts-ignore
-                    |> analyze(test)
-                    // @ts-ignore
-                    |> takeWhile(({ analyzeEnd }) => !analyzeEnd, true)
-                  )
-                  // @ts-ignore
-                  |> updateCache
+                // const analyzed =
+                //   // @ts-ignore
+                //   merge(
+                //     tested,
+                //     // @ts-ignore
+                //     of(cachedTestFile)
+                //     // @ts-ignore
+                //     |> filter(() => !hashDifference.size)
+                //     // @ts-ignore
+                //     |> mergeMap(({ tests }) => from(tests))
+                //   )
+                //   // @ts-ignore
+                //   |> mergeMap((test: Test) =>
+                //     // test hasn't changed and is in the cache
+                //     (!hashDifference.size &&
+                //       cachedTestFile.tests.find((test) =>
+                //         test.description === _test.description &&
+                //         'analyzeEnd' in test)) ||
+                //     // @ts-ignore
+                //     runtimeProvider
+                //     // @ts-ignore
+                //     |> analyze(test)
+                //     // @ts-ignore
+                //     |> takeWhile(({ analyzeEnd }) => !analyzeEnd, true)
+                //   )
+                //   // @ts-ignore
+                //   |> updateCache
 
                 // @ts-ignore
                 return merge(
                   of(hashDifference.size ? testFile : cachedTestFile),
                   preprocessed,
                   tested,
-                  analyzed
+                  // analyzed
                 )
                 // @ts-ignore
                 |> map(() => testFileCache.get(name))
@@ -242,15 +243,35 @@ export default
           })
         )
         // @ts-ignore
-        // |> scan((runtimes, [runtime, fileTests]) =>
-        //   runtimes.has(runtime)
-        //     ? runtimes.get(runtime)
-        //     : undefined
-        // )
+        |> scan(
+          (runtimes, [runtime, fileTests]) =>
+            runtimes.set(runtime, fileTests),
+          new Map<RUNTIME,Map<string, TestFile>>()
+        )
         // @ts-ignore
-        |> map(runtimes => ({
+        |> map((runtimes: Map<RUNTIME,Map<string, TestFile>>) =>
+          Array.from(runtimes).reduce((aggregations, [runtime, testFiles]) => {
+
+            for (const testFile of testFiles.values()) {
+              if (!aggregations.has(testFile.name)) {
+                aggregations.set(testFile.name, {
+                  bundle: testFile.bundle,
+                  hashes: testFile.hashes,
+                  name: testFile.name,
+                  path: testFile.path,
+                  url: testFile.url,
+                  testFiles: new Map<RUNTIME, TestFile>()
+                })
+              }
+              aggregations.get(testFile.name).testFiles.set(runtime, testFile)
+            }
+            return aggregations
+          }, new Map<string, TestFileRuntimeAggregation>())
+        )
+        // @ts-ignore
+        |> map(testFiles => ({
           type: REPORTER_EVENT.STATE,
-          runtimes
+          testFiles
         }))
 
       // @ts-ignore

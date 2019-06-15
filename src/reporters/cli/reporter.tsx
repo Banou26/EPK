@@ -1,16 +1,16 @@
 import { Text, Box, Color } from 'ink'
 import React, { useEffect, useState } from 'react'
-import { TestResult } from '../../types.ts'
 import BorderBox from 'ink-box'
+import { TestFileRuntimeAggregation } from '../../types.ts'
 import File from './file.jsx'
 
 interface State {
-  files: TestResult[]
+  testFiles: Map<string, TestFileRuntimeAggregation>
 }
 
 export default ({ subject }) => {
   const [state, setState] = useState<State>({
-    files: []
+    testFiles: new Map()
   })
   const [error, setError] = useState<Error>()
 
@@ -24,11 +24,11 @@ export default ({ subject }) => {
 
   return <Box>
     {
-      state.files.length &&
+      state.testFiles.size &&
       <BorderBox borderStyle="round">
         {
-          state.files.map(file =>
-            <File file={file}/>)
+          Array.from(state.testFiles).map(([,testFile]) =>
+            <File key={testFile.name} testFile={testFile}/>)
         }
       </BorderBox> || ''
     }
