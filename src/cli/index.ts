@@ -4,7 +4,6 @@ import 'v8-compile-cache'
 import getPort from 'get-port'
 import program from 'commander'
 import chalk from 'chalk'
-import { render } from 'ink'
 
 import pkg from '../../package.json'
 import Tester from '../core/index.ts'

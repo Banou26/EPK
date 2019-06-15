@@ -1,25 +1,18 @@
-import { from, OperatorFunction } from 'rxjs'
-import { switchMap, mergeMap, take } from 'rxjs/operators'
+import { OperatorFunction } from 'rxjs'
+import { mergeMap, take, filter, pluck, startWith, takeUntil, scan, combineLatest, map, skip } from 'rxjs/operators'
 
 import {
-  TargetRuntime,
   MESSAGE,
   Test,
-  EPK_FUNCTION_PROPERTY_PLACEHOLDER,
-  BROWSER,
-  AnalyzedTestFile,
-  TestResult,
-  RuntimeProvider,
   Runtime,
-  TestFile
 } from '../types.ts'
-import { parse, Observable as AsyncObservable } from '../utils/index.ts'
+import { Observable as AsyncObservable } from '../utils/index.ts'
 
 
-export default (test: Test): OperatorFunction<Runtime, TestResult> =>
+export default (testFile, test: Test): OperatorFunction<Runtime, Test> =>
   mergeMap(({ loadFile, inMessages, outMessages }: Runtime) =>
-    AsyncObservable<TestResult>(async observer => {
-      await loadFile(test.testFile)
+    AsyncObservable<Test>(async observer => {
+      await loadFile(testFile)
 
       const tests =
         // @ts-ignore
@@ -54,21 +47,19 @@ export default (test: Test): OperatorFunction<Runtime, TestResult> =>
         // @ts-ignore
         |> combineLatest(logs)
         // @ts-ignore
-        |> map(([testResult, logs]): TestResult => ({
-          parcelBundle: test.parcelBundle,
-          bundle: test.bundle,
-          analyzedTestFile: test.analyzedTestFile,
-          test,
-          type: testResult?.type,
-          value: testResult?.value,
+        |> map(([_test, logs]): Test => ({
+          description: test.description,
+          body: test.body,
+          type: _test?.type,
+          value: _test?.value,
           logs: logs,
-          timeStart: testResult?.timeStart,
-          timeEnd: testResult?.timeEnd
+          executionStart: _test?.executionStart,
+          executionEnd: _test?.executionEnd
         }))
 
       // @ts-ignore
       result.subscribe(
-        testResult => observer.next(testResult),
+        test => observer.next(test),
         err => observer.error(err),
         () => observer.complete()
       )

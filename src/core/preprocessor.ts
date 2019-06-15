@@ -57,7 +57,7 @@ export default (testFile: TestFile): OperatorFunction<Runtime, TestFile> =>
         |> combineLatest(logs)
         // @ts-ignore
         |> map(([tests, logs]): TestFile => ({
-          bundle: testFile.bundle,
+          ...testFile,
           tests,
           logs,
           preprocessingStart,

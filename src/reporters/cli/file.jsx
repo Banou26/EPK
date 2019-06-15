@@ -1,6 +1,9 @@
+import React from 'react'
+import { Text, Box, Color } from 'ink'
 
+import { prettifyPath } from '../../utils/file.ts'
 
-export default file =>
+export default ({ testFile }) =>
   <Box>
-    {file.name}
+    {prettifyPath(testFile.name)}
   </Box>

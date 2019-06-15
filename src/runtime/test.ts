@@ -30,30 +30,30 @@ const getTests = () =>
         }))
   })
 
-const runTest = async description => {
+const runTest = async ({ description }) => {
   // Empty the logs
   // logs.splice(0, logs.length)
 
   // todo: replace by "isBrowser ? window : require('perf_hooks')"
   const { performance } = window
-  let timeStart, timeEnd, value
+  let executionStart, executionEnd, value
 
   try {
-    timeStart = performance.now()
+    executionStart = performance.now()
     value = await tests.get(description)()
     if (isObservable(value)) {
       // @ts-ignore
       value = await (value |> toArray()).toPromise()
     }
   } finally {
-    timeEnd = performance.now()
+    executionEnd = performance.now()
 
     setTimeout(() =>
       outMessages.next({
         type: MESSAGE.RUN_TEST_RESPONSE,
         test: {
-          timeStart,
-          timeEnd,
+          executionStart,
+          executionEnd,
           type:
             isObservable(value) ? 'observable'
               : value instanceof Promise ? 'promise'
