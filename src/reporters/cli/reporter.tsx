@@ -1,6 +1,7 @@
 import { Text, Box, Color } from 'ink'
 import React, { useEffect, useState } from 'react'
 import { TestResult } from '../../types.ts'
+import BorderBox from 'ink-box'
 import File from './file.jsx'
 
 interface State {
@@ -24,12 +25,12 @@ export default ({ subject }) => {
   return <Box>
     {
       state.files.length &&
-      <Box>
+      <BorderBox borderStyle="round">
         {
           state.files.map(file =>
             <File file={file}/>)
         }
-      </Box>
+      </BorderBox> || ''
     }
     {
       error &&
