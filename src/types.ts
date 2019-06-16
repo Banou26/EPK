@@ -110,6 +110,10 @@ export interface TestFileRuntimeAggregation {
    */
   path: string
   /**
+   * Array of analyzed tests
+   */
+  tests?: Test[] | undefined
+  /**
    * Url by which browsers can access the test file
    * Not defined if target is node
    */

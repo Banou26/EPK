@@ -2,7 +2,7 @@ import { Text, Box, Color } from 'ink'
 import React, { useEffect, useState } from 'react'
 import BorderBox from 'ink-box'
 import { TestFileRuntimeAggregation } from '../../types.ts'
-import File from './file.jsx'
+import File from './file.tsx'
 
 interface State {
   testFiles: Map<string, TestFileRuntimeAggregation>

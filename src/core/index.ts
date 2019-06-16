@@ -260,6 +260,7 @@ export default
                   name: testFile.name,
                   path: testFile.path,
                   url: testFile.url,
+                  tests: testFile.tests,
                   testFiles: new Map<RUNTIME, TestFile>()
                 })
               }
