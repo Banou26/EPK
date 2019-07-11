@@ -62,6 +62,10 @@ export interface TestFile {
    */
   name: string
   /**
+   * Prettified path of the source test file
+   */
+  displayName: string
+  /**
    * Path of the bundled test file
    */
   path: string
@@ -106,6 +110,10 @@ export interface TestFileRuntimeAggregation {
    */
   name: string
   /**
+   * Prettified path of the source test file
+   */
+  displayName: string
+  /**
    * Path of the bundled test file
    */
   path: string
@@ -118,6 +126,9 @@ export interface TestFileRuntimeAggregation {
    * Not defined if target is node
    */
   url?: string
+  /**
+   * Map of tested file per runtime
+   */
   testFiles: Map<RUNTIME, TestFile>
 }
 

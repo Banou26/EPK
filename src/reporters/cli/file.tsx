@@ -1,33 +1,18 @@
 import React from 'react'
-import { Text, Box, Color } from 'ink'
+import { Box} from 'ink'
 
 import { prettifyPath } from '../../utils/file.ts'
-import { TestFile, TestFileRuntimeAggregation, RUNTIME, Test } from '../../types'
-import { brightGreen } from './colors.ts'
+import { TestFileRuntimeAggregation } from '../../types'
+import ColorPipe from 'ink-color-pipe'
 import Spinner from './spinner.tsx'
+import { getTestFileAggregationStats } from '../../utils/file.ts'
 
 export default ({ testFile: testFileAggregation }: { testFile: TestFileRuntimeAggregation }) => {
-  const tests: Test[] | undefined = testFileAggregation?.tests
-  const runtimeTestFiles = Array.from(testFileAggregation.testFiles.values())
-  const testedTestsArray =
-    testFileAggregation.tests
-      ?.filter(({ description }) =>
-        runtimeTestFiles
-          .every(testFiles =>
-            testFiles.tests
-              ?.some(({ description: _description, executionEnd }) =>
-                _description === description &&
-                executionEnd)))
-      || []
+  const {isPreprocessed, testedTest, totalTests} = getTestFileAggregationStats(testFileAggregation)
 
-  const isPreprocessed = testFileAggregation.tests
-  const testedTest = testedTestsArray.length
-  const totalTests = testFileAggregation.tests?.length || 0
-
-  // todo: replace green by greenBright when ink will fix it
   return <Box>
-    <Color rgb={isPreprocessed && testedTest === totalTests && brightGreen }>
+    <ColorPipe styles="greenBright">
       {prettifyPath(testFileAggregation.name)} {isPreprocessed ? `${testedTest}/${totalTests}` : <Spinner></Spinner>}
-    </Color>
+    </ColorPipe>
   </Box>
 }

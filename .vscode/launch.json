@@ -15,6 +15,7 @@
         "./tests/unit/*.spec.*s"
       ],
       "runtimeArgs": [
+        "--no-stdin",
         "--watch",
         "lib",
         "--watch",

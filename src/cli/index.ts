@@ -97,7 +97,8 @@ const run = async (entries: Array<string>, command: any) => {
     report => subject.next(report),
     error => {
       subject.error(error)
-      process.exit(1)
+      setTimeout(() => process.exit(1), 0)
+      throw error
     },
     () => subject.complete())
 }
