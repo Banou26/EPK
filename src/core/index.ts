@@ -8,7 +8,7 @@ import { REPORTER_EVENT, Options, TARGET, BROWSER, RUNTIME, TestFile, TestBundle
 import preprocessor from './preprocessor.ts'
 import test from './test.ts'
 import analyze from './analyzer.ts'
-import { pathToTestUrl } from '../utils/index.ts'
+import { pathToTestUrl, prettifyPath } from '../utils/index.ts'
 import { string } from 'prop-types';
 
 export default
@@ -100,6 +100,7 @@ export default
                   )
                 ),
                 name,
+                displayName: prettifyPath(name),
                 path,
                 url:
                   TARGET.BROWSER === target &&
@@ -141,7 +142,7 @@ export default
                   // @ts-ignore
                   of(testFile)
                   // @ts-ignore
-                  |> filter(() => hashDifference.size)
+                  |> filter(() => testFile.hashes.size && hashDifference.size)
                   // @ts-ignore
                   |> switchMap((testFile: TestFile) =>
                     // @ts-ignore
@@ -165,7 +166,7 @@ export default
                     // @ts-ignore
                     of(cachedTestFile)
                     // @ts-ignore
-                    |> filter(() => !hashDifference.size)
+                    |> filter(() => testFile.hashes.size && !hashDifference.size)
                   )
                   // @ts-ignore
                   |> switchMap((testFile: TestFile) =>
@@ -258,6 +259,7 @@ export default
                   bundle: testFile.bundle,
                   hashes: testFile.hashes,
                   name: testFile.name,
+                  displayName: testFile.displayName,
                   path: testFile.path,
                   url: testFile.url,
                   tests: testFile.tests,
