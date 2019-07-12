@@ -91,13 +91,10 @@ export default
                 : [parcelBundle]
 
             const testFiles =
-              childBundles.map(({ name: path, entryAsset: { name }}): TestFile => ({
+              childBundles.map(({ assets, name: path, entryAsset: { name }}): TestFile => ({
                 bundle: testBundle,
                 hashes: new Set(
-                  Array.from(
-                    testBundle.parcelBundle.assets,
-                    asset => asset.hash
-                  )
+                  Array.from(assets, ({ hash }) => hash)
                 ),
                 name,
                 displayName: prettifyPath(name),
@@ -142,7 +139,7 @@ export default
                   // @ts-ignore
                   of(testFile)
                   // @ts-ignore
-                  |> filter(() => testFile.hashes.size && hashDifference.size)
+                  |> filter(() => hashDifference.size || testFile.hashes.size)
                   // @ts-ignore
                   |> switchMap((testFile: TestFile) =>
                     // @ts-ignore
@@ -166,7 +163,7 @@ export default
                     // @ts-ignore
                     of(cachedTestFile)
                     // @ts-ignore
-                    |> filter(() => testFile.hashes.size && !hashDifference.size)
+                    |> filter(() => !hashDifference.size && testFile.hashes.size)
                   )
                   // @ts-ignore
                   |> switchMap((testFile: TestFile) =>

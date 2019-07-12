@@ -30,7 +30,16 @@ const useError = (subject) => {
     return () => subscription.unsubscribe()
   }, [])
 
-  return error
+  return [
+    error,
+    error
+      ? <Color red>
+        <Box flexDirection="column">
+          <Box>An internal error happened, you should probably report the error here: https://github.com/FKN48/EPK/issues</Box>
+        </Box>
+      </Color>
+      : ''
+  ]
 }
 
 const useFilesState = (subject) => {
@@ -57,7 +66,7 @@ const getRenderableNames = (terminalWidth, names: string[], startAt): [[string, 
           : [[...list, [name, i + startAt]], i + startAt, false]
     , [[], 0, false])
 
-const useTabs = ({ stdin, setRawMode }, aggregatedTestFiles: TestFileRuntimeAggregation[]) => {
+const useTabs = ({ stdin, setRawMode }, aggregatedTestFiles: TestFileRuntimeAggregation[]): [TestFileRuntimeAggregation, JSX.Element] => {
   /**
    * Level 0 = folder
    * Level 1 = file
@@ -107,7 +116,7 @@ const useTabs = ({ stdin, setRawMode }, aggregatedTestFiles: TestFileRuntimeAggr
       ])
     }
   }
-  // console.log(selected, scroll, names.length, maxRenderableNames)
+
   useEffect(() => {
     setRawMode(true)
     stdin.on('data', handleKeyPress)
@@ -119,85 +128,118 @@ const useTabs = ({ stdin, setRawMode }, aggregatedTestFiles: TestFileRuntimeAggr
   // remove set raw mode, as it might interfere with CTRL-C
   useEffect(() => () => setRawMode(false), [])
   return [
+    aggregatedTestFiles[selected],
     <Box width={terminalWidth} alignItems="center" justifyContent="space-around">
-      <Box>
+        <Box>
+          {
+            needScroller &&
+            renderNames[0][1] !== 0
+              ? '⬅️'
+              : ''
+          }
+        </Box>
         {
-          needScroller &&
-          renderNames[0][1] !== 0
-            ? '⬅️'
-            : ''
-        }
-      </Box>
-      {
-        renderNames
-          .map(([name, i]) => {
-            const testFiles =
-              Array.from(
-                aggregatedTestFiles
-                  .find(({displayName}) => displayName === name)
-                  .testFiles.values())
+          renderNames
+            .map(([name, i]) => {
+              const testFiles =
+                Array.from(
+                  aggregatedTestFiles
+                    .find(({displayName}) => displayName === name)
+                    .testFiles.values())
 
-            const hasErrors =
-              testFiles.some(({tests}) =>
-                tests?.some(({logs}) =>
-                  logs?.some(({type}) => type === LOG.error)))
+              const hasErrors =
+                testFiles.some(({tests}) =>
+                  tests?.some(({logs}) =>
+                    logs?.some(({type}) => type === LOG.error)))
 
-            return (
-              <Box key={name}>
-                <ColorPipe styles={`${hasErrors ? 'red' : 'greenBright'}${i === selected ? '.bold.underline' : ''}`}>
-                  {prettifyPath(name)}
-                </ColorPipe>
-              </Box>
-            )
-          })
-          .reverse()
-          .reduce((arr, value, i) =>
-            i
-              ? [...arr, [value, <Text key={i}> </Text>]]
-              : [...arr, [value]]
-            , [])
-          .reverse()
-          .flat(Infinity)
-      }
-      <Box>
-        {
-          needScroller &&
-          renderNames[renderNames.length - 1][1] !== names.length - 1
-            ? '➡️'
-            : ''
+              return (
+                <Box key={name}>
+                  <ColorPipe styles={`${hasErrors ? 'red' : 'greenBright'}${i === selected ? '.bold.underline' : ''}`}>
+                    {prettifyPath(name)}
+                  </ColorPipe>
+                </Box>
+              )
+            })
+            .reverse()
+            .reduce((arr, value, i) =>
+              i
+                ? [...arr, [value, <Text key={i}> </Text>]]
+                : [...arr, [value]]
+              , [])
+            .reverse()
+            .flat(Infinity)
         }
+        <Box>
+          {
+            needScroller &&
+            renderNames[renderNames.length - 1][1] !== names.length - 1
+              ? '➡️'
+              : ''
+          }
+        </Box>
       </Box>
-    </Box>
   ]
 }
 
-export default ({ stdin, setRawMode, subject }) => {
-  const error = useError(subject)
-  const aggregatedTestFiles = useFilesState(subject)
-  const [ tabsElement ] = useTabs({ stdin, setRawMode }, aggregatedTestFiles)
+const useTestFile = (aggregatedTestFile: TestFileRuntimeAggregation) => {
+  // todo:
+  // replace tests because TestFileRuntimeAggregation#tests are analyzed tests,
+  // they're not tested so they'll not have execution error logs
+  const color =
+    aggregatedTestFile?.tests &&
+    'executionEnd'
+      ? aggregatedTestFile.tests.some(({logs}) => logs?.some(({type}) => type === LOG.error))
+        ? 'red'
+        : 'greenBright'
+      : ''
 
-  return <Box>
-    {/* {
-      testFiles.length &&
-      Array.from(testFiles).map(testFile =>
-        <File key={testFile.name} testFile={testFile}/>) || ''
-      // <BorderBox borderStyle="round">
-      //   {
-      //     Array.from(state.testFiles).map(([,testFile]) =>
-      //       <File key={testFile.name} testFile={testFile}/>)
-      //   }
-      // </BorderBox> || ''
-    } */}
-    {
-      tabsElement
-    }
-    {
-      error &&
-      <Color red>
-        <Box flexDirection="column">
-          <Box>An internal error happened, you should probably report the error here: https://github.com/FKN48/EPK/issues</Box>
-        </Box>
-      </Color>
-    }
+  return aggregatedTestFile
+    ? <Box flexDirection="column">
+      <Box>
+        <ColorPipe styles={color}>
+          {aggregatedTestFile.displayName}
+        </ColorPipe>
+      </Box>
+      <Box  flexDirection="column" paddingLeft={2}>
+        {
+          aggregatedTestFile.tests?.map(({ description, logs }) => (
+            <Box key={description}>
+              <ColorPipe
+                styles={
+                  logs
+                    ? logs.some(({type}) => type === LOG.error)
+                      ? 'red'
+                      : 'greenBright'
+                    : ''
+                }>
+                {description}
+              </ColorPipe>
+            </Box>
+          ))
+        }
+      </Box>
+    </Box>
+    : ''
+}
+
+export default ({ stdin, setRawMode, subject }) => {
+  const [ error, errorElement ] = useError(subject)
+  const aggregatedTestFiles = useFilesState(subject)
+  const [ selected, tabsElement ] = useTabs({ stdin, setRawMode }, aggregatedTestFiles)
+  const fileDescription = useTestFile(selected)
+  return <Box flexDirection="column">
+    { fileDescription }
+    { tabsElement }
+    { errorElement }
   </Box>
 }
+
+// testFiles.length &&
+// Array.from(testFiles).map(testFile =>
+//   <File key={testFile.name} testFile={testFile}/>) || ''
+// <BorderBox borderStyle="round">
+//   {
+//     Array.from(state.testFiles).map(([,testFile]) =>
+//       <File key={testFile.name} testFile={testFile}/>)
+//   }
+// </BorderBox> || ''
