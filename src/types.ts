@@ -83,6 +83,10 @@ export interface TestFile {
    */
   tests?: Test[] | undefined
   /**
+   * Boolean that equals true if all the tests ran
+   */
+  testsDone?: boolean
+  /**
    * Array of logs logged without running the tests
    */
   logs?: Log[]
