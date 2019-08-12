@@ -5,7 +5,7 @@ import './polyfills.ts'
 import { REPORTER_EVENT, Options, TARGET, RUNTIME } from '../types.ts'
 import Parcel from './parcel/index.ts'
 import getRuntimeProvider from '../runtimes/index.ts'
-import process from './processor.ts'
+import manageRuntimes from './runtime-manager.ts'
 
 export default
   (options: Options) =>
@@ -59,19 +59,17 @@ export default
 
       const runtimeProvider =
         // @ts-ignore
-        from(
-          runtimeNames
-            .map(runtimeName => getRuntimeProvider(runtimeName))
-            .map(makeRuntimeProvider => makeRuntimeProvider(options)))
+        from(runtimeNames, runtimeName => getRuntimeProvider(runtimeName))
         // @ts-ignore
-        |> mergeMap(runtimeProvider => runtimeProvider) // todo: check how to remove that
+        |> mergeMap(makeRuntimeProvider => makeRuntimeProvider(options))
         // @ts-ignore
         |> takeUntil(unsubscribe)
 
-      // @ts-ignore
-      const tests = process({
+      const tests = manageRuntimes({
+        target,
         bundle,
-        runtimeProvider
+        runtimeProvider,
+        options
       })
 
       // @ts-ignore

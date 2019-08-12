@@ -18,10 +18,10 @@ for (const [runtimeName, runtime] of runtimeMap) {
       |> map((provider: RuntimeProvider) => {
         provider.runtimeName = runtimeName
         return provider
-      }))
+      })
+  )
 
   runtimeMap.get(runtimeName).runtimeName = runtimeName
 }
 
-export default (runtime: RUNTIME) =>
-runtimeMap.get(runtime)
+export default (runtime: RUNTIME) => runtimeMap.get(runtime)
