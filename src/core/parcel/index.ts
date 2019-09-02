@@ -3,30 +3,26 @@ import path from 'path'
 import { Observable } from 'rxjs'
 import ParcelBundler from 'parcel-bundler'
 
+import _Parcel from '@parcel/core'
+const { default: Parcel } = _Parcel
+
 import { Bundler } from '../../types.ts'
 
 export default (options = undefined): Bundler =>
   Observable.create(observer => {
-    const bundler = new ParcelBundler(options.entryFiles, options)
-
-    bundler.addAssetType('js', path.resolve(__dirname, '../src/core/parcel/js-asset.js'))
-    bundler.addAssetType('ts', path.resolve(__dirname, '../src/core/parcel/ts-asset.js'))
-
-    bundler.on('bundled', bundle =>
-      observer.next({ name: 'bundled', parcelBundle: bundle, buildEndTime: Date.now() }))
-    bundler.on('buildStart', entryFiles =>
-      observer.next({ name: 'buildStart', entryFiles, buildStartTime: Date.now() }))
-    bundler.on('buildEnd', () =>
-      observer.next({ name: 'buildEnd' }))
+    const parcel = new Parcel(options)
 
     const emitError = err => observer.error(err)
-    bundler.on('buildError', emitError)
-    bundler
-      .bundle()
-      .catch(emitError)
 
-    return () =>
-      bundler
-        .stop()
-        .catch(emitError)
+    const unsub = parcel.watch((err, buildEvent) => {
+      if (err) emitError(err)
+      const { type } = buildEvent
+      if (type === 'buildFailure') {
+        emitError(buildEvent)
+      } else if (type === 'buildSuccess') {
+        observer.next(buildEvent)
+      }
+    })
+
+    return () => unsub().catch(emitError)
   })

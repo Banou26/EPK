@@ -1,6 +1,6 @@
 
 import { Observable, Subject } from 'rxjs'
-import { ParcelBundle } from 'parcel-bundler'
+import { BuildSuccessEvent, BuildFailureEvent, BuildEvent, BundleGraph  } from '@parcel/types'
 import { CoverageEntry, ElementHandle } from 'puppeteer'
 
 // Subject that is sent data from the tester to the runtime
@@ -9,7 +9,7 @@ export const EPK_SUBJECT = '__EPK__SUBJECT__'
 export const EPK_RUNTIME_SUBJECT = '__EPK__RUNTIME__SUBJECT__'
 export const EPK_FUNCTION_PROPERTY_PLACEHOLDER = '__EPK__FUNCTION__PLACEHOLDER__'
 
-export interface Bundler extends Observable<any> {}
+export interface Bundler extends Observable<BuildEvent> {}
 
 // Going to change when Parcel 2 get released
 export interface Options {
@@ -30,7 +30,7 @@ export interface TestBundle {
   /**
    * Parcel bundle
    */
-  parcelBundle: ParcelBundle
+  parcelBundle: BundleGraph
   /**
    * Entry files
    */

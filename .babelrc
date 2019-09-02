@@ -6,7 +6,6 @@
   "plugins": [
     "@babel/plugin-proposal-optional-chaining",
     ["@babel/plugin-proposal-pipeline-operator", { "proposal": "minimal" }],
-    "@babel/plugin-proposal-throw-expressions",
-    "@babel/plugin-syntax-dynamic-import"
+    "@babel/plugin-proposal-throw-expressions"
   ]
 }

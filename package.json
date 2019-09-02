@@ -5,41 +5,42 @@
   "type": "module",
   "main": "lib/index.js",
   "browser": "lib/browser.js",
+  "module": "lib/index.js",
+  "source": "src/index.ts",
+  "browserslist": [
+    "last 1 Chrome versions"
+  ],
   "bin": {
     "epk": "bin/cli.js"
   },
   "engines": {
     "node": ">= 11.0.0"
   },
-  "browserslist": [
-    "last 1 Chrome versions"
-  ],
+  "targets": {
+    "main": {
+      "node": ">=10.5.0",
+      "browsers": "last 1 Chrome versions"
+    }
+  },
   "devDependencies": {
-    "@babel/cli": "^7.4.4",
-    "@babel/core": "^7.4.4",
+    "@babel/core": "^7.0.0-0",
     "@babel/plugin-proposal-optional-chaining": "^7.2.0",
-    "@babel/plugin-proposal-pipeline-operator": "^7.3.2",
+    "@babel/plugin-proposal-pipeline-operator": "^7.5.0",
     "@babel/plugin-proposal-throw-expressions": "^7.2.0",
-    "@babel/plugin-syntax-dynamic-import": "^7.2.0",
+    "@babel/preset-react": "^7.0.0",
     "@babel/preset-typescript": "^7.3.3",
-    "@types/node": "^12.0.0",
-    "@types/parcel-bundler": "^1.12.0",
-    "@types/puppeteer": "^1.12.4",
-    "core-js": "^3.0.1",
+    "core-js": "^3.2.1",
     "nodemon": "^1.19.0",
-    "rollup": "^1.11.3",
-    "rollup-plugin-babel": "^4.3.2"
+    "standard": "^14.0.2"
   },
   "scripts": {
+    "dev": "parcel watch src/index.ts src/cli/index.ts",
     "build-browser": "rollup -m -w -c rollup.browser.config.js",
     "build-cli": "rollup -m -c rollup.cli.config.js -w",
     "build-babel": "babel src -w -s -d lib -ex \".ts,.tsx\"",
     "test": "node --experimental-modules tests/e2e/installImport.js"
   },
   "dependencies": {
-    "@babel/plugin-transform-modules-commonjs": "^7.4.4",
-    "@babel/plugin-transform-react-jsx": "^7.3.0",
-    "@babel/preset-react": "^7.0.0",
     "babel-plugin-espower": "^3.0.1",
     "chalk": "^2.4.2",
     "cli-spinners": "^2.1.0",
@@ -52,7 +53,7 @@
     "koa": "^2.7.0",
     "koa-mount": "^4.0.0",
     "koa-static": "^5.0.0",
-    "parcel-bundler": "^1.12.3",
+    "parcel": "^2.0.0-alpha.1.1",
     "power-assert": "^1.6.1",
     "puppeteer": "^1.15.0",
     "react": "^16.8.6",

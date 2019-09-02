@@ -1,5 +1,5 @@
-import { prettifyPath, pathToTestUrl } from '../utils';
-import { TARGET, TestFile, RUNTIME, TestFileRuntimeAggregation, REPORTER_EVENT } from '../types';
+import { prettifyPath, pathToTestUrl } from '../utils/file.ts';
+import { TARGET, TestFile, RUNTIME, TestFileRuntimeAggregation, REPORTER_EVENT } from '../types.ts';
 import { Subject } from 'rxjs';
 
 export default ({ target, bundle, runtimeProvider, options }) =>
