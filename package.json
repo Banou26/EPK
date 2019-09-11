@@ -1,66 +1,23 @@
 {
   "name": "epk",
-  "version": "0.3.0",
-  "license": "MIT",
-  "type": "module",
+  "version": "0.4.0",
   "main": "lib/index.js",
-  "browser": "lib/browser.js",
-  "module": "lib/index.js",
-  "source": "src/index.ts",
-  "browserslist": [
-    "last 1 Chrome versions"
-  ],
-  "bin": {
-    "epk": "bin/cli.js"
-  },
-  "engines": {
-    "node": ">= 11.0.0"
-  },
-  "targets": {
-    "main": {
-      "node": ">=10.5.0",
-      "browsers": "last 1 Chrome versions"
-    }
+  "license": "MIT",
+  "dependencies": {
+    "parcel": "^2.0.0-alpha.1.1",
+    "rxjs": "^6.5.3"
   },
   "devDependencies": {
     "@babel/core": "^7.0.0-0",
-    "@babel/plugin-proposal-optional-chaining": "^7.2.0",
+    "@babel/plugin-proposal-optional-chaining": "^7.6.0",
     "@babel/plugin-proposal-pipeline-operator": "^7.5.0",
     "@babel/plugin-proposal-throw-expressions": "^7.2.0",
     "@babel/preset-react": "^7.0.0",
-    "@babel/preset-typescript": "^7.3.3",
-    "core-js": "^3.2.1",
-    "nodemon": "^1.19.0",
-    "standard": "^14.0.2"
+    "@babel/preset-typescript": "^7.6.0",
+    "nodemon": "^1.19.2",
+    "standard": "^14.1.0"
   },
   "scripts": {
-    "dev": "parcel watch src/index.ts src/cli/index.ts",
-    "build-browser": "rollup -m -w -c rollup.browser.config.js",
-    "build-cli": "rollup -m -c rollup.cli.config.js -w",
-    "build-babel": "babel src -w -s -d lib -ex \".ts,.tsx\"",
-    "test": "node --experimental-modules tests/e2e/installImport.js"
-  },
-  "dependencies": {
-    "babel-plugin-espower": "^3.0.1",
-    "chalk": "^2.4.2",
-    "cli-spinners": "^2.1.0",
-    "commander": "^2.20.0",
-    "flatted": "^2.0.0",
-    "get-port": "^5.0.0",
-    "ink": "^2.1.1",
-    "ink-box": "^1.0.0",
-    "ink-color-pipe": "^0.2.0",
-    "koa": "^2.7.0",
-    "koa-mount": "^4.0.0",
-    "koa-static": "^5.0.0",
-    "parcel": "^2.0.0-alpha.1.1",
-    "power-assert": "^1.6.1",
-    "puppeteer": "^1.15.0",
-    "react": "^16.8.6",
-    "rollup-plugin-json": "^4.0.0",
-    "rxjs": "^6.5.1",
-    "stacktrace-parser": "^0.1.6",
-    "string-width": "^4.1.0",
-    "v8-compile-cache": "^2.0.3"
+    "dev": "parcel src/index.ts src/cli/index.ts"
   }
 }

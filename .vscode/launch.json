@@ -1,12 +1,15 @@
 {
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
   "version": "0.2.0",
   "configurations": [
     {
       "type": "node",
       "request": "launch",
-      "name": "nodemon",
+      "name": "dev",
       "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/nodemon",
-      "program": "${workspaceFolder}/lib/cli.js",
+      "program": "${workspaceFolder}/.parcel-cache/dist/cli/index.js",
       "sourceMaps": true,
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen",
@@ -17,29 +20,7 @@
       "runtimeArgs": [
         "--no-stdin",
         "--watch",
-        "lib",
-        "--watch",
-        "tests"
-      ]
-    },
-    {
-      "type": "node",
-      "request": "launch",
-      "name": "bruh",
-      "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/nodemon",
-      "program_": "${workspaceFolder}/src/cli/index.ts",
-      "program": "${workspaceFolder}/bin/cli.js",
-      "console": "integratedTerminal",
-      "internalConsoleOptions": "neverOpen",
-      "restart": true,
-      "args": [
-        "./tests/unit/*.spec.*s"
-      ],
-      "remoteRoot": "${workspaceRoot}/dist",
-      "__": "--experimental-modules",
-      "runtimeArgs": [
-        "--watch",
-        "lib",
+        ".parcel-cache/dist",
         "--watch",
         "tests"
       ]
