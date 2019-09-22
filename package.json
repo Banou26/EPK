@@ -1,8 +1,8 @@
 {
   "name": "epk",
   "version": "0.4.0",
-  "main": "lib/index.js",
   "license": "MIT",
+  "main": "dist/index.js",
   "dependencies": {
     "parcel": "^2.0.0-alpha.1.1",
     "rxjs": "^6.5.3"
@@ -15,9 +15,13 @@
     "@babel/preset-react": "^7.0.0",
     "@babel/preset-typescript": "^7.6.0",
     "nodemon": "^1.19.2",
+    "rollup": "^1.21.4",
+    "rollup-plugin-babel": "^4.3.3",
     "standard": "^14.1.0"
   },
   "scripts": {
-    "dev": "parcel src/index.ts src/cli/index.ts"
+    "_dev": "parcel src/cli/index.js",
+    "dev": "rollup -c -w",
+    "test": "node .parcel-cache/dist/index.js --test yeet"
   }
 }

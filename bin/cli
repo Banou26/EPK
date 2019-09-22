@@ -1,0 +1,12 @@
+#!/usr/bin/env node
+module.exports = require('../dist/cli.js')
+
+// module.exports = require('../.parcel-cache/dist/index.js')
+// module.exports = require('../.parcel-cache/dist/cli/index.js')
+// module.exports = require('../dist/index.js')
+
+// module.exports = require('../dist/index.clijs')
+
+// #!/usr/bin/env node --experimental-modules
+// import '../dist/cli.js'
+// export * from '../dist/cli.js'

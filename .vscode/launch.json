@@ -8,19 +8,21 @@
       "type": "node",
       "request": "launch",
       "name": "dev",
+      // "runtimeExecutable": "${workspaceFolder}\\bin\\epk",
       "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/nodemon",
-      "program": "${workspaceFolder}/.parcel-cache/dist/cli/index.js",
+      "program": "${workspaceFolder}/bin/cli",
+      // "program": "${workspaceFolder}/.parcel-cache/dist/cli/index.js",
       "sourceMaps": true,
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen",
       "restart": true,
       "args": [
-        "./tests/unit/*.spec.*s"
+        "./tests/unit/*_test.ts"
       ],
       "runtimeArgs": [
         "--no-stdin",
         "--watch",
-        ".parcel-cache/dist",
+        "dist",
         "--watch",
         "tests"
       ]
