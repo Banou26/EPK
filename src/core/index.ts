@@ -1,5 +1,10 @@
+import Parcel from '../parcel/index.ts'
+import { PARCEL_REPORTER_EVENT } from '../parcel/index.ts'
+import WorkerFarm from './workerFarm.ts'
 
 export default (parcelOptions) => {
+
+  const workerFarm = WorkerFarm()
 
   const parcelBundle =
     (Parcel(parcelOptions)
@@ -12,7 +17,7 @@ export default (parcelOptions) => {
 
   const buildStart =
     build
-    |> mapTo({ type: REPORTER_EVENT.BUILD_START })
+    |> mapTo({ type: PARCEL_REPORTER_EVENT.BUILD_START })
 
   const bundle =
     build
@@ -23,7 +28,7 @@ export default (parcelOptions) => {
 
   const buildSuccess =
     parcelBundle
-    |> mapTo({ type: REPORTER_EVENT.BUILD_SUCCESS })
+    |> mapTo({ type: PARCEL_REPORTER_EVENT.BUILD_SUCCESS })
 
   const tests = manageRuntimes({
     target, bundle, runtimeProvider, options
