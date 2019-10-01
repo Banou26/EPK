@@ -22,6 +22,6 @@
   "scripts": {
     "_dev": "parcel src/cli/index.js",
     "dev": "rollup -c -w",
-    "test": "node .parcel-cache/dist/index.js --test yeet"
+    "test": "node dist/index.js --test yeet"
   }
 }

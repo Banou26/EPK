@@ -56,8 +56,9 @@ export default (initialParcelOptions) =>
     })
     
     const { unsubscribe } = await parcel.watch((err, build) => {
-      if (err) throw err
+      if (err) observer.throw(err)
       debugger
+      observer.next(build)
     })
 
     return () => unsubscribe()

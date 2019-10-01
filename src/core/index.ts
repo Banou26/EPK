@@ -1,6 +1,9 @@
+import { Observable } from 'rxjs'
+
 import Parcel from '../parcel/index.ts'
 import { PARCEL_REPORTER_EVENT } from '../parcel/index.ts'
 import WorkerFarm from './workerFarm.ts'
+import Task, { TASK_TYPE } from './task.ts'
 
 export default (parcelOptions) => {
 
@@ -30,13 +33,11 @@ export default (parcelOptions) => {
     parcelBundle
     |> mapTo({ type: PARCEL_REPORTER_EVENT.BUILD_SUCCESS })
 
-  const tests = manageRuntimes({
-    target, bundle, runtimeProvider, options
-  })
-
-  return merge(
-    buildStart,
-    buildSuccess
-  )
+  const test =
+    bundle
+    |> switchMap(bundle =>
+      Task({ type: TASK_TYPE.ANALYZE })
+      |> workerFarm
+    )
 
 }

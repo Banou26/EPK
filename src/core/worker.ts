@@ -1,8 +1,9 @@
+import { Subject } from 'rxjs'
 
-export default () => {
+export default ({ url = './worker.js' }) => {
+  const worker = new Worker(url)
 
-
-  return {
-    
-  }
+  return (generateTask: () => Observable<Task>) =>
+    from(worker, 'message')
+    |> generateTask
 }
