@@ -5,7 +5,7 @@ import childProcess from 'child_process'
 
 let amount
 
-if (globalThis.window !== 'undefined') {
+if (globalThis.window !== undefined) {
   amount = window.navigator.hardwareConcurrency
 } else {
   const exec =
