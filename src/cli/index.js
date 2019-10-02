@@ -1,5 +1,5 @@
 // import 'v8-compile-cache'
-// import EPK from '../core/index.ts'
+import EPK from '../core/index.ts'
 // import program from 'commander'
 
 // import pkg from '../../package.json'
@@ -33,13 +33,13 @@
 // program.parse(process.argv)
 // console.log('foo')
 
-// const run = (entryFiles) => {
-//   const epk = EPK({
-//     entryFiles
-//   })
+const run = (entryFiles) => {
+  const epk = EPK({
+    entryFiles
+  })
 
-//   epk.subscribe(v => console.log(v))
-// }
+  epk.subscribe(v => console.log(v))
+}
 
-// run()
-console.log('foo')
+run('./tests/unit/index_test.ts')
+// console.log('foo')

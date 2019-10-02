@@ -1,7 +1,9 @@
+import 'rxjs';
+import 'rxjs/operators';
 import '@parcel/core';
 import os from 'os';
 import childProcess from 'child_process';
-import 'rxjs';
+import 'worker_threads';
 
 let PARCEL_REPORTER_EVENT;
 
@@ -15,7 +17,7 @@ let PARCEL_REPORTER_EVENT;
 
 let amount;
 
-if (globalThis.window !== 'undefined') {
+if (globalThis.window !== undefined) {
   amount = window.navigator.hardwareConcurrency;
 } else {
   const exec = command => childProcess.execSync(command, {
@@ -57,4 +59,19 @@ let TASK_STATUS;
   TASK_STATUS["START"] = "start";
   TASK_STATUS["END"] = "end";
   TASK_STATUS["CANCEL"] = "cancel";
-})(TASK_STATUS || (TASK_STATUS = {}));
+})(TASK_STATUS || (TASK_STATUS = {})); // export default
+//   (task: Task) =>
+//     messages =>
+//       messages
+//       |> 
+// export default (task: Task) =>
+//   Observable.create(observer => {
+//     let _observer
+//     const task = Observable.create<TaskMessage>(observer => {
+//       _observer = observer
+//       observer.next({ type: TASK_STATUS.START })
+//       return () => observer.next({ type: TASK_STATUS.CANCEL })
+//     })
+//     workerFarm.next(task)
+//     return () => _observer.complete()
+//   })

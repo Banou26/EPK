@@ -1,5 +1,7 @@
 import _Parcel from '@parcel/core'
 
+import AsyncObservable from '../utils/async-observable.ts'
+
 const { default: Parcel } = _Parcel
 
 export type JSONReportEvent =

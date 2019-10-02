@@ -20,14 +20,14 @@ export interface Task {
 export interface TaskMessage {
   type: TASK_TYPE
   status: TASK_STATUS
-  data: any
+  data?: any
 }
 
-export default
-  (task: Task) =>
-    messages =>
-      messages
-      |> 
+// export default
+//   (task: Task) =>
+//     messages =>
+//       messages
+//       |> 
 
 
 // export default (task: Task) =>

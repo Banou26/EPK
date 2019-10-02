@@ -5,7 +5,7 @@ export default [
     input: './src/cli/index.js',
     output: {
       file: 'dist/cli.js',
-      format: 'esm'
+      format: 'cjs'
     },
     plugins: [
       babel({
@@ -31,7 +31,7 @@ export default [
     input: './src/worker/index.ts',
     output: {
       file: 'dist/worker.js',
-      format: 'esm'
+      format: 'cjs'
     },
     plugins: [
       babel({

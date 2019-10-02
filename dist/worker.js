@@ -1,6 +1,8 @@
-import { parentPort } from 'worker_threads';
+'use strict';
 
-parentPort.on('message', message => console.log('received', message));
-parentPort.postMessage({
+var worker_threads = require('worker_threads');
+
+worker_threads.parentPort.on('message', message => console.log('received', message));
+worker_threads.parentPort.postMessage({
   foo: 'bar'
 });
