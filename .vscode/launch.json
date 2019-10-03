@@ -22,7 +22,7 @@
       "runtimeArgs": [
         "--no-stdin",
         "--watch",
-        "dist",
+        "src",
         "--watch",
         "tests"
       ]

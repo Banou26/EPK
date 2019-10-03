@@ -4,7 +4,7 @@ function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'defau
 
 var rxjs = require('rxjs');
 var operators = require('rxjs/operators');
-var _Parcel = _interopDefault(require('@parcel/core'));
+var Parcel$1 = _interopDefault(require('@parcel/core'));
 var os = _interopDefault(require('os'));
 var childProcess = _interopDefault(require('child_process'));
 var worker_threads = require('worker_threads');
@@ -18,9 +18,6 @@ var AsyncObservable = (func => rxjs.Observable.create(observer => {
   };
 }));
 
-const {
-  default: Parcel
-} = _Parcel;
 let PARCEL_REPORTER_EVENT;
 
 (function (PARCEL_REPORTER_EVENT) {
@@ -31,13 +28,12 @@ let PARCEL_REPORTER_EVENT;
   PARCEL_REPORTER_EVENT["LOG"] = "log";
 })(PARCEL_REPORTER_EVENT || (PARCEL_REPORTER_EVENT = {}));
 
-var Parcel$1 = (initialParcelOptions => AsyncObservable(async observer => {
-  // const parcel = new Parcel(initialParcelOptions)
-  const parcel = new Parcel({
-    entries: ['tests/test.ts', 'tests/test2.ts'],
+var Parcel = (initialParcelOptions => AsyncObservable(async observer => {
+  const parcel = new Parcel$1({
+    entries: ['tests/unit/index_test.ts'],
     targets: {
       test: {
-        distDir: 'dist/browser',
+        distDir: '.epk/dist/browser',
         "browsers": ["> 1%", "not dead"]
       }
     },
@@ -49,7 +45,6 @@ var Parcel$1 = (initialParcelOptions => AsyncObservable(async observer => {
     unsubscribe
   } = await parcel.watch((err, build) => {
     if (err) observer.throw(err);
-    debugger;
     observer.next(build);
   });
   return () => unsubscribe();
@@ -122,42 +117,44 @@ var WorkerFarm = (() => {
   const idleWorker = Array(amount).fill(undefined).map(() => new worker_threads.Worker('./dist/worker.js'));
   const taskSubject = new rxjs.Subject();
   const queue = (_taskSubject = taskSubject, operators.mergeMap((task, _, count) => {
-    var _ref, _ref2, _ref3, _ref4, _task;
+    var _ref, _ref2, _ref3, _ref4, _ref5, _task;
 
     const worker = idleWorker.splice(0, 1);
     const workerMessages = rxjs.fromEvent(worker, 'message');
     worker.postMessage({
       status: TASK_STATUS.START
     });
-    return _ref = (_ref2 = (_ref3 = (_ref4 = (_task = task, operators.finalize(() => worker.postMessage({
-      status: TASK_STATUS.CANCEL
-    }))(_task) // clean up the worker
-    ), operators.tap(message => worker.postMessage(message))(_ref4)), withLatestFrom(workerMessages)(_ref3) // switch the flow from having sent messages to receiving them
+    return _ref = (_ref2 = (_ref3 = (_ref4 = (_ref5 = (_task = task, operators.finalize(() => {
+      idleWorker.push(worker);
+      worker.postMessage({
+        status: TASK_STATUS.CANCEL
+      });
+    })(_task) // clean up the worker
+    ), takeUntil(({
+      status
+    }) => status === TASK_STATUS.END)(_ref5)), operators.tap(message => worker.postMessage(message))(_ref4)), withLatestFrom(workerMessages)(_ref3) // switch the flow from having sent messages to receiving them
     ), operators.pluck(1)(_ref2) // from here we only have messages from the worker
     ), operators.map(message => [count, message])(_ref);
   }, amount)(_taskSubject));
   let taskCounter = 0;
   return messageObservable => {
-    var _ref5, _queue;
+    var _ref6, _queue;
 
     const count = taskCounter;
     taskCounter++;
-    return _ref5 = (_queue = queue, operators.filter(([_count]) => count === _count)(_queue)), operators.pluck(1)(_ref5);
+    return _ref6 = (_queue = queue, operators.filter(([_count]) => count === _count)(_queue)), operators.pluck(1)(_ref6);
   };
 });
 
 var EPK = (parcelOptions => {
-  var _Parcel, _parcelBundle, _build, _build2, _parcelBundle3, _bundle;
+  var _Parcel, _parcelBundle, _build, _bundle;
 
   const workerFarm = WorkerFarm();
-  const parcelBundle = (_Parcel = Parcel$1(), operators.publish()(_Parcel)).refCount();
+  const parcelBundle = (_Parcel = Parcel(), operators.publish()(_Parcel)).refCount();
   const build = (_parcelBundle = parcelBundle, operators.filter(({
     name
-  }) => name === 'buildStart')(_parcelBundle));
-  const buildStart = (_build = build, operators.mapTo({
-    type: PARCEL_REPORTER_EVENT.BUILD_START
-  })(_build));
-  const bundle = (_build2 = build, operators.switchMap(({
+  }) => name === PARCEL_REPORTER_EVENT.BUILD_START)(_parcelBundle));
+  const bundle = (_build = build, operators.switchMap(({
     entryFiles,
     buildStartTime
   }) => {
@@ -165,55 +162,26 @@ var EPK = (parcelOptions => {
 
     return _ref = (_parcelBundle2 = parcelBundle, operators.filter(({
       name
-    }) => name === 'bundled')(_parcelBundle2)), operators.map(bundle => ({ ...bundle,
+    }) => name === PARCEL_REPORTER_EVENT.BUILD_SUCCESS)(_parcelBundle2)), operators.map(bundle => ({ ...bundle,
       entryFiles,
       buildStartTime
     }))(_ref);
-  })(_build2));
-  const buildSuccess = (_parcelBundle3 = parcelBundle, operators.mapTo({
-    type: PARCEL_REPORTER_EVENT.BUILD_SUCCESS
-  })(_parcelBundle3));
+  })(_build));
   const test = (_bundle = bundle, operators.switchMap(bundle => {
-    var _ref2, _of;
+    var _of;
 
-    return _ref2 = (_of = rxjs.of({
+    return _of = rxjs.of({
       type: TASK_TYPE.ANALYZE
-    }), workerFarm(_of)), operators.takeUntil(({
-      status
-    }) => status === TASK_STATUS.END)(_ref2);
+    }), workerFarm(_of);
   })(_bundle));
   return test;
 });
 
-// import 'v8-compile-cache'
-// import pkg from '../../package.json'
-// console.log('.')
-// process.on('unhandledRejection', error => {
-//   console.error(error)
-//   process.exit(1)
-// })
-// program.version(pkg.version)
-// const run = (entries: Array<string>, command: any) => {
-//   console.log('kkkk', entries, command)
-// }
-// const watch = program
-//   .command('watch [input...]')
-//   .description('starts the tester in watch mode')
-//   .action(run)
-// console.log(process.argv)
-// Make watch the default command except for --help
-// let args = process.argv
-// if (args[2] === '--help' || args[2] === '-h') args[2] = 'help'
-// if (!args[2] || !program.commands.some(c => c.name() === args[2])) {
-//   args.splice(2, 0, 'watch')
-// }
-// console.log(process.argv)
-// program.parse(process.argv)
-// console.log('foo')
+// import Parcel from '@parcel/core'
 
 const run = entryFiles => {
   const epk = EPK();
   epk.subscribe(v => console.log(v));
 };
 
-run(); // console.log('foo')
+run();

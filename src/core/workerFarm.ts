@@ -22,7 +22,11 @@ export default () => {
         worker.postMessage({ status: TASK_STATUS.START })
         return (
           task
-          |> finalize(() => worker.postMessage({ status: TASK_STATUS.CANCEL })) // clean up the worker
+          |> finalize(() => {
+            idleWorker.push(worker)
+            worker.postMessage({ status: TASK_STATUS.CANCEL })
+          }) // clean up the worker
+          |> takeUntil(({ status }) => status === TASK_STATUS.END)
           |> tap(message => worker.postMessage(message))
           |> withLatestFrom(workerMessages) // switch the flow from having sent messages to receiving them
           |> pluck(1) // from here we only have messages from the worker

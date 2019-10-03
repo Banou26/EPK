@@ -1,36 +1,6 @@
-import _Parcel from '@parcel/core'
+import Parcel from '@parcel/core'
 
 import AsyncObservable from '../utils/async-observable.ts'
-
-const { default: Parcel } = _Parcel
-
-export type JSONReportEvent =
-  | {
-      type: 'log',
-      level: 'info' | 'success' | 'verbose' | 'progress' | 'warn' | 'error',
-      message: string
-    }
-  | {type: 'buildStart'}
-  | {type: 'buildFailure', message: string}
-  | {
-      type: 'buildSuccess',
-      buildTime: number,
-      bundles?: any
-    }
-  | JSONProgressEvent
-
-export type JSONProgressEvent =
-  | {
-      type: 'buildProgress',
-      phase: 'transforming',
-      filePath: string
-    }
-  | {type: 'buildProgress', phase: 'bundling'}
-  | {
-      type: 'buildProgress',
-      phase: 'packaging' | 'optimizing',
-      bundleFilePath?: string
-    }
 
 export enum PARCEL_REPORTER_EVENT {
   BUILD_START = 'buildStart',
@@ -42,13 +12,11 @@ export enum PARCEL_REPORTER_EVENT {
 
 export default (initialParcelOptions) =>
   AsyncObservable(async observer => {
-    // const parcel = new Parcel(initialParcelOptions)
-
     const parcel = new Parcel({
-      entries: ['tests/test.ts', 'tests/test2.ts'],
+      entries: ['tests/unit/index_test.ts'],
       targets: {
         test: {
-          distDir: 'dist/browser',
+          distDir: '.epk/dist/browser',
           "browsers": ["> 1%", "not dead"]
         }
       },
@@ -59,7 +27,6 @@ export default (initialParcelOptions) =>
     
     const { unsubscribe } = await parcel.watch((err, build) => {
       if (err) observer.throw(err)
-      debugger
       observer.next(build)
     })
 
