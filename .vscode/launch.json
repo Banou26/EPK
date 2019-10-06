@@ -21,8 +21,10 @@
       ],
       "runtimeArgs": [
         "--no-stdin",
+        "--ignore",
+        "dist/browser",
         "--watch",
-        "src",
+        "dist",
         "--watch",
         "tests"
       ]
