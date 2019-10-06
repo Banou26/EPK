@@ -6,3 +6,4 @@ worker_threads.parentPort.on('message', message => console.log('received', messa
 worker_threads.parentPort.postMessage({
   foo: 'bar'
 });
+//# sourceMappingURL=worker.js.map

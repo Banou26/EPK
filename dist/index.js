@@ -1,9 +1,9 @@
 import 'rxjs';
 import 'rxjs/operators';
 import '@parcel/core';
+import 'worker_threads';
 import os from 'os';
 import childProcess from 'child_process';
-import 'worker_threads';
 
 let PARCEL_REPORTER_EVENT;
 
@@ -75,3 +75,4 @@ let TASK_STATUS;
 //     workerFarm.next(task)
 //     return () => _observer.complete()
 //   })
+//# sourceMappingURL=index.js.map

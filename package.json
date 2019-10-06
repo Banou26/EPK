@@ -21,7 +21,7 @@
   },
   "scripts": {
     "_dev": "parcel src/cli/index.js",
-    "dev": "rollup -c -w",
+    "dev": "rollup -m -c -w",
     "test": "node dist/index.js --test yeet"
   }
 }
