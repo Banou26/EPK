@@ -8,6 +8,7 @@ export enum TASK_TYPE {
 
 export enum TASK_STATUS {
   START = 'start',
+  READY = 'ready',
   END = 'end',
   CANCEL = 'cancel'
 }

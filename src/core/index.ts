@@ -1,4 +1,4 @@
-import { Observable, of } from 'rxjs'
+import { Observable, of, generate } from 'rxjs'
 import { takeUntil, publish, filter, map, mapTo, switchMap } from 'rxjs/operators'
 
 import Parcel from '../parcel/index.ts'
@@ -15,24 +15,16 @@ export default (parcelOptions) =>
       |> publish())
         .refCount()
   
-    const build =
-      parcelBundle
-      |> filter(({ name }) => name === PARCEL_REPORTER_EVENT.BUILD_START)
-  
     const bundle =
       parcelBundle
+      |> map(bundle => ({ bundle, parcelOptions }))
 
-    // const bundle =
-    //   build
-    //   |> switchMap(({ entryFiles, buildStartTime }) =>
-    //     parcelBundle
-    //     |> filter(({ name }) => name === PARCEL_REPORTER_EVENT.BUILD_SUCCESS)
-    //     |> map(bundle => ({ ...bundle, entryFiles, buildStartTime })))
-  
     const test =
       bundle
       |> switchMap(bundle =>
-        of({ type: TASK_TYPE.ANALYZE })
+        Observable.create(observer => {
+          observer.next({ type: TASK_TYPE.ANALYZE })
+        })
         |> workerFarm)
 
     const result =

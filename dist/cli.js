@@ -92,6 +92,7 @@ let TASK_STATUS;
 
 (function (TASK_STATUS) {
   TASK_STATUS["START"] = "start";
+  TASK_STATUS["READY"] = "ready";
   TASK_STATUS["END"] = "end";
   TASK_STATUS["CANCEL"] = "cancel";
 })(TASK_STATUS || (TASK_STATUS = {})); // export default
@@ -117,40 +118,42 @@ var WorkerFarm = (() => {
   const idleWorker = Array(amount).fill(undefined).map(() => new worker_threads.Worker('./dist/worker.js'));
   const taskSubject = new rxjs.Subject();
   const queue = (_taskSubject = taskSubject, operators.mergeMap((task, _, count) => {
-    var _ref, _ref2, _ref3, _ref4, _ref5, _ref6, _ref7, _ref8, _task;
+    var _ref, _ref2, _ref3, _ref4, _ref5, _ref6, _ref7, _ref8, _ref9, _task;
 
     const worker = idleWorker.splice(0, 1)[0];
-    const workerMessages = rxjs.fromEvent(worker, 'message');
+    const workerMessages = rxjs.fromEvent(worker, 'message'); // |> shareReplay()
+
     let done = false;
-    let canceled = false;
+    let canceled = false; // workerMessages.subscribe(v => console.log('received main thread', v))
+
     worker.postMessage({
       status: TASK_STATUS.START
     });
-    return _ref = (_ref2 = (_ref3 = (_ref4 = (_ref5 = (_ref6 = (_ref7 = (_ref8 = (_task = task, operators.finalize(() => {
+    return _ref = (_ref2 = (_ref3 = (_ref4 = (_ref5 = (_ref6 = (_ref7 = (_ref8 = (_ref9 = (_task = task, operators.finalize(() => {
       // task was canceled
       if (!done) canceled = true; // clean up the worker
 
-      worker.postMessage({
+      if (canceled) worker.postMessage({
         status: TASK_STATUS.CANCEL
       });
       idleWorker.push(worker);
-    })(_task)), operators.mergeMap(async value => value)(_ref8) // allow for the finalize to run before the task if it was canceled
-    ), operators.filter(() => !canceled)(_ref7) // if it was canceled, filter everything out
-    ), operators.withLatestFrom(workerMessages)(_ref6) // switch the flow from having sent messages to receiving them
-    ), operators.tap(([message]) => worker.postMessage(message))(_ref5)), operators.pluck(1)(_ref4) // from here we only have messages from the worker
-    ), operators.takeWhile(({
+    })(_task)), operators.mergeMap(async value => value)(_ref9) // allow for the finalize to run before the task if it was canceled
+    ), operators.filter(() => !canceled)(_ref8) // if it was canceled, filter everything out
+    ), operators.tap(message => worker.postMessage(message))(_ref7)), operators.combineLatest(workerMessages)(_ref6) // switch the flow from having sent messages to receiving them
+    ), operators.pluck(1)(_ref5) // from here we only have messages from the worker
+    ), operators.tap(v => console.log('received main thread', v))(_ref4)), operators.takeWhile(({
       status
     }) => status !== TASK_STATUS.END)(_ref3)), operators.tap(() => done = true)(_ref2)), operators.map(message => [count, message])(_ref);
   }, amount)(_taskSubject));
   let taskCounter = 0;
   return messageObservable => {
-    var _ref9, _queue;
+    var _ref10, _queue;
 
     const replay = new rxjs.ReplaySubject();
     const count = taskCounter;
     taskCounter++;
-    const result = (_ref9 = (_queue = queue, operators.filter(([_count]) => count === _count)(_queue)), operators.pluck(1)(_ref9));
-    result.subscribe(v => replay.next(v), err => replay.error(err), () => replay.complete());
+    const result = (_ref10 = (_queue = queue, operators.filter(([_count]) => count === _count)(_queue)), operators.pluck(1)(_ref10));
+    result.subscribe(replay);
     taskSubject.next(messageObservable);
     return replay;
   };
@@ -161,22 +164,18 @@ var EPK = (parcelOptions => AsyncObservable(observer => {
 
   const workerFarm = WorkerFarm();
   const parcelBundle = (_Parcel = Parcel(), operators.publish()(_Parcel)).refCount();
-  const build = (_parcelBundle = parcelBundle, operators.filter(({
-    name
-  }) => name === PARCEL_REPORTER_EVENT.BUILD_START)(_parcelBundle));
-  const bundle = parcelBundle; // const bundle =
-  //   build
-  //   |> switchMap(({ entryFiles, buildStartTime }) =>
-  //     parcelBundle
-  //     |> filter(({ name }) => name === PARCEL_REPORTER_EVENT.BUILD_SUCCESS)
-  //     |> map(bundle => ({ ...bundle, entryFiles, buildStartTime })))
-
+  const bundle = (_parcelBundle = parcelBundle, operators.map(bundle => ({
+    bundle,
+    parcelOptions
+  }))(_parcelBundle));
   const test = (_bundle = bundle, operators.switchMap(bundle => {
-    var _of;
+    var _Observable$create;
 
-    return _of = rxjs.of({
-      type: TASK_TYPE.ANALYZE
-    }), workerFarm(_of);
+    return _Observable$create = rxjs.Observable.create(observer => {
+      observer.next({
+        type: TASK_TYPE.ANALYZE
+      });
+    }), workerFarm(_Observable$create);
   })(_bundle));
   const result = test;
   result.subscribe(observer);
@@ -186,7 +185,9 @@ var EPK = (parcelOptions => AsyncObservable(observer => {
 // import Parcel from '@parcel/core'
 
 const run = entryFiles => {
-  const epk = EPK();
+  const epk = EPK({
+    entryFiles
+  });
   epk.subscribe(v => console.log(v));
 };
 

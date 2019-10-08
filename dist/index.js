@@ -57,6 +57,7 @@ let TASK_STATUS;
 
 (function (TASK_STATUS) {
   TASK_STATUS["START"] = "start";
+  TASK_STATUS["READY"] = "ready";
   TASK_STATUS["END"] = "end";
   TASK_STATUS["CANCEL"] = "cancel";
 })(TASK_STATUS || (TASK_STATUS = {})); // export default
