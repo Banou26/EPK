@@ -1,9 +1,9 @@
-import { Worker, isMainThread, parentPort, workerData } from 'worker_threads'
+import { parentPort } from 'worker_threads'
 import { TASK_STATUS } from '../core/task.ts'
+import { fromEvent } from 'rxjs'
+import { tap } from 'rxjs/operators'
 
-parentPort.on('message', (message) => {
-  console.log('received', message)
-  if (message.status === TASK_STATUS.START) parentPort.postMessage({ status: TASK_STATUS.READY })
-  setTimeout(() => parentPort.postMessage({ status: TASK_STATUS.END }), 1000)
-})
-// setTimeout(() => parentPort.postMessage({ status: TASK_STATUS.END }), 1000)
+const tasks =
+  fromEvent(parentPort, 'message')
+
+tasks.subscribe(task => console.log(task))

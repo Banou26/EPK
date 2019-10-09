@@ -29,21 +29,20 @@ export default () => {
         return (
           task
           |> finalize(() => {
-            // task was canceled
             if (!done) canceled = true
-            // clean up the worker
             if (canceled) worker.postMessage({ status: TASK_STATUS.CANCEL })
-            
             idleWorker.push(worker)
           })
           |> mergeMap(async value => value) // allow for the finalize to run before the task if it was canceled
           |> filter(() => !canceled) // if it was canceled, filter everything out
           |> tap(message => worker.postMessage(message))
-          |> combineLatest(workerMessages) // switch the flow from having sent messages to receiving them
-          |> pluck(1) // from here we only have messages from the worker
-          |> tap(v => console.log('received main thread', v))
+          |> combineLatest(workerMessages, (_, message) => message) // switch the flow from having sent messages to receiving them
+          |> tap(({ status }) =>
+            status === TASK_STATUS.END
+              ? (done = true)
+              : undefined
+          )
           |> takeWhile(({ status }) => status !== TASK_STATUS.END)
-          |> tap(() => (done = true))
           |> map(message => [
             count,
             message

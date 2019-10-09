@@ -118,7 +118,7 @@ var WorkerFarm = (() => {
   const idleWorker = Array(amount).fill(undefined).map(() => new worker_threads.Worker('./dist/worker.js'));
   const taskSubject = new rxjs.Subject();
   const queue = (_taskSubject = taskSubject, operators.mergeMap((task, _, count) => {
-    var _ref, _ref2, _ref3, _ref4, _ref5, _ref6, _ref7, _ref8, _ref9, _task;
+    var _ref, _ref2, _ref3, _ref4, _ref5, _ref6, _ref7, _task;
 
     const worker = idleWorker.splice(0, 1)[0];
     const workerMessages = rxjs.fromEvent(worker, 'message'); // |> shareReplay()
@@ -129,30 +129,29 @@ var WorkerFarm = (() => {
     worker.postMessage({
       status: TASK_STATUS.START
     });
-    return _ref = (_ref2 = (_ref3 = (_ref4 = (_ref5 = (_ref6 = (_ref7 = (_ref8 = (_ref9 = (_task = task, operators.finalize(() => {
-      // task was canceled
-      if (!done) canceled = true; // clean up the worker
-
+    return _ref = (_ref2 = (_ref3 = (_ref4 = (_ref5 = (_ref6 = (_ref7 = (_task = task, operators.finalize(() => {
+      if (!done) canceled = true;
       if (canceled) worker.postMessage({
         status: TASK_STATUS.CANCEL
       });
       idleWorker.push(worker);
-    })(_task)), operators.mergeMap(async value => value)(_ref9) // allow for the finalize to run before the task if it was canceled
-    ), operators.filter(() => !canceled)(_ref8) // if it was canceled, filter everything out
-    ), operators.tap(message => worker.postMessage(message))(_ref7)), operators.combineLatest(workerMessages)(_ref6) // switch the flow from having sent messages to receiving them
-    ), operators.pluck(1)(_ref5) // from here we only have messages from the worker
-    ), operators.tap(v => console.log('received main thread', v))(_ref4)), operators.takeWhile(({
+    })(_task)), operators.mergeMap(async value => value)(_ref7) // allow for the finalize to run before the task if it was canceled
+    ), operators.filter(() => !canceled)(_ref6) // if it was canceled, filter everything out
+    ), operators.tap(message => worker.postMessage(message))(_ref5)), operators.combineLatest(workerMessages, (_, message) => message)(_ref4) // switch the flow from having sent messages to receiving them
+    ), operators.tap(({
       status
-    }) => status !== TASK_STATUS.END)(_ref3)), operators.tap(() => done = true)(_ref2)), operators.map(message => [count, message])(_ref);
+    }) => status === TASK_STATUS.END ? done = true : undefined)(_ref3)), operators.takeWhile(({
+      status
+    }) => status !== TASK_STATUS.END)(_ref2)), operators.map(message => [count, message])(_ref);
   }, amount)(_taskSubject));
   let taskCounter = 0;
   return messageObservable => {
-    var _ref10, _queue;
+    var _ref8, _queue;
 
     const replay = new rxjs.ReplaySubject();
     const count = taskCounter;
     taskCounter++;
-    const result = (_ref10 = (_queue = queue, operators.filter(([_count]) => count === _count)(_queue)), operators.pluck(1)(_ref10));
+    const result = (_ref8 = (_queue = queue, operators.filter(([_count]) => count === _count)(_queue)), operators.pluck(1)(_ref8));
     result.subscribe(replay);
     taskSubject.next(messageObservable);
     return replay;
