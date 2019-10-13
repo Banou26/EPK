@@ -2,7 +2,7 @@ import babel from 'rollup-plugin-babel'
 
 export default [
   {
-    input: './src/cli/index.js',
+    input: './src/cli/index.ts',
     output: {
       file: 'dist/cli.js',
       format: 'cjs'

@@ -2,9 +2,9 @@
 
 function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
 
-var rxjs = require('rxjs');
 var operators = require('rxjs/operators');
 var Parcel$1 = _interopDefault(require('@parcel/core'));
+var rxjs = require('rxjs');
 var worker_threads = require('worker_threads');
 var os = _interopDefault(require('os'));
 var childProcess = _interopDefault(require('child_process'));
@@ -49,6 +49,8 @@ var Parcel = (initialParcelOptions => AsyncObservable(async observer => {
   });
   return () => unsubscribe();
 }));
+
+var isBrowser = typeof window !== 'undefined';
 
 let amount;
 
@@ -112,7 +114,7 @@ let TASK_STATUS;
 //     return () => _observer.complete()
 //   })
 
-var WorkerFarm = (() => {
+var browserWorkerFarm = (() => {
   var _taskSubject;
 
   const idleWorker = Array(amount).fill(undefined).map(() => new worker_threads.Worker('./dist/worker.js'));
@@ -121,11 +123,9 @@ var WorkerFarm = (() => {
     var _ref, _ref2, _ref3, _ref4, _ref5, _ref6, _ref7, _task;
 
     const worker = idleWorker.splice(0, 1)[0];
-    const workerMessages = rxjs.fromEvent(worker, 'message'); // |> shareReplay()
-
+    const workerMessages = rxjs.fromEvent(worker, 'message');
     let done = false;
-    let canceled = false; // workerMessages.subscribe(v => console.log('received main thread', v))
-
+    let canceled = false;
     worker.postMessage({
       status: TASK_STATUS.START
     });
@@ -158,6 +158,67 @@ var WorkerFarm = (() => {
   };
 });
 
+var tap = ((...args) => rxjs.isObservable(args[0]) ? operators.tap(value => args[0](value).subscribe()) : operators.tap(...args));
+
+var nodeWorkerFarm = (taskSubject => {
+  var _taskSubject;
+
+  const idleWorker = Array(amount).fill(undefined).map(() => new worker_threads.Worker('./dist/worker.js'));
+  return _taskSubject = taskSubject, operators.mergeMap((task, id) => {
+    var _ref, _ref2, _ref3, _ref4, _ref5, _ref6, _ref7, _ref8, _task;
+
+    const worker = idleWorker.splice(0, 1)[0];
+    const workerMessages = rxjs.fromEvent(worker, 'message');
+    let done = false;
+    let canceled = false;
+    return _ref = (_ref2 = (_ref3 = (_ref4 = (_ref5 = (_ref6 = (_ref7 = (_ref8 = (_task = task, tap(message => {
+      var _ref9, _of;
+
+      return _ref9 = (_of = rxjs.of(message), operators.first()(_of)), tap(message => worker.postMessage({
+        id,
+        status: TASK_STATUS.START,
+        ...message
+      }))(_ref9);
+    })(_task)), operators.finalize(() => {
+      if (!done) canceled = true;
+      if (canceled) worker.postMessage({
+        id,
+        status: TASK_STATUS.CANCEL
+      });
+      idleWorker.push(worker);
+    })(_ref8)), operators.mergeMap(async message => message)(_ref7) // allow for the finalize to run before the task if it was canceled
+    ), operators.filter(() => !canceled)(_ref6) // if it was canceled, filter everything out
+    ), tap(message => worker.postMessage({
+      id,
+      ...message
+    }))(_ref5)), operators.combineLatest(workerMessages, (_, task) => task)(_ref4) // switch the flow from having sent messages to receiving them
+    ), tap(({
+      status
+    }) => status === TASK_STATUS.END && (done = true))(_ref3)), operators.takeWhile(({
+      status
+    }) => status !== TASK_STATUS.END)(_ref2)), operators.map(message => [id, message])(_ref);
+  }, amount)(_taskSubject);
+});
+
+var WorkerFarm = (() => {
+  const taskSubject = new rxjs.Subject();
+  const queue = isBrowser ? browserWorkerFarm() : nodeWorkerFarm(taskSubject);
+  let idCounter = 0;
+  return messageObservable => {
+    var _ref, _queue;
+
+    const replay = new rxjs.ReplaySubject();
+    const id = idCounter;
+    idCounter++;
+    const result = (_ref = (_queue = queue, operators.filter(([_id]) => _id === id)(_queue)), operators.pluck(1)(_ref));
+    result.subscribe(replay);
+    taskSubject.next(messageObservable);
+    return replay;
+  };
+});
+
+var emit = (value => rxjs.Observable.create(observer => observer.next(value)));
+
 var EPK = (parcelOptions => AsyncObservable(observer => {
   var _Parcel, _parcelBundle, _bundle;
 
@@ -168,13 +229,11 @@ var EPK = (parcelOptions => AsyncObservable(observer => {
     parcelOptions
   }))(_parcelBundle));
   const test = (_bundle = bundle, operators.switchMap(bundle => {
-    var _Observable$create;
+    var _emit;
 
-    return _Observable$create = rxjs.Observable.create(observer => {
-      observer.next({
-        type: TASK_TYPE.ANALYZE
-      });
-    }), workerFarm(_Observable$create);
+    return _emit = emit({
+      type: TASK_TYPE.ANALYZE
+    }), workerFarm(_emit);
   })(_bundle));
   const result = test;
   result.subscribe(observer);

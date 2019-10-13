@@ -1,6 +1,6 @@
-import 'rxjs';
 import 'rxjs/operators';
 import '@parcel/core';
+import 'rxjs';
 import 'worker_threads';
 import os from 'os';
 import childProcess from 'child_process';
