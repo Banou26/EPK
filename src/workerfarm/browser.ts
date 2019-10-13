@@ -5,7 +5,7 @@ import { Observable, Subject, fromEvent, ReplaySubject } from 'rxjs'
 import { mergeMap, tap, pluck, map, filter, finalize, shareReplay, publish, withLatestFrom, takeUntil, takeWhile, combineLatest } from 'rxjs/operators'
 
 import { cpuCount } from '../utils/cpu.ts'
-import { TaskMessage, TASK_STATUS } from './task.ts'
+import { TaskMessage, TASK_STATUS } from '../core/task.ts'
 
 export default () => {
   const idleWorker =

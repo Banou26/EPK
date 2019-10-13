@@ -3,8 +3,9 @@ import { takeUntil, publish, filter, map, mapTo, switchMap } from 'rxjs/operator
 
 import Parcel from '../parcel/index.ts'
 import { PARCEL_REPORTER_EVENT } from '../parcel/index.ts'
-import WorkerFarm from './workerFarm.ts'
+import WorkerFarm from '../workerFarm/index.ts'
 import Task, { TASK_TYPE, TASK_STATUS } from './task.ts'
+import emit from '../utils/emit.ts'
 import AsyncObservable from '../utils/async-observable.ts'
 
 export default (parcelOptions) =>
@@ -22,9 +23,7 @@ export default (parcelOptions) =>
     const test =
       bundle
       |> switchMap(bundle =>
-        Observable.create(observer => {
-          observer.next({ type: TASK_TYPE.ANALYZE })
-        })
+        emit({ type: TASK_TYPE.ANALYZE })
         |> workerFarm)
 
     const result =
