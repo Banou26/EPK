@@ -17,7 +17,7 @@ export default (initialParcelOptions) =>
       targets: {
         test: {
           distDir: '.epk/dist/browser',
-          "browsers": ["> 1%", "not dead"]
+          browsers: ['last 1 Chrome versions'] // ["> 1%", "not dead"]
         }
       },
       sourceMaps: true,
