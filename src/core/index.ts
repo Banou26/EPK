@@ -8,9 +8,8 @@ import WorkerFarm from '../workerFarm/index.ts'
 import Task, { TASK_TYPE, TASK_STATUS } from './task.ts'
 import emit from '../utils/emit.ts'
 import AsyncObservable from '../utils/async-observable.ts'
-import taskRunner from '../runtimes/index.ts'
+import runtimeFactory from '../runtimes/index.ts'
 import preAnalyze from './pre-analyzer.ts'
-import { TASK_TYPE } from './task.ts'
 
 export default (parcelOptions) =>
   combineLatest(
