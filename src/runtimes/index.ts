@@ -1,6 +1,6 @@
-import { finalize } from 'rxjs/operators'
+import { of, Subject } from 'rxjs'
+import { finalize, filter } from 'rxjs/operators'
 
-import { of } from 'rxjs'
 import chrome from './chrome.ts'
 
 const runtimeMap = new Map([
@@ -12,20 +12,30 @@ export default options => {
   const runtimes = new Map()
 
   return of(
-    (runtimeName, task) => {
+    async (runtimeName, task) => {
       if (!runtimes.has(runtimeName)) {
         const subject = new Subject()
         runtimeSubjects.set(runtimeName, subject)
-        runtimes.set(runtimeName, runtimeMap.get(runtimeName)(subject))
-      } else {
-        const subject = runtimeSubjects.get(runtimeName)
-        subject.next(task)
+        runtimes.set(runtimeName, await runtimeMap.get(runtimeName)(subject))
       }
+      const subject = runtimeSubjects.get(runtimeName)
+      const runtime = runtimes.get(runtimeName)
+      
+      Promise
+        .resolve()
+        .then(() => subject.next(task))
+
+      return (
+        runtime
+        |> filter(({ task: _task }) => _task === task)
+      )
     }
   )
-  |> finalize(() => {
-    for (const [, subject] of runtimeSubjects) {
-      subject.complete()
-    }
-  })
+  |> finalize(() =>
+    Array.from(
+      runtimeSubjects.values())
+        .forEach(subject =>
+          subject.complete()
+        )
+  )
 }

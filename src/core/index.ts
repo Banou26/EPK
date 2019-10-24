@@ -16,17 +16,19 @@ export default (parcelOptions) =>
     Parcel(parcelOptions),
     runtimeFactory()
   )
-  |> switchMap((bundle, Runtime) =>
-    bundle
-    |> mergeMap(({ changedAssets }) => from(changedAssets.values()))
+  |> switchMap(([bundle, run]) =>
+    of(bundle)
+    |> mergeMap(({ changedAssets }) => from(Array.from(changedAssets.values())))
     |> map(asset => ({
         engines: [
-          ...browsersList(asset.env.engines.browsers)
-            .map(str =>
-              str
-                .split(' ')
-                .shift()
-            )
+          'chrome'
+          // todo: add this back
+          // ...browsersList(asset.env.engines.browsers)
+          //   .map(str =>
+          //     str
+          //       .split(' ')
+          //       .shift()
+          //   )
         ],
         asset
       })
@@ -34,7 +36,8 @@ export default (parcelOptions) =>
     |> mergeMap(({engines, asset}) =>
       from(engines)
       |> mergeMap(runtime =>
-        run(runtime, { type: TASK_TYPE.PRE_ANALYZE }))
+        run(runtime, { type: TASK_TYPE.PRE_ANALYZE })
+      )
     )
   )
 

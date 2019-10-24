@@ -1,4 +1,4 @@
-import { NodePackageManager } from '@parcel/package-manager'
+import { NodePackageManager, Yarn } from '@parcel/package-manager'
 import { NodeFS } from '@parcel/fs'
 
 const fs = new NodeFS()

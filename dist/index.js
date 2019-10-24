@@ -1,7 +1,8 @@
 import 'rxjs';
 import 'rxjs/operators';
-import 'browserslist';
 import '@parcel/core';
+import { Yarn, NodePackageManager } from '@parcel/package-manager';
+import { NodeFS } from '@parcel/fs';
 
 let PARCEL_REPORTER_EVENT;
 
@@ -44,4 +45,8 @@ let TASK_STATUS;
 //     workerFarm.next(task)
 //     return () => _observer.complete()
 //   })
+
+const fs = new NodeFS();
+const pkgInstaller = new Yarn();
+const npm = new NodePackageManager(fs, pkgInstaller);
 //# sourceMappingURL=index.js.map
