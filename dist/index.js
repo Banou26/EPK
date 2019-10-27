@@ -1,7 +1,8 @@
-import 'rxjs';
-import 'rxjs/operators';
+import { Observable } from 'rxjs';
+import { finalize } from 'rxjs/operators';
+import 'browserslist';
 import '@parcel/core';
-import { Yarn, NodePackageManager } from '@parcel/package-manager';
+import { NodePackageManager } from '@parcel/package-manager';
 import { NodeFS } from '@parcel/fs';
 
 let PARCEL_REPORTER_EVENT;
@@ -46,7 +47,44 @@ let TASK_STATUS;
 //     return () => _observer.complete()
 //   })
 
-const fs = new NodeFS();
-const pkgInstaller = new Yarn();
-const npm = new NodePackageManager(fs, pkgInstaller);
+// const pkgInstaller = new Yarn()
+// const npm = new NodePackageManager(fs, pkgInstaller)
+// export default (...args) => npm.install(...args)
+
+const packageManager = new NodePackageManager(new NodeFS());
+const require = (...args) => packageManager.require(...args);
+
+var emit = (value => Observable.create(observer => observer.next(value)));
+
+var chrome = (async () => {
+  var _emit;
+
+  const puppeteer = await require('puppeteer', __filename);
+  const browser = await puppeteer.launch();
+  return _emit = emit(async task => {
+    const page = browser.newPage();
+    return emit({
+      runTask: () => {}
+    });
+  }), finalize(() => browser.close())(_emit); // return (
+  //   taskSubject
+  //   |> mergeMap(async task => {
+  //     return {
+  //       task,
+  //       page: await browser.newPage()
+  //     }
+  //   })
+  //   |> finalize(async () => {
+  //     await browser.close()
+  //   })z
+  // )
+});
+
+let RUNTIMES;
+
+(function (RUNTIMES) {
+  RUNTIMES["CHROME"] = "chrome";
+})(RUNTIMES || (RUNTIMES = {}));
+
+const runtimeMap = new Map([[RUNTIMES.CHROME, chrome]]);
 //# sourceMappingURL=index.js.map

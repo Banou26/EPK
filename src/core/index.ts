@@ -8,7 +8,7 @@ import WorkerFarm from '../workerFarm/index.ts'
 import Task, { TASK_TYPE, TASK_STATUS } from './task.ts'
 import emit from '../utils/emit.ts'
 import AsyncObservable from '../utils/async-observable.ts'
-import runtimeFactory from '../runtimes/index.ts'
+import runtimeFactory, { RUNTIMES } from '../runtimes/index.ts'
 import preAnalyze from './pre-analyzer.ts'
 
 export default (parcelOptions) =>
@@ -18,26 +18,33 @@ export default (parcelOptions) =>
   )
   |> switchMap(([bundle, run]) =>
     of(bundle)
-    |> mergeMap(({ changedAssets }) => from(Array.from(changedAssets.values())))
+    |> mergeMap(({ changedAssets }) =>
+      changedAssets.values()
+      |> Array.from
+      |> from
+    )
     |> map(asset => ({
         engines: [
-          'chrome'
-          // todo: add this back
-          // ...browsersList(asset.env.engines.browsers)
-          //   .map(str =>
-          //     str
-          //       .split(' ')
-          //       .shift()
-          //   )
+          ...Array.from(
+            new Set(
+              browsersList(asset.env.engines.browsers)
+                .map(str =>
+                  str
+                    .split(' ')
+                    .shift()
+                )))
+            .filter(runtime => runtime.toUpperCase() in RUNTIMES)
+            // todo: add node/electron runtime detection
         ],
         asset
       })
     )
     |> mergeMap(({engines, asset}) =>
       from(engines)
-      |> mergeMap(runtime =>
-        run(runtime, { type: TASK_TYPE.PRE_ANALYZE })
-      )
+      |> mergeMap(runtime => {
+        const analyze = run(runtime, { type: TASK_TYPE.PRE_ANALYZE })
+        return analyze
+      })
     )
   )
 

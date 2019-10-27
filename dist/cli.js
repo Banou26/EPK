@@ -4,9 +4,10 @@ function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'defau
 
 var rxjs = require('rxjs');
 var operators = require('rxjs/operators');
+var browsersList = _interopDefault(require('browserslist'));
 var Parcel$1 = _interopDefault(require('@parcel/core'));
-var packageManager = require('@parcel/package-manager');
-var fs$1 = require('@parcel/fs');
+var packageManager$1 = require('@parcel/package-manager');
+var fs = require('@parcel/fs');
 
 var AsyncObservable = (func => rxjs.Observable.create(observer => {
   const unsubscribe = func(observer);
@@ -82,42 +83,71 @@ let TASK_STATUS;
 //     return () => _observer.complete()
 //   })
 
-const fs = new fs$1.NodeFS();
-const pkgInstaller = new packageManager.Yarn();
-const npm = new packageManager.NodePackageManager(fs, pkgInstaller);
-var install = ((...args) => npm.install(...args));
+// const pkgInstaller = new Yarn()
+// const npm = new NodePackageManager(fs, pkgInstaller)
+// export default (...args) => npm.install(...args)
 
-var chrome = (async taskSubject => {
-  var _taskSubject;
+const packageManager = new packageManager$1.NodePackageManager(new fs.NodeFS());
+const require$1 = (...args) => packageManager.require(...args);
 
-  const puppeteer = await install(['puppeteer'], __filename);
-  return _taskSubject = taskSubject, operators.map(task => ({
-    task
-  }))(_taskSubject);
+var emit = (value => rxjs.Observable.create(observer => observer.next(value)));
+
+var chrome = (async () => {
+  var _emit;
+
+  const puppeteer = await require$1('puppeteer', __filename);
+  const browser = await puppeteer.launch();
+  return _emit = emit(async task => {
+    const page = browser.newPage();
+    return emit({
+      runTask: () => {}
+    });
+  }), operators.finalize(() => browser.close())(_emit); // return (
+  //   taskSubject
+  //   |> mergeMap(async task => {
+  //     return {
+  //       task,
+  //       page: await browser.newPage()
+  //     }
+  //   })
+  //   |> finalize(async () => {
+  //     await browser.close()
+  //   })z
+  // )
 });
 
-const runtimeMap = new Map([['chrome', chrome]]);
+let RUNTIMES;
+
+(function (RUNTIMES) {
+  RUNTIMES["CHROME"] = "chrome";
+})(RUNTIMES || (RUNTIMES = {}));
+
+const runtimeMap = new Map([[RUNTIMES.CHROME, chrome]]);
 var runtimeFactory = (options => {
-  var _of;
+  var _emit;
 
-  const runtimeSubjects = new Map();
   const runtimes = new Map();
-  return _of = rxjs.of(async (runtimeName, task) => {
-    var _runtime;
-
+  return _emit = emit(async (runtimeName, task) => {
     if (!runtimes.has(runtimeName)) {
-      const subject = new rxjs.Subject();
-      runtimeSubjects.set(runtimeName, subject);
-      runtimes.set(runtimeName, (await runtimeMap.get(runtimeName)(subject)));
+      const obs = await runtimeMap.get(runtimeName)();
+      let runTask;
+      const sub = obs.subscribe(_runTask => runTask = _runTask);
+      runtimes.set(runtimeName, {
+        subscription: sub,
+        runTask
+      });
     }
 
-    const subject = runtimeSubjects.get(runtimeName);
-    const runtime = runtimes.get(runtimeName);
-    Promise.resolve().then(() => subject.next(task));
-    return _runtime = runtime, operators.filter(({
-      task: _task
-    }) => _task === task)(_runtime);
-  }), operators.finalize(() => Array.from(runtimeSubjects.values()).forEach(subject => subject.complete()))(_of);
+    return runtimes.get(runtimeName).runTask(task); // return task => {
+    //   subject.next(task)
+    //   return (
+    //     runtime
+    //     |> filter(({ task: _task }) => _task === task)
+    //   )
+    // }
+  }), operators.finalize(() => Array.from(runtimeSubjects.values()).forEach(({
+    subscription
+  }) => subscription.unsubscribe()))(_emit);
 });
 
 var EPK = (parcelOptions => {
@@ -128,14 +158,12 @@ var EPK = (parcelOptions => {
 
     return _ref = (_ref2 = (_of = rxjs.of(bundle), operators.mergeMap(({
       changedAssets
-    }) => rxjs.from(Array.from(changedAssets.values())))(_of)), operators.map(asset => ({
-      engines: ['chrome' // todo: add this back
-      // ...browsersList(asset.env.engines.browsers)
-      //   .map(str =>
-      //     str
-      //       .split(' ')
-      //       .shift()
-      //   )
+    }) => {
+      var _ref3, _changedAssets$values;
+
+      return _ref3 = (_changedAssets$values = changedAssets.values(), Array.from(_changedAssets$values)), rxjs.from(_ref3);
+    })(_of)), operators.map(asset => ({
+      engines: [...Array.from(new Set(browsersList(asset.env.engines.browsers).map(str => str.split(' ').shift()))).filter(runtime => runtime.toUpperCase() in RUNTIMES) // todo: add node/electron runtime detection
       ],
       asset
     }))(_ref2)), operators.mergeMap(({
@@ -144,9 +172,12 @@ var EPK = (parcelOptions => {
     }) => {
       var _from;
 
-      return _from = rxjs.from(engines), operators.mergeMap(runtime => run(runtime, {
-        type: TASK_TYPE.PRE_ANALYZE
-      }))(_from);
+      return _from = rxjs.from(engines), operators.mergeMap(runtime => {
+        const analyze = run(runtime, {
+          type: TASK_TYPE.PRE_ANALYZE
+        });
+        return analyze;
+      })(_from);
     })(_ref);
   })(_combineLatest);
 }); // AsyncObservable(observer => {
