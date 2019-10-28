@@ -162,11 +162,15 @@ var EPK = (parcelOptions => {
       var _ref3, _changedAssets$values;
 
       return _ref3 = (_changedAssets$values = changedAssets.values(), Array.from(_changedAssets$values)), rxjs.from(_ref3);
-    })(_of)), operators.map(asset => ({
-      engines: [...Array.from(new Set(browsersList(asset.env.engines.browsers).map(str => str.split(' ').shift()))).filter(runtime => runtime.toUpperCase() in RUNTIMES) // todo: add node/electron runtime detection
-      ],
-      asset
-    }))(_ref2)), operators.mergeMap(({
+    })(_of)), operators.map(asset => {
+      var _ref4, _ref5, _browsersList;
+
+      return {
+        engines: [...(_ref4 = (_ref5 = (_browsersList = browsersList(asset.env.engines.browsers), _browsersList.map(str => str.split(' ').shift())), new Set(_ref5)), Array.from(_ref4).filter(runtime => runtime.toUpperCase() in RUNTIMES)) // todo: add node/electron runtime detection
+        ],
+        asset
+      };
+    })(_ref2)), operators.mergeMap(({
       engines,
       asset
     }) => {

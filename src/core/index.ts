@@ -25,15 +25,17 @@ export default (parcelOptions) =>
     )
     |> map(asset => ({
         engines: [
-          ...Array.from(
-            new Set(
-              browsersList(asset.env.engines.browsers)
-                .map(str =>
-                  str
-                    .split(' ')
-                    .shift()
-                )))
-            .filter(runtime => runtime.toUpperCase() in RUNTIMES)
+          ...browsersList(asset.env.engines.browsers)
+            |> (arr => arr.map(str =>
+              str
+                .split(' ')
+                .shift()
+            ))
+            |> (arr => new Set(arr))
+            |> (set =>
+              Array
+                .from(set)
+                .filter(runtime => runtime.toUpperCase() in RUNTIMES))
             // todo: add node/electron runtime detection
         ],
         asset
