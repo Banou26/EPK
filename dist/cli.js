@@ -158,28 +158,28 @@ const getAssetSupportedTargets = asset => {
 };
 
 var EPK = (parcelOptions => {
-  var _ref3, _ref4, _combineLatest;
+  var _combineLatest;
 
-  return _ref3 = (_ref4 = (_combineLatest = rxjs.combineLatest(Parcel(), runtimeFactory()), operators.mergeMap(([bundle, runtime]) => {
-    var _ref5, _ref6, _bundle$changedAssets;
+  return _combineLatest = rxjs.combineLatest(Parcel(), runtimeFactory()), operators.mergeMap(([bundle, runtime]) => {
+    var _ref3, _ref4, _ref5, _ref6, _bundle$changedAssets;
 
-    return _ref5 = (_ref6 = (_bundle$changedAssets = bundle.changedAssets.values(), Array.from(_bundle$changedAssets)), _ref6.reduce((arr, asset) => [...arr, ...getAssetSupportedTargets(asset).map(target => ({
+    return _ref3 = (_ref4 = (_ref5 = (_ref6 = (_bundle$changedAssets = bundle.changedAssets.values(), Array.from(_bundle$changedAssets)), _ref6.reduce((arr, asset) => [...arr, ...getAssetSupportedTargets(asset).map(target => ({
       asset,
       target
-    }))], [])), rxjs.from(_ref5);
-  })(_combineLatest)), operators.groupBy(({
-    target
-  }) => target, ({
-    asset
-  }) => asset)(_ref4)), operators.mergeMap(assets => {
-    var _combineLatest2;
+    }))], [])), rxjs.from(_ref5)), operators.groupBy(({
+      target
+    }) => target, ({
+      asset
+    }) => asset)(_ref4)), operators.mergeMap(assets => {
+      var _combineLatest2;
 
-    return _combineLatest2 = rxjs.combineLatest(assets, runtime(assets.key)), operators.mergeMap(([asset, run]) => {
-      const preAnalyze = run({
-        type: TASK_TYPE.PRE_ANALYZE
-      });
-    })(_combineLatest2);
-  })(_ref3);
+      return _combineLatest2 = rxjs.combineLatest(assets, runtime(assets.key)), operators.mergeMap(([asset, run]) => {
+        const preAnalyze = run({
+          type: TASK_TYPE.PRE_ANALYZE
+        });
+      })(_combineLatest2);
+    })(_ref3);
+  })(_combineLatest);
 }); // |> switchMap(([bundle, run]) =>
 //   of(bundle)
 //   |> mergeMap(({ changedAssets }) =>

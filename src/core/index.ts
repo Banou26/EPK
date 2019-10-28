@@ -43,21 +43,22 @@ export default (parcelOptions) =>
         }))
     ], []))
     |> from
-  )
-  |> groupBy(
-    ({ target }) => target,
-    ({ asset }) => asset
-  )
-  |> mergeMap(assets =>
-    combineLatest(
-      assets,
-      runtime(assets.key)
+    |> groupBy(
+      ({ target }) => target,
+      ({ asset }) => asset
     )
-    |> mergeMap(([asset, run]) => {
-      const preAnalyze = run({ type: TASK_TYPE.PRE_ANALYZE })
+    |> mergeMap(assets =>
+      combineLatest(
+        assets,
+        runtime(assets.key)
+      )
+      |> mergeMap(([asset, run]) => {
+        const preAnalyze = run({ type: TASK_TYPE.PRE_ANALYZE })
 
-    })
+      })
+    )
   )
+
   // |> switchMap(([bundle, run]) =>
   //   of(bundle)
   //   |> mergeMap(({ changedAssets }) =>
