@@ -11,44 +11,73 @@ import AsyncObservable from '../utils/async-observable.ts'
 import runtimeFactory, { RUNTIMES } from '../runtimes/index.ts'
 import preAnalyze from './pre-analyzer.ts'
 
+const getAssetSupportedTargets = asset => [
+    ...browsersList(asset.env.engines.browsers)
+      |> (arr => arr.map(str =>
+        str
+          .split(' ')
+          .shift()
+      ))
+      |> (arr => new Set(arr))
+      |> (set =>
+        Array
+          .from(set)
+          .filter(runtime => runtime.toUpperCase() in RUNTIMES))
+      // todo: add node/electron runtime detection
+  ]
+
 export default (parcelOptions) =>
   combineLatest(
     Parcel(parcelOptions),
     runtimeFactory()
   )
-  |> switchMap(([bundle, run]) =>
-    of(bundle)
-    |> mergeMap(({ changedAssets }) =>
-      changedAssets.values()
-      |> Array.from
-      |> from
-    )
-    |> map(asset => ({
-        engines: [
-          ...browsersList(asset.env.engines.browsers)
-            |> (arr => arr.map(str =>
-              str
-                .split(' ')
-                .shift()
-            ))
-            |> (arr => new Set(arr))
-            |> (set =>
-              Array
-                .from(set)
-                .filter(runtime => runtime.toUpperCase() in RUNTIMES))
-            // todo: add node/electron runtime detection
-        ],
-        asset
-      })
-    )
-    |> mergeMap(({engines, asset}) =>
-      from(engines)
-      |> mergeMap(runtime => {
-        const analyze = run(runtime, { type: TASK_TYPE.PRE_ANALYZE })
-        return analyze
-      })
-    )
+  |> mergeMap(([bundle, runtime]) =>
+    bundle.changedAssets.values()
+    |> (values => Array.from(values))
+    |> (assets => assets.reduce((arr, asset) => [
+      ...arr,
+      ...getAssetSupportedTargets(asset)
+        .map(target => ({
+          asset,
+          target
+        }))
+    ], []))
+    |> from
   )
+  |> groupBy(
+    ({ target }) => target,
+    ({ asset }) => asset
+  )
+  |> mergeMap(assets =>
+    combineLatest(
+      assets,
+      runtime(assets.key)
+    )
+    |> mergeMap(([asset, run]) => {
+      const preAnalyze = run({ type: TASK_TYPE.PRE_ANALYZE })
+
+    })
+  )
+  // |> switchMap(([bundle, run]) =>
+  //   of(bundle)
+  //   |> mergeMap(({ changedAssets }) =>
+  //     changedAssets.values()
+  //     |> Array.from
+  //     |> from
+  //   )
+  //   |> map(asset => ({
+  //       engines: getAssetSupportedTargets(asset),
+  //       asset
+  //     })
+  //   )
+  //   |> mergeMap(({engines, asset}) =>
+  //     from(engines)
+  //     |> mergeMap(runtime => {
+  //       const analyze = run(runtime, { type: TASK_TYPE.PRE_ANALYZE })
+  //       return analyze
+  //     })
+  //   )
+  // )
 
   // AsyncObservable(observer => {
   //   const bundle =

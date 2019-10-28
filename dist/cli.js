@@ -150,41 +150,57 @@ var runtimeFactory = (options => {
   }) => subscription.unsubscribe()))(_emit);
 });
 
+const getAssetSupportedTargets = asset => {
+  var _ref, _ref2, _browsersList;
+
+  return [...(_ref = (_ref2 = (_browsersList = browsersList(asset.env.engines.browsers), _browsersList.map(str => str.split(' ').shift())), new Set(_ref2)), Array.from(_ref).filter(runtime => runtime.toUpperCase() in RUNTIMES)) // todo: add node/electron runtime detection
+  ];
+};
+
 var EPK = (parcelOptions => {
-  var _combineLatest;
+  var _ref3, _ref4, _combineLatest;
 
-  return _combineLatest = rxjs.combineLatest(Parcel(), runtimeFactory()), operators.switchMap(([bundle, run]) => {
-    var _ref, _ref2, _of;
+  return _ref3 = (_ref4 = (_combineLatest = rxjs.combineLatest(Parcel(), runtimeFactory()), operators.mergeMap(([bundle, runtime]) => {
+    var _ref5, _ref6, _bundle$changedAssets;
 
-    return _ref = (_ref2 = (_of = rxjs.of(bundle), operators.mergeMap(({
-      changedAssets
-    }) => {
-      var _ref3, _changedAssets$values;
+    return _ref5 = (_ref6 = (_bundle$changedAssets = bundle.changedAssets.values(), Array.from(_bundle$changedAssets)), _ref6.reduce((arr, asset) => [...arr, ...getAssetSupportedTargets(asset).map(target => ({
+      asset,
+      target
+    }))], [])), rxjs.from(_ref5);
+  })(_combineLatest)), operators.groupBy(({
+    target
+  }) => target, ({
+    asset
+  }) => asset)(_ref4)), operators.mergeMap(assets => {
+    var _combineLatest2;
 
-      return _ref3 = (_changedAssets$values = changedAssets.values(), Array.from(_changedAssets$values)), rxjs.from(_ref3);
-    })(_of)), operators.map(asset => {
-      var _ref4, _ref5, _browsersList;
-
-      return {
-        engines: [...(_ref4 = (_ref5 = (_browsersList = browsersList(asset.env.engines.browsers), _browsersList.map(str => str.split(' ').shift())), new Set(_ref5)), Array.from(_ref4).filter(runtime => runtime.toUpperCase() in RUNTIMES)) // todo: add node/electron runtime detection
-        ],
-        asset
-      };
-    })(_ref2)), operators.mergeMap(({
-      engines,
-      asset
-    }) => {
-      var _from;
-
-      return _from = rxjs.from(engines), operators.mergeMap(runtime => {
-        const analyze = run(runtime, {
-          type: TASK_TYPE.PRE_ANALYZE
-        });
-        return analyze;
-      })(_from);
-    })(_ref);
-  })(_combineLatest);
-}); // AsyncObservable(observer => {
+    return _combineLatest2 = rxjs.combineLatest(assets, runtime(assets.key)), operators.mergeMap(([asset, run]) => {
+      const preAnalyze = run({
+        type: TASK_TYPE.PRE_ANALYZE
+      });
+    })(_combineLatest2);
+  })(_ref3);
+}); // |> switchMap(([bundle, run]) =>
+//   of(bundle)
+//   |> mergeMap(({ changedAssets }) =>
+//     changedAssets.values()
+//     |> Array.from
+//     |> from
+//   )
+//   |> map(asset => ({
+//       engines: getAssetSupportedTargets(asset),
+//       asset
+//     })
+//   )
+//   |> mergeMap(({engines, asset}) =>
+//     from(engines)
+//     |> mergeMap(runtime => {
+//       const analyze = run(runtime, { type: TASK_TYPE.PRE_ANALYZE })
+//       return analyze
+//     })
+//   )
+// )
+// AsyncObservable(observer => {
 //   const bundle =
 //     (Parcel(parcelOptions)
 //     |> publish())
