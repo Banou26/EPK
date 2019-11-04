@@ -53,23 +53,35 @@ export default (parcelOptions) =>
         assets,
         runtime(assets.key)
       )
-      |> mergeMap(([asset, run]) => {
-        const firstContext = run()
+      |> mergeMap(([asset, createContext]) => {
+        const unisolatedContext = createContext(run => {
+          const preAnalyze =
+            of({ type: TASK_TYPE.PRE_ANALYZE, url: asset.filePath })
+            |> run
 
-        const preAnalyze =
-          emit({ type: TASK_TYPE.PRE_ANALYZE })
-
-        const unisolatedTestsRun =
-          preAnalyze
-        
-        const firstContext =
-          merge(
+          const unisolatedTestsRun =
             preAnalyze
+            |> mergeMap(analyze =>
+              from(analyze.tests)
+              |> filter(({ isolated, async }) => !isolated && !async))
+              |> toArray()
+            )
+            |> map(tests => ({
+              type: TASK_TYPE.RUN,
+              url: asset.filePath,
+              tests
+            }))
+            |> run
+
+          return merge(
+            preAnalyze,
+            unisolatedTestsRun
           )
-          |> run
+        })
+
 
         return merge(
-          preAnalyze
+          unisolatedContext
         )
       })
     )

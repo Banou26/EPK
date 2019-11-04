@@ -1,4 +1,4 @@
-import { of, Subject } from 'rxjs'
+import { of, isObservable, ReplaySubject } from 'rxjs'
 import { finalize, filter, shareReplay } from 'rxjs/operators'
 
 import chrome from './chrome.ts'
@@ -27,8 +27,18 @@ export default options => {
         })
       }
 
-      return task =>
-        runtimes.get(runtimeName).createContext(task)
+      return task => {
+        if (!isObservable(task)) {
+          const subject = new ReplaySubject()
+          const context = runtimes.get(runtimeName).createContext(subject)
+          
+          return task => {
+            task.subscribe(subject)
+          }
+        } else {
+          return runtimes.get(runtimeName).createContext(task)
+        }
+      }
     }
   )
   |> finalize(() =>
