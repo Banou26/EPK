@@ -83,14 +83,14 @@ let TASK_STATUS;
 //     return () => _observer.complete()
 //   })
 
+var emit = (value => rxjs.Observable.create(observer => observer.next(value)));
+
 // const pkgInstaller = new Yarn()
 // const npm = new NodePackageManager(fs, pkgInstaller)
 // export default (...args) => npm.install(...args)
 
 const packageManager = new packageManager$1.NodePackageManager(new fs.NodeFS());
 const require$1 = (...args) => packageManager.require(...args);
-
-var emit = (value => rxjs.Observable.create(observer => observer.next(value)));
 
 var chrome = (async () => {
   var _emit;
@@ -127,25 +127,19 @@ var runtimeFactory = (options => {
   var _emit;
 
   const runtimes = new Map();
-  return _emit = emit(async (runtimeName, task) => {
+  return _emit = emit(async runtimeName => {
     if (!runtimes.has(runtimeName)) {
       const obs = await runtimeMap.get(runtimeName)();
-      let runTask;
-      const sub = obs.subscribe(_runTask => runTask = _runTask);
+      let createContext;
+      const sub = obs.subscribe(_createContext => createContext = _createContext);
       runtimes.set(runtimeName, {
         subscription: sub,
-        runTask
+        createContext
       });
     }
 
-    return runtimes.get(runtimeName).runTask(task); // return task => {
-    //   subject.next(task)
-    //   return (
-    //     runtime
-    //     |> filter(({ task: _task }) => _task === task)
-    //   )
-    // }
-  }), operators.finalize(() => Array.from(runtimeSubjects.values()).forEach(({
+    return task => runtimes.get(runtimeName).createContext(task);
+  }), operators.finalize(() => Array.from(runtimes.values()).forEach(({
     subscription
   }) => subscription.unsubscribe()))(_emit);
 });
@@ -170,13 +164,17 @@ var EPK = (parcelOptions => {
       target
     }) => target, ({
       asset
-    }) => asset)(_ref4)), operators.mergeMap(assets => {
+    }) => asset)(_ref4) // Observable per target that emit assets
+    ), operators.mergeMap(assets => {
       var _combineLatest2;
 
       return _combineLatest2 = rxjs.combineLatest(assets, runtime(assets.key)), operators.mergeMap(([asset, run]) => {
-        const preAnalyze = run({
+        var _emit;
+
+        const preAnalyze = (_emit = emit({
           type: TASK_TYPE.PRE_ANALYZE
-        });
+        }), run(_emit));
+        return merge(preAnalyze);
       })(_combineLatest2);
     })(_ref3);
   })(_combineLatest);

@@ -1,4 +1,4 @@
-import { Observable, of, generate, from, BehaviorSubject, zip, combineLatest } from 'rxjs'
+import { Observable, of, generate, from, BehaviorSubject, zip, combineLatest, merge } from 'rxjs'
 import { takeUntil, publish, filter, map, mapTo, switchMap, groupBy, mergeMap, tap, skip, toArray } from 'rxjs/operators'
 import browsersList from 'browserslist'
 
@@ -31,7 +31,7 @@ export default (parcelOptions) =>
     Parcel(parcelOptions),
     runtimeFactory()
   )
-  |> mergeMap(([bundle, runtime]) =>
+  |> switchMap(([bundle, runtime]) =>
     bundle.changedAssets.values()
     |> (values => Array.from(values))
     |> (assets => assets.reduce((arr, asset) => [
@@ -47,14 +47,30 @@ export default (parcelOptions) =>
       ({ target }) => target,
       ({ asset }) => asset
     )
+    // Observable per target that emit assets
     |> mergeMap(assets =>
       combineLatest(
         assets,
         runtime(assets.key)
       )
       |> mergeMap(([asset, run]) => {
-        const preAnalyze = run({ type: TASK_TYPE.PRE_ANALYZE })
+        const firstContext = run()
 
+        const preAnalyze =
+          emit({ type: TASK_TYPE.PRE_ANALYZE })
+
+        const unisolatedTestsRun =
+          preAnalyze
+        
+        const firstContext =
+          merge(
+            preAnalyze
+          )
+          |> run
+
+        return merge(
+          preAnalyze
+        )
       })
     )
   )

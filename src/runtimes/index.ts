@@ -16,30 +16,23 @@ export default options => {
   const runtimes = new Map()
 
   return emit(
-    async (runtimeName, task) => {
+    async runtimeName => {
       if (!runtimes.has(runtimeName)) {
         const obs = await runtimeMap.get(runtimeName)()
-        let runTask
-        const sub = obs.subscribe(_runTask => (runTask = _runTask))
+        let createContext
+        const sub = obs.subscribe(_createContext => (createContext = _createContext))
         runtimes.set(runtimeName, {
           subscription: sub,
-          runTask
+          createContext
         })
       }
 
-      return runtimes.get(runtimeName).runTask(task)
-
-      // return task => {
-      //   subject.next(task)
-      //   return (
-      //     runtime
-      //     |> filter(({ task: _task }) => _task === task)
-      //   )
-      // }
+      return task =>
+        runtimes.get(runtimeName).createContext(task)
     }
   )
   |> finalize(() =>
-    Array.from(runtimeSubjects.values())
+    Array.from(runtimes.values())
       .forEach(({ subscription }) => subscription.unsubscribe())
   )
 }

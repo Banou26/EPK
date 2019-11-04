@@ -47,14 +47,14 @@ let TASK_STATUS;
 //     return () => _observer.complete()
 //   })
 
+var emit = (value => Observable.create(observer => observer.next(value)));
+
 // const pkgInstaller = new Yarn()
 // const npm = new NodePackageManager(fs, pkgInstaller)
 // export default (...args) => npm.install(...args)
 
 const packageManager = new NodePackageManager(new NodeFS());
 const require = (...args) => packageManager.require(...args);
-
-var emit = (value => Observable.create(observer => observer.next(value)));
 
 var chrome = (async () => {
   var _emit;
