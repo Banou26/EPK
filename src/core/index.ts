@@ -59,11 +59,11 @@ export default (parcelOptions) =>
             of({ type: TASK_TYPE.PRE_ANALYZE, url: asset.filePath })
             |> run
 
-          const unisolatedTestsRun =
+          const tests =
             preAnalyze
             |> mergeMap(analyze =>
               from(analyze.tests)
-              |> filter(({ isolated, async }) => !isolated && !async))
+              |> filter(({ isolated, async }) => !isolated && !async)
               |> toArray()
             )
             |> map(tests => ({
@@ -75,7 +75,7 @@ export default (parcelOptions) =>
 
           return merge(
             preAnalyze,
-            unisolatedTestsRun
+            tests
           )
         })
 

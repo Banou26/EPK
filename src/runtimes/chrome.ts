@@ -3,7 +3,7 @@ import { map, tap, finalize, mergeMap, shareReplay, filter } from 'rxjs/operator
 import { require } from '../utils/package-manager.ts'
 import emit from '../utils/emit.ts'
 import { Subject } from 'rxjs'
-import { GLOBALS } from '../runtime'
+import { GLOBALS } from '../runtime/index.ts'
 
 
 export default async (contextObservable) => {

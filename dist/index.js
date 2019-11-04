@@ -1,5 +1,5 @@
-import { Observable } from 'rxjs';
-import { finalize } from 'rxjs/operators';
+import { Subject } from 'rxjs';
+import { mergeMap, tap, filter, finalize } from 'rxjs/operators';
 import 'browserslist';
 import '@parcel/core';
 import { NodePackageManager } from '@parcel/package-manager';
@@ -47,8 +47,6 @@ let TASK_STATUS;
 //     return () => _observer.complete()
 //   })
 
-var emit = (value => Observable.create(observer => observer.next(value)));
-
 // const pkgInstaller = new Yarn()
 // const npm = new NodePackageManager(fs, pkgInstaller)
 // export default (...args) => npm.install(...args)
@@ -56,17 +54,35 @@ var emit = (value => Observable.create(observer => observer.next(value)));
 const packageManager = new NodePackageManager(new NodeFS());
 const require = (...args) => packageManager.require(...args);
 
-var chrome = (async () => {
-  var _emit;
+let GLOBALS;
+
+(function (GLOBALS) {
+  GLOBALS["MESSAGES"] = "__EPK_MESSAGES";
+  GLOBALS["SEND_MESSAGE"] = "__EPK_SEND_MESSAGE";
+})(GLOBALS || (GLOBALS = {}));
+
+var chrome = (async contextObservable => {
+  var _ref, _contextObservable;
 
   const puppeteer = await require('puppeteer', __filename);
   const browser = await puppeteer.launch();
-  return _emit = emit(async task => {
-    const page = browser.newPage();
-    return emit({
-      runTask: () => {}
-    });
-  }), finalize(() => browser.close())(_emit); // return (
+  return _ref = (_contextObservable = contextObservable, mergeMap(async taskObservable => {
+    var _ref2, _taskObservable;
+
+    const page = await browser.newPage();
+    const pageMessages = new Subject();
+    await page.exposeFunction(GLOBALS.SEND_MESSAGE, msg => pageMessages.next(msg));
+    return _ref2 = (_taskObservable = taskObservable, mergeMap((task, id) => {
+      var _ref3, _ref4, _task;
+
+      return _ref3 = (_ref4 = (_task = task, tap(message => page.evaluate(message => globalThis[GLOBALS.MESSAGES].next(message), {
+        id,
+        ...message
+      }))(_task)), combineLatest(pageMessages, (_, task) => task)(_ref4)), filter(({
+        id: _id
+      }) => _id === id)(_ref3);
+    })(_taskObservable)), finalize(() => page.close())(_ref2);
+  })(_contextObservable)), finalize(() => browser.close())(_ref); // return (
   //   taskSubject
   //   |> mergeMap(async task => {
   //     return {
@@ -87,4 +103,6 @@ let RUNTIMES;
 })(RUNTIMES || (RUNTIMES = {}));
 
 const runtimeMap = new Map([[RUNTIMES.CHROME, chrome]]);
+
+export { GLOBALS };
 //# sourceMappingURL=index.js.map
