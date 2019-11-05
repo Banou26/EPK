@@ -1,56 +1,52 @@
-import { map, tap, finalize, mergeMap, shareReplay, filter } from 'rxjs/operators'
+import { map, tap, finalize, shareReplay, filter, combineLatest } from 'rxjs/operators'
 
 import { require } from '../utils/package-manager.ts'
 import emit from '../utils/emit.ts'
-import { Subject } from 'rxjs'
+import { Subject, of } from 'rxjs'
 import { GLOBALS } from '../runtime/index.ts'
+import mergeMap from '../utils/mergeMap.ts'
 
 
-export default async (contextObservable) => {
+export default async () => {
   const puppeteer = await require('puppeteer', __filename)
   const browser = await puppeteer.launch()
 
-
   return (
-    contextObservable
-    |> mergeMap(async (taskObservable) => {
-      const page = await browser.newPage()
-      const pageMessages = new Subject()
+    emit(func =>
+      of(func)
+      |> mergeMap(async func => {
+        const page = await browser.newPage()
+        const pageMessages = new Subject()
 
-      await page.exposeFunction(GLOBALS.SEND_MESSAGE, msg => pageMessages.next(msg))
+        await page.exposeFunction(GLOBALS.SEND_MESSAGE, msg => pageMessages.next(msg))
 
-      return (
-        taskObservable
-        |> mergeMap((task, id) =>
-          task
-          |> tap(message =>
-            page.evaluate(
-              message => globalThis[GLOBALS.MESSAGES].next(message),
-              {
-                id,
-                ...message
-              }
+        let count = 0
+        return (
+          func(task => {
+            const id = count
+            count++
+
+            return (
+              task
+              |> tap(message =>
+                page.evaluate(
+                  (message, GLOBALS) => globalThis[GLOBALS.MESSAGES].next(message),
+                  {
+                    id,
+                    ...message
+                  },
+                  GLOBALS
+                )
+              )
+              |> combineLatest(pageMessages, (_, task) => task)
+              |> filter(({ id: _id }) => _id === id)
             )
-          )
-          |> combineLatest(pageMessages, (_, task) => task)
-          |> filter(({ id: _id }) => _id === id)
+          })
+          |> finalize(() => page.close())
         )
-        |> finalize(() => page.close())
-      )
-    })
+      })
+      |> mergeMap(obs => obs)
+    )
     |> finalize(() => browser.close())
   )
-  // return (
-  //   taskSubject
-  //   |> mergeMap(async task => {
-
-  //     return {
-  //       task,
-  //       page: await browser.newPage()
-  //     }
-  //   })
-  //   |> finalize(async () => {
-  //     await browser.close()
-  //   })z
-  // )
 }

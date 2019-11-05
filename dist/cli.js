@@ -90,6 +90,8 @@ let TASK_STATUS;
 const packageManager = new packageManager$1.NodePackageManager(new fs.NodeFS());
 const require$1 = (...args) => packageManager.require(...args);
 
+var emit = (value => rxjs.Observable.create(observer => observer.next(value)));
+
 let GLOBALS;
 
 (function (GLOBALS) {
@@ -97,42 +99,45 @@ let GLOBALS;
   GLOBALS["SEND_MESSAGE"] = "__EPK_SEND_MESSAGE";
 })(GLOBALS || (GLOBALS = {}));
 
-var chrome = (async contextObservable => {
-  var _ref, _contextObservable;
+globalThis[GLOBALS.MESSAGES] = new rxjs.Subject();
+
+var mergeMap = ((project, resultSelector, concurrent) => operators.mergeMap((...args) => {
+  var _from;
+
+  const result = project(...args);
+  return result instanceof Promise ? (_from = rxjs.from(result), operators.mergeMap(obs => obs)(_from)) : result;
+}, resultSelector, concurrent));
+
+var chrome = (async () => {
+  var _emit;
 
   const puppeteer = await require$1('puppeteer', __filename);
   const browser = await puppeteer.launch();
-  return _ref = (_contextObservable = contextObservable, operators.mergeMap(async taskObservable => {
-    var _ref2, _taskObservable;
+  return _emit = emit(func => {
+    var _ref, _of;
 
-    const page = await browser.newPage();
-    const pageMessages = new rxjs.Subject();
-    await page.exposeFunction(GLOBALS.SEND_MESSAGE, msg => pageMessages.next(msg));
-    return _ref2 = (_taskObservable = taskObservable, operators.mergeMap((task, id) => {
-      var _ref3, _ref4, _task;
+    return _ref = (_of = rxjs.of(func), mergeMap(async func => {
+      var _func;
 
-      return _ref3 = (_ref4 = (_task = task, operators.tap(message => page.evaluate(message => globalThis[GLOBALS.MESSAGES].next(message), {
-        id,
-        ...message
-      }))(_task)), combineLatest(pageMessages, (_, task) => task)(_ref4)), operators.filter(({
-        id: _id
-      }) => _id === id)(_ref3);
-    })(_taskObservable)), operators.finalize(() => page.close())(_ref2);
-  })(_contextObservable)), operators.finalize(() => browser.close())(_ref); // return (
-  //   taskSubject
-  //   |> mergeMap(async task => {
-  //     return {
-  //       task,
-  //       page: await browser.newPage()
-  //     }
-  //   })
-  //   |> finalize(async () => {
-  //     await browser.close()
-  //   })z
-  // )
+      const page = await browser.newPage();
+      const pageMessages = new rxjs.Subject();
+      await page.exposeFunction(GLOBALS.SEND_MESSAGE, msg => pageMessages.next(msg));
+      let count = 0;
+      return _func = func(task => {
+        var _ref2, _ref3, _task;
+
+        const id = count;
+        count++;
+        return _ref2 = (_ref3 = (_task = task, operators.tap(message => page.evaluate((message, GLOBALS) => globalThis[GLOBALS.MESSAGES].next(message), {
+          id,
+          ...message
+        }, GLOBALS))(_task)), operators.combineLatest(pageMessages, (_, task) => task)(_ref3)), operators.filter(({
+          id: _id
+        }) => _id === id)(_ref2);
+      }), operators.finalize(() => page.close())(_func);
+    })(_of)), mergeMap(obs => obs)(_ref);
+  }), operators.finalize(() => browser.close())(_emit);
 });
-
-var emit = (value => rxjs.Observable.create(observer => observer.next(value)));
 
 let RUNTIMES;
 
@@ -156,17 +161,7 @@ var runtimeFactory = (options => {
       });
     }
 
-    return task => {
-      if (!rxjs.isObservable(task)) {
-        const subject = new rxjs.ReplaySubject();
-        const context = runtimes.get(runtimeName).createContext(subject);
-        return task => {
-          task.subscribe(subject);
-        };
-      } else {
-        return runtimes.get(runtimeName).createContext(task);
-      }
-    };
+    return runtimes.get(runtimeName).createContext;
   }), operators.finalize(() => Array.from(runtimes.values()).forEach(({
     subscription
   }) => subscription.unsubscribe()))(_emit);
@@ -187,17 +182,27 @@ var EPK = (parcelOptions => {
 
     return _ref3 = (_ref4 = (_ref5 = (_ref6 = (_bundle$changedAssets = bundle.changedAssets.values(), Array.from(_bundle$changedAssets)), _ref6.reduce((arr, asset) => [...arr, ...getAssetSupportedTargets(asset).map(target => ({
       asset,
-      target
+      target,
+      bundle
     }))], [])), rxjs.from(_ref5)), operators.groupBy(({
       target
     }) => target, ({
+      bundle,
       asset
-    }) => asset)(_ref4) // Observable per target that emit assets
+    }) => ({
+      bundle,
+      asset
+    }))(_ref4) // Observable per target that emit assets
     ), operators.mergeMap(assets => {
-      var _combineLatest2;
+      var _combineLatest2, _runtime;
 
-      return _combineLatest2 = rxjs.combineLatest(assets, runtime(assets.key)), operators.mergeMap(([asset, createContext]) => {
-        const unisolatedContext = createContext(run => {
+      return _combineLatest2 = rxjs.combineLatest(assets, (_runtime = runtime(assets.key), rxjs.from(_runtime))), operators.mergeMap(([{
+        bundle,
+        asset
+      }, createContext]) => {
+        const unisolatedContext = createContext({
+          url: asset.filePath
+        }, run => {
           var _of, _ref7, _ref8, _preAnalyze;
 
           const preAnalyze = (_of = rxjs.of({
@@ -222,67 +227,7 @@ var EPK = (parcelOptions => {
       })(_combineLatest2);
     })(_ref3);
   })(_combineLatest);
-}); // |> switchMap(([bundle, run]) =>
-//   of(bundle)
-//   |> mergeMap(({ changedAssets }) =>
-//     changedAssets.values()
-//     |> Array.from
-//     |> from
-//   )
-//   |> map(asset => ({
-//       engines: getAssetSupportedTargets(asset),
-//       asset
-//     })
-//   )
-//   |> mergeMap(({engines, asset}) =>
-//     from(engines)
-//     |> mergeMap(runtime => {
-//       const analyze = run(runtime, { type: TASK_TYPE.PRE_ANALYZE })
-//       return analyze
-//     })
-//   )
-// )
-// AsyncObservable(observer => {
-//   const bundle =
-//     (Parcel(parcelOptions)
-//     |> publish())
-//       .refCount()
-//   const analyze =
-//     bundle
-//     |> switchMap(bundle =>
-//       of(bundle)
-//       |> mergeMap(({ changedAssets }) => from(changedAssets.values()))
-//       |> map(asset => ({ asset }))
-//       |> mergeMap(asset =>
-//         of(asset)
-//         |> )
-//       |> groupBy(({ env: { context, engines: { browsers } } }) =>
-//         context === 'browser'
-//           ? ['chrome']
-//           // ? browsersList(browsers)
-//           //   .map(str => str.split(' '))
-//           //   .shift()
-//           : ['node']
-//       )
-//       |> mergeMap(group =>
-//         zip(
-//           of(group.key),
-//           group
-//         )
-//       )
-//       |> mergeMap(([contexts, asset]) =>
-//         from(contexts)
-//         |> map(context => [context, asset])
-//       )
-//       |> mergeMap(([context, asset]) => {
-//         debugger
-//       })
-//     )
-//   const analyzeSubscription = analyze.subscribe()
-//   return () => {
-//     analyzeSubscription.unsubscribe()
-//   }
-// })
+});
 
 // import Parcel from '@parcel/core'
 

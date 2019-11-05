@@ -14,35 +14,24 @@ export const runtimeMap = new Map([
 
 export default options => {
   const runtimes = new Map()
-
-  return emit(
-    async runtimeName => {
-      if (!runtimes.has(runtimeName)) {
-        const obs = await runtimeMap.get(runtimeName)()
-        let createContext
-        const sub = obs.subscribe(_createContext => (createContext = _createContext))
-        runtimes.set(runtimeName, {
-          subscription: sub,
-          createContext
-        })
-      }
-
-      return task => {
-        if (!isObservable(task)) {
-          const subject = new ReplaySubject()
-          const context = runtimes.get(runtimeName).createContext(subject)
-          
-          return task => {
-            task.subscribe(subject)
-          }
-        } else {
-          return runtimes.get(runtimeName).createContext(task)
+  return (
+    emit(async runtimeName => {
+        if (!runtimes.has(runtimeName)) {
+          const obs = await runtimeMap.get(runtimeName)()
+          let createContext
+          const sub = obs.subscribe(_createContext => (createContext = _createContext))
+          runtimes.set(runtimeName, {
+            subscription: sub,
+            createContext
+          })
         }
+
+        return runtimes.get(runtimeName).createContext
       }
-    }
-  )
-  |> finalize(() =>
-    Array.from(runtimes.values())
-      .forEach(({ subscription }) => subscription.unsubscribe())
+    )
+    |> finalize(() =>
+      Array.from(runtimes.values())
+        .forEach(({ subscription }) => subscription.unsubscribe())
+    )
   )
 }

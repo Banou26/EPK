@@ -39,22 +39,23 @@ export default (parcelOptions) =>
       ...getAssetSupportedTargets(asset)
         .map(target => ({
           asset,
-          target
+          target,
+          bundle
         }))
     ], []))
     |> from
     |> groupBy(
       ({ target }) => target,
-      ({ asset }) => asset
+      ({ bundle, asset }) => ({ bundle, asset })
     )
     // Observable per target that emit assets
-    |> mergeMap(assets =>
+    |> mergeMap((assets) =>
       combineLatest(
         assets,
-        runtime(assets.key)
+        runtime(assets.key) |> from
       )
-      |> mergeMap(([asset, createContext]) => {
-        const unisolatedContext = createContext(run => {
+      |> mergeMap(([{ bundle, asset }, createContext]) => {
+        const unisolatedContext = createContext({ url: asset.filePath },run => {
           const preAnalyze =
             of({ type: TASK_TYPE.PRE_ANALYZE, url: asset.filePath })
             |> run
@@ -80,74 +81,10 @@ export default (parcelOptions) =>
         })
 
 
+
         return merge(
           unisolatedContext
         )
       })
     )
   )
-
-  // |> switchMap(([bundle, run]) =>
-  //   of(bundle)
-  //   |> mergeMap(({ changedAssets }) =>
-  //     changedAssets.values()
-  //     |> Array.from
-  //     |> from
-  //   )
-  //   |> map(asset => ({
-  //       engines: getAssetSupportedTargets(asset),
-  //       asset
-  //     })
-  //   )
-  //   |> mergeMap(({engines, asset}) =>
-  //     from(engines)
-  //     |> mergeMap(runtime => {
-  //       const analyze = run(runtime, { type: TASK_TYPE.PRE_ANALYZE })
-  //       return analyze
-  //     })
-  //   )
-  // )
-
-  // AsyncObservable(observer => {
-  //   const bundle =
-  //     (Parcel(parcelOptions)
-  //     |> publish())
-  //       .refCount()
-  
-  //   const analyze =
-  //     bundle
-  //     |> switchMap(bundle =>
-  //       of(bundle)
-  //       |> mergeMap(({ changedAssets }) => from(changedAssets.values()))
-  //       |> map(asset => ({ asset }))
-  //       |> mergeMap(asset =>
-  //         of(asset)
-  //         |> )
-  //       |> groupBy(({ env: { context, engines: { browsers } } }) =>
-  //         context === 'browser'
-  //           ? ['chrome']
-  //           // ? browsersList(browsers)
-  //           //   .map(str => str.split(' '))
-  //           //   .shift()
-  //           : ['node']
-  //       )
-  //       |> mergeMap(group =>
-  //         zip(
-  //           of(group.key),
-  //           group
-  //         )
-  //       )
-  //       |> mergeMap(([contexts, asset]) =>
-  //         from(contexts)
-  //         |> map(context => [context, asset])
-  //       )
-  //       |> mergeMap(([context, asset]) => {
-  //         debugger
-  //       })
-  //     )
-  
-  //   const analyzeSubscription = analyze.subscribe()
-  //   return () => {
-  //     analyzeSubscription.unsubscribe()
-  //   }
-  // })

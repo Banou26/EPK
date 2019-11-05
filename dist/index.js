@@ -1,5 +1,5 @@
-import { Subject } from 'rxjs';
-import { mergeMap, tap, filter, finalize } from 'rxjs/operators';
+import { Observable, Subject, from, of } from 'rxjs';
+import { mergeMap as mergeMap$1, tap, combineLatest, filter, finalize } from 'rxjs/operators';
 import 'browserslist';
 import '@parcel/core';
 import { NodePackageManager } from '@parcel/package-manager';
@@ -54,6 +54,8 @@ let TASK_STATUS;
 const packageManager = new NodePackageManager(new NodeFS());
 const require = (...args) => packageManager.require(...args);
 
+var emit = (value => Observable.create(observer => observer.next(value)));
+
 let GLOBALS;
 
 (function (GLOBALS) {
@@ -61,39 +63,44 @@ let GLOBALS;
   GLOBALS["SEND_MESSAGE"] = "__EPK_SEND_MESSAGE";
 })(GLOBALS || (GLOBALS = {}));
 
-var chrome = (async contextObservable => {
-  var _ref, _contextObservable;
+globalThis[GLOBALS.MESSAGES] = new Subject();
+
+var mergeMap = ((project, resultSelector, concurrent) => mergeMap$1((...args) => {
+  var _from;
+
+  const result = project(...args);
+  return result instanceof Promise ? (_from = from(result), mergeMap$1(obs => obs)(_from)) : result;
+}, resultSelector, concurrent));
+
+var chrome = (async () => {
+  var _emit;
 
   const puppeteer = await require('puppeteer', __filename);
   const browser = await puppeteer.launch();
-  return _ref = (_contextObservable = contextObservable, mergeMap(async taskObservable => {
-    var _ref2, _taskObservable;
+  return _emit = emit(func => {
+    var _ref, _of;
 
-    const page = await browser.newPage();
-    const pageMessages = new Subject();
-    await page.exposeFunction(GLOBALS.SEND_MESSAGE, msg => pageMessages.next(msg));
-    return _ref2 = (_taskObservable = taskObservable, mergeMap((task, id) => {
-      var _ref3, _ref4, _task;
+    return _ref = (_of = of(func), mergeMap(async func => {
+      var _func;
 
-      return _ref3 = (_ref4 = (_task = task, tap(message => page.evaluate(message => globalThis[GLOBALS.MESSAGES].next(message), {
-        id,
-        ...message
-      }))(_task)), combineLatest(pageMessages, (_, task) => task)(_ref4)), filter(({
-        id: _id
-      }) => _id === id)(_ref3);
-    })(_taskObservable)), finalize(() => page.close())(_ref2);
-  })(_contextObservable)), finalize(() => browser.close())(_ref); // return (
-  //   taskSubject
-  //   |> mergeMap(async task => {
-  //     return {
-  //       task,
-  //       page: await browser.newPage()
-  //     }
-  //   })
-  //   |> finalize(async () => {
-  //     await browser.close()
-  //   })z
-  // )
+      const page = await browser.newPage();
+      const pageMessages = new Subject();
+      await page.exposeFunction(GLOBALS.SEND_MESSAGE, msg => pageMessages.next(msg));
+      let count = 0;
+      return _func = func(task => {
+        var _ref2, _ref3, _task;
+
+        const id = count;
+        count++;
+        return _ref2 = (_ref3 = (_task = task, tap(message => page.evaluate((message, GLOBALS) => globalThis[GLOBALS.MESSAGES].next(message), {
+          id,
+          ...message
+        }, GLOBALS))(_task)), combineLatest(pageMessages, (_, task) => task)(_ref3)), filter(({
+          id: _id
+        }) => _id === id)(_ref2);
+      }), finalize(() => page.close())(_func);
+    })(_of)), mergeMap(obs => obs)(_ref);
+  }), finalize(() => browser.close())(_emit);
 });
 
 let RUNTIMES;
