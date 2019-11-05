@@ -9,15 +9,16 @@ import mergeMap from '../utils/mergeMap.ts'
 
 export default async () => {
   const puppeteer = await require('puppeteer', __filename)
-  const browser = await puppeteer.launch()
+  const browser = await puppeteer.launch({ devtools: true })
 
   return (
-    emit(func =>
+    emit((options, func) =>
       of(func)
       |> mergeMap(async func => {
         const page = await browser.newPage()
         const pageMessages = new Subject()
 
+        await page.addScriptTag({ url: options.filePath })
         await page.exposeFunction(GLOBALS.SEND_MESSAGE, msg => pageMessages.next(msg))
 
         let count = 0

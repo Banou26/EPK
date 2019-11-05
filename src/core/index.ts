@@ -31,8 +31,8 @@ export default (parcelOptions) =>
     Parcel(parcelOptions),
     runtimeFactory()
   )
-  |> switchMap(([bundle, runtime]) =>
-    bundle.changedAssets.values()
+  |> switchMap(([parcelBundle, runtime]) =>
+  parcelBundle.changedAssets.values()
     |> (values => Array.from(values))
     |> (assets => assets.reduce((arr, asset) => [
       ...arr,
@@ -40,13 +40,13 @@ export default (parcelOptions) =>
         .map(target => ({
           asset,
           target,
-          bundle
+          parcelBundle
         }))
     ], []))
     |> from
     |> groupBy(
       ({ target }) => target,
-      ({ bundle, asset }) => ({ bundle, asset })
+      ({ parcelBundle, asset }) => ({ parcelBundle, asset })
     )
     // Observable per target that emit assets
     |> mergeMap((assets) =>
@@ -54,8 +54,13 @@ export default (parcelOptions) =>
         assets,
         runtime(assets.key) |> from
       )
-      |> mergeMap(([{ bundle, asset }, createContext]) => {
-        const unisolatedContext = createContext({ url: asset.filePath },run => {
+      |> mergeMap(([{ parcelBundle: { bundleGraph }, asset }, createContext]) => {
+        const bundle =
+          bundleGraph
+            .getBundles()
+            .find(({ isEntry }) => isEntry)
+
+        const unisolatedContext = createContext({ filePath: bundle.filePath }, run => {
           const preAnalyze =
             of({ type: TASK_TYPE.PRE_ANALYZE, url: asset.filePath })
             |> run

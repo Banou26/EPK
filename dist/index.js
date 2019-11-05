@@ -76,8 +76,10 @@ var chrome = (async () => {
   var _emit;
 
   const puppeteer = await require('puppeteer', __filename);
-  const browser = await puppeteer.launch();
-  return _emit = emit(func => {
+  const browser = await puppeteer.launch({
+    devtools: true
+  });
+  return _emit = emit((options, func) => {
     var _ref, _of;
 
     return _ref = (_of = of(func), mergeMap(async func => {
@@ -85,6 +87,9 @@ var chrome = (async () => {
 
       const page = await browser.newPage();
       const pageMessages = new Subject();
+      await page.addScriptTag({
+        url: options.filePath
+      });
       await page.exposeFunction(GLOBALS.SEND_MESSAGE, msg => pageMessages.next(msg));
       let count = 0;
       return _func = func(task => {

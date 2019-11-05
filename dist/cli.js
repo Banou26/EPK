@@ -112,8 +112,10 @@ var chrome = (async () => {
   var _emit;
 
   const puppeteer = await require$1('puppeteer', __filename);
-  const browser = await puppeteer.launch();
-  return _emit = emit(func => {
+  const browser = await puppeteer.launch({
+    devtools: true
+  });
+  return _emit = emit((options, func) => {
     var _ref, _of;
 
     return _ref = (_of = rxjs.of(func), mergeMap(async func => {
@@ -121,6 +123,9 @@ var chrome = (async () => {
 
       const page = await browser.newPage();
       const pageMessages = new rxjs.Subject();
+      await page.addScriptTag({
+        url: options.filePath
+      });
       await page.exposeFunction(GLOBALS.SEND_MESSAGE, msg => pageMessages.next(msg));
       let count = 0;
       return _func = func(task => {
@@ -177,31 +182,36 @@ const getAssetSupportedTargets = asset => {
 var EPK = (parcelOptions => {
   var _combineLatest;
 
-  return _combineLatest = rxjs.combineLatest(Parcel(), runtimeFactory()), operators.switchMap(([bundle, runtime]) => {
-    var _ref3, _ref4, _ref5, _ref6, _bundle$changedAssets;
+  return _combineLatest = rxjs.combineLatest(Parcel(), runtimeFactory()), operators.switchMap(([parcelBundle, runtime]) => {
+    var _ref3, _ref4, _ref5, _ref6, _parcelBundle$changed;
 
-    return _ref3 = (_ref4 = (_ref5 = (_ref6 = (_bundle$changedAssets = bundle.changedAssets.values(), Array.from(_bundle$changedAssets)), _ref6.reduce((arr, asset) => [...arr, ...getAssetSupportedTargets(asset).map(target => ({
+    return _ref3 = (_ref4 = (_ref5 = (_ref6 = (_parcelBundle$changed = parcelBundle.changedAssets.values(), Array.from(_parcelBundle$changed)), _ref6.reduce((arr, asset) => [...arr, ...getAssetSupportedTargets(asset).map(target => ({
       asset,
       target,
-      bundle
+      parcelBundle
     }))], [])), rxjs.from(_ref5)), operators.groupBy(({
       target
     }) => target, ({
-      bundle,
+      parcelBundle,
       asset
     }) => ({
-      bundle,
+      parcelBundle,
       asset
     }))(_ref4) // Observable per target that emit assets
     ), operators.mergeMap(assets => {
       var _combineLatest2, _runtime;
 
       return _combineLatest2 = rxjs.combineLatest(assets, (_runtime = runtime(assets.key), rxjs.from(_runtime))), operators.mergeMap(([{
-        bundle,
+        parcelBundle: {
+          bundleGraph
+        },
         asset
       }, createContext]) => {
+        const bundle = bundleGraph.getBundles().find(({
+          isEntry
+        }) => isEntry);
         const unisolatedContext = createContext({
-          url: asset.filePath
+          filePath: bundle.filePath
         }, run => {
           var _of, _ref7, _ref8, _preAnalyze;
 
