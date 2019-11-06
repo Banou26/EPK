@@ -31,6 +31,7 @@ export default (parcelOptions) =>
     Parcel(parcelOptions),
     runtimeFactory()
   )
+  |> filter(([{ type }]) => type === 'buildSuccess')
   |> switchMap(([parcelBundle, runtime]) =>
   parcelBundle.changedAssets.values()
     |> (values => Array.from(values))

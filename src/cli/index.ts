@@ -9,7 +9,10 @@ const run = (entryFiles) => {
     entryFiles
   })
 
-  epk.subscribe(v => console.log(v))
+  epk.subscribe(
+    v => console.log(v),
+    err => console.error(err)
+  )
 }
 
 run()
