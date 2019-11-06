@@ -18,7 +18,7 @@ export default async () => {
         const page = await browser.newPage()
         const pageMessages = new Subject()
 
-        await page.addScriptTag({ url: options.filePath })
+        await page.addScriptTag({ path: options.filePath })
         await page.exposeFunction(GLOBALS.SEND_MESSAGE, msg => pageMessages.next(msg))
 
         let count = 0
