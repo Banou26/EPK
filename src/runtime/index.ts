@@ -6,3 +6,5 @@ export enum GLOBALS {
 }
 
 globalThis[GLOBALS.MESSAGES] = new Subject()
+
+export const test = () => {}
