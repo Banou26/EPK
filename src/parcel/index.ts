@@ -1,4 +1,5 @@
 import Parcel from '@parcel/core'
+import config from '@parcel/config-default'
 
 import AsyncObservable from '../utils/async-observable.ts'
 
@@ -13,6 +14,10 @@ export enum PARCEL_REPORTER_EVENT {
 export default (initialParcelOptions) =>
   AsyncObservable(async observer => {
     const parcel = new Parcel({
+      defaultConfig: {
+        ...config,
+        filePath: require.resolve('@parcel/config-default')
+      },
       entries: ['tests/unit/index_test.ts'],
       targets: {
         test: {
@@ -20,9 +25,10 @@ export default (initialParcelOptions) =>
           browsers: ['last 1 Chrome versions'] // ["> 1%", "not dead"]
         }
       },
+      mode: 'production',
       sourceMaps: true,
       minify: true,
-      scopeHoist: true
+      // scopeHoist: true
     })
     
     const { unsubscribe } = await parcel.watch((err, build) => {
