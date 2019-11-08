@@ -22,13 +22,13 @@ export default (initialParcelOptions) =>
       targets: {
         test: {
           distDir: '.epk/dist/browser',
-          browsers: ['last 1 Chrome versions'] // ["> 1%", "not dead"]
+          browsers: ['last 1 Chrome versions']
         }
       },
       mode: 'production',
       sourceMaps: true,
       minify: true,
-      // scopeHoist: true
+      scopeHoist: true
     })
     
     const { unsubscribe } = await parcel.watch((err, build) => {

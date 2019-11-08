@@ -76,7 +76,6 @@ export default (parcelOptions) =>
             )
             |> map(tests => ({
               type: TASK_TYPE.RUN,
-              url: asset.filePath,
               tests
             }))
             |> run
