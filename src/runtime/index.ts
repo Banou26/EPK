@@ -1,10 +1,5 @@
-import { Subject } from 'rxjs'
+import './message.ts'
 
-export enum GLOBALS {
-  MESSAGES = '__EPK_MESSAGES',
-  SEND_MESSAGE = '__EPK_SEND_MESSAGE'
-}
-
-globalThis[GLOBALS.MESSAGES] = new Subject()
-
-export const test = () => {}
+export * from './test.ts'
+export * from './assert.ts'
+export * from './message.ts'
