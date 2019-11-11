@@ -1,5 +1,5 @@
 import { Observable, of, generate, from, BehaviorSubject, zip, combineLatest, merge } from 'rxjs'
-import { takeUntil, publish, filter, map, mapTo, switchMap, groupBy, mergeMap, tap, skip, toArray, share } from 'rxjs/operators'
+import { takeUntil, publish, filter, map, mapTo, switchMap, groupBy, mergeMap, tap, skip, toArray, share, take } from 'rxjs/operators'
 import browsersList from 'browserslist'
 
 import Parcel from '../parcel/index.ts'
@@ -63,8 +63,9 @@ export default (parcelOptions) =>
 
         const unisolatedContext = createContext({ filePath: bundle.filePath }, run => {
           const preAnalyze =
-            of({ type: TASK_TYPE.PRE_ANALYZE })
+            emit({ type: TASK_TYPE.PRE_ANALYZE })
             |> run
+            |> take(1)
             |> share()
 
           const tests =

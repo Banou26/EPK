@@ -1,11 +1,12 @@
 
 import { Subject, of } from 'rxjs'
-import { map, tap, finalize, shareReplay, filter, combineLatest } from 'rxjs/operators'
+import { map, tap, finalize, shareReplay, filter, combineLatest, takeUntil } from 'rxjs/operators'
 
 import { require } from '../utils/package-manager.ts'
 import emit from '../utils/emit.ts'
 import { GLOBALS } from '../runtime/index.ts'
 import mergeMap from '../utils/mergeMap.ts'
+import { TASK_STATUS } from '../core/task.ts'
 
 
 export default async () => {
@@ -20,28 +21,40 @@ export default async () => {
         const pageMessages = new Subject()
 
         await page.addScriptTag({ path: options.filePath })
-        await page.exposeFunction(GLOBALS.SEND_MESSAGE, msg => pageMessages.next(msg))
+        await page.exposeFunction(GLOBALS.SEND_MESSAGE, msg => {pageMessages.next(msg)})
 
         let count = 0
         return (
-          func(task => {
+          func(messages => {
             const id = count
             count++
 
             return (
-              task
-              |> tap(message =>
+              messages
+              |> finalize(() =>
                 page.evaluate(
                   (message, GLOBALS) => globalThis[GLOBALS.MESSAGES].next(message),
                   {
                     id,
-                    ...message
+                    status: TASK_STATUS.CANCEL,
                   },
                   GLOBALS
                 )
               )
-              |> combineLatest(pageMessages, (_, task) => task)
+              |> tap(message =>
+                page.evaluate(
+                  (message, GLOBALS) => globalThis[GLOBALS.MESSAGES].next(message),
+                  { id,  status: TASK_STATUS.START, message },
+                  GLOBALS
+                )
+              )
+              |> combineLatest(pageMessages, (_, message) => message)
               |> filter(({ id: _id }) => _id === id)
+              |> takeUntil(
+                pageMessages
+                |> filter(({ status }) => status === TASK_STATUS.END)
+              )
+              |> map(({ message }) => message)
             )
           })
           |> finalize(() => page.close())
