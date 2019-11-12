@@ -21,23 +21,22 @@ export default async () => {
         const pageMessages = new Subject()
 
         await page.addScriptTag({ path: options.filePath })
-        await page.exposeFunction(GLOBALS.SEND_MESSAGE, msg => {pageMessages.next(msg)})
+        await page.exposeFunction(GLOBALS.SEND_MESSAGE, msg => pageMessages.next(msg))
 
         let count = 0
         return (
           func(messages => {
             const id = count
             count++
-
+            let taskFinished = false
+            
             return (
               messages
               |> finalize(() =>
-                page.evaluate(
+                !taskFinished
+                && page.evaluate(
                   (message, GLOBALS) => globalThis[GLOBALS.MESSAGES].next(message),
-                  {
-                    id,
-                    status: TASK_STATUS.CANCEL,
-                  },
+                  { id, status: TASK_STATUS.CANCEL },
                   GLOBALS
                 )
               )
@@ -53,6 +52,7 @@ export default async () => {
               |> takeUntil(
                 pageMessages
                 |> filter(({ status }) => status === TASK_STATUS.END)
+                |> tap(() => (taskFinished = true))
               )
               |> map(({ message }) => message)
             )
@@ -60,7 +60,6 @@ export default async () => {
           |> finalize(() => page.close())
         )
       })
-      |> mergeMap(obs => obs)
     )
     |> finalize(() => browser.close())
   )

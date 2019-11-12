@@ -1,5 +1,5 @@
 import { Observable, of, generate, from, BehaviorSubject, zip, combineLatest, merge } from 'rxjs'
-import { takeUntil, publish, filter, map, mapTo, switchMap, groupBy, mergeMap, tap, skip, toArray, share, take } from 'rxjs/operators'
+import { takeUntil, publish, filter, map, mapTo, switchMap, groupBy, mergeMap, tap, skip, toArray, share, take, shareReplay } from 'rxjs/operators'
 import browsersList from 'browserslist'
 
 import Parcel from '../parcel/index.ts'
@@ -82,12 +82,11 @@ export default (parcelOptions) =>
             |> run
 
           return merge(
-            preAnalyze,
-            tests
+            tests,
+            preAnalyze
           )
+          |> tap(v => console.log(v))
         })
-
-
 
         return merge(
           unisolatedContext
