@@ -15,7 +15,7 @@ const taskMap = new Map([
   [TASK_TYPE.RUN, run]
 ])
 
-export const sendMessage = (value) => console.log('msg', value) || globalThis[GLOBALS.SEND_MESSAGE](value)
+export const sendMessage = (value) => globalThis[GLOBALS.SEND_MESSAGE](value)
 
 export const subject = globalThis[GLOBALS.MESSAGES] = new Subject()
 

@@ -85,7 +85,6 @@ export default (parcelOptions) =>
             tests,
             preAnalyze
           )
-          |> tap(v => console.log(v))
         })
 
         return merge(
