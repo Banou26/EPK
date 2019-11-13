@@ -72,7 +72,7 @@ export default (parcelOptions) =>
             preAnalyze
             |> mergeMap(analyze =>
               from(analyze.tests)
-              |> filter(({ isolated, async }) => !isolated && !async)
+              |> filter(({ isolate, async }) => !isolate && !async)
               |> toArray()
             )
             |> map(tests => ({
