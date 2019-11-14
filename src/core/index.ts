@@ -64,22 +64,21 @@ export default (parcelOptions) =>
         const unisolatedContext = createContext({ filePath: bundle.filePath }, run => {
           const preAnalyze =
             emit({ type: TASK_TYPE.PRE_ANALYZE })
-            |> run
+            |> run()
             |> take(1)
             |> share()
 
           const tests =
             preAnalyze
-            |> mergeMap(analyze =>
-              from(analyze.tests)
-              |> filter(({ isolate, async }) => !isolate && !async)
-              |> toArray()
+            |> map(({ tests }) =>
+              tests
+                .filter(({ isolate, serial }) => !isolate && !serial)
             )
             |> map(tests => ({
               type: TASK_TYPE.RUN,
               tests
             }))
-            |> run
+            |> run()
 
           return merge(
             tests,
