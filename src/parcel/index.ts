@@ -25,6 +25,7 @@ export default (initialParcelOptions) =>
           browsers: ['last 1 Chrome versions']
         }
       },
+      cacheDir: '.epk/parcel-cache',
       mode: 'production',
       sourceMaps: true,
       minify: true,
