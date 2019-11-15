@@ -1,11 +1,10 @@
 
 import { Subject, of, empty, concat, from } from 'rxjs'
-import { map, tap, finalize, shareReplay, filter, combineLatest, takeUntil, ignoreElements } from 'rxjs/operators'
+import { mergeMap, map, tap, finalize, shareReplay, filter, combineLatest, takeUntil, ignoreElements, take, first } from 'rxjs/operators'
 
 import { require } from '../utils/package-manager.ts'
 import emit from '../utils/emit.ts'
 import { GLOBALS } from '../runtime/index.ts'
-import mergeMap from '../utils/mergeMap.ts'
 import { TASK_STATUS } from '../core/task.ts'
 
 
@@ -19,6 +18,7 @@ export default async () => {
       |> mergeMap(async func => {
         const page = await browser.newPage()
         const pageMessages = new Subject()
+        const cancelledTasks = []
 
         await page.addScriptTag({ path: options.filePath })
         await page.exposeFunction(GLOBALS.SEND_MESSAGE, msg => pageMessages.next(msg))
@@ -45,10 +45,12 @@ export default async () => {
                 messages
                 |> finalize(() =>
                   !taskFinished
-                  && page.evaluate(
-                    (message, GLOBALS) => globalThis[GLOBALS.MESSAGES].next(message),
-                    { id, status: TASK_STATUS.CANCEL },
-                    GLOBALS
+                  && cancelledTasks.push(
+                    page.evaluate(
+                      (message, GLOBALS) => globalThis[GLOBALS.MESSAGES].next(message),
+                      { id, status: TASK_STATUS.CANCEL },
+                      GLOBALS
+                    )
                   )
                 )
                 |> mergeMap(async message => {
@@ -61,13 +63,14 @@ export default async () => {
                   }
                   return message
                 })
-                |> tap(message =>
-                  page.evaluate(
+                |> mergeMap(async message => {
+                  await page.evaluate(
                     (message, GLOBALS) => globalThis[GLOBALS.MESSAGES].next(message),
                     { id, message },
                     GLOBALS
                   )
-                )
+                  return message
+                })
                 |> combineLatest(pageMessages, (_, message) => message)
                 |> filter(({ id: _id }) => _id === id)
                 |> takeUntil(
@@ -83,9 +86,14 @@ export default async () => {
                   : empty()
               )
           })
-          |> finalize(() => page.close())
+          |> finalize(() =>
+            Promise
+              .all(cancelledTasks)
+              .then(() => page.close())
+          )
         )
       })
+      |> mergeMap(obs => obs)
     )
     |> finalize(() => browser.close())
   )
