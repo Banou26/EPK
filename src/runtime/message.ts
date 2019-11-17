@@ -4,6 +4,7 @@ import preAnalyze from './pre-analyze.ts'
 import { TASK_TYPE, TASK_STATUS } from '../core/task.ts'
 import { groupBy, tap, mergeMap, first, startWith, takeUntil, filter, finalize, map, delay, skip } from 'rxjs/operators'
 import run from './run.ts'
+import mapLast from '../utils/mapLast.ts'
 
 export enum GLOBALS {
   MESSAGES = '__EPK_MESSAGES__',
@@ -25,33 +26,37 @@ const incomingMessages =
   |> groupBy(({ id }) => id)
   |> mergeMap(messages =>
     messages
-    |> skip(1)
-    |> first()
+    |> takeUntil(
+      messages
+      |> filter(({ status }) => status === TASK_STATUS.CANCEL)
+      |> tap(() => console.log('CANCELLED', messages.key) || (cancelled = true))
+    )
+    |> first(({ message: { type } = {} } = {}) => type)
+    |> tap(() => console.log('hmm', messages.key))
     |> mergeMap(task => {
       let cancelled = false
       return (
         messages
         |> startWith(task)
-        |> takeUntil(
-          messages
-          |> filter(({ status }) => status === TASK_STATUS.CANCEL)
-          |> tap(() => (cancelled = true))
-        )
         |> map(({ message }) => message)
         |> taskMap.get(task.message.type)()
+        |> mapLast(message => ({
+          ...message,
+          status: TASK_STATUS.END
+        }))
         |> tap(message =>
           sendMessage({
             id: messages.key,
             message
           })
         )
-        |> finalize(() =>
-          !cancelled
-          && sendMessage({
-            id: messages.key,
-            status: TASK_STATUS.END
-          })
-        )
+        // |> finalize(() =>
+        //   !cancelled
+        //   && sendMessage({
+        //     id: messages.key,
+        //     status: TASK_STATUS.END
+        //   })
+        // )
       )
     })
   )

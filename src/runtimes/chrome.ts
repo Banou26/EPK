@@ -6,6 +6,8 @@ import { require } from '../utils/package-manager.ts'
 import emit from '../utils/emit.ts'
 import { GLOBALS } from '../runtime/index.ts'
 import { TASK_STATUS } from '../core/task.ts'
+import mapFirst from '../utils/mapFirst.ts'
+import mapLast from '../utils/mapLast.ts'
 
 
 export default async () => {
@@ -33,26 +35,34 @@ export default async () => {
             
             return messages =>
               concat(
-                from(
-                  page.evaluate(
-                    (message, GLOBALS) => globalThis[GLOBALS.MESSAGES].next(message),
-                    { id, status: TASK_STATUS.START },
-                    GLOBALS
-                  )
-                )
-                |> ignoreElements(),
+              //   from(
+              //     page.evaluate(
+              //       (message, GLOBALS) => globalThis[GLOBALS.MESSAGES].next(message),
+              //       { id, status: TASK_STATUS.START },
+              //       GLOBALS
+              //     )
+              //   )
+              //   |> ignoreElements(),
 
                 messages
-                |> finalize(() =>
-                  !taskFinished
-                  && cancelledTasks.push(
-                    page.evaluate(
-                      (message, GLOBALS) => globalThis[GLOBALS.MESSAGES].next(message),
-                      { id, status: TASK_STATUS.CANCEL },
-                      GLOBALS
-                    )
-                  )
-                )
+                |> mapFirst(message => ({
+                  ...message,
+                  status: TASK_STATUS.START
+                }))
+                |> mapLast(message => ({
+                  ...message,
+                  status: TASK_STATUS.CANCEL
+                }))
+                // |> finalize(() =>
+                //   !taskFinished
+                //   && cancelledTasks.push(
+                //     page.evaluate(
+                //       (message, GLOBALS) => globalThis[GLOBALS.MESSAGES].next(message),
+                //       { id, status: TASK_STATUS.CANCEL },
+                //       GLOBALS
+                //     )
+                //   )
+                // )
                 |> mergeMap(async message => {
                   if (JSCoverage) {
                     if (coverageRunning) {
@@ -89,7 +99,7 @@ export default async () => {
           |> finalize(() =>
             Promise
               .all(cancelledTasks)
-              .then(() => page.close())
+              // .then(() => page.close())
           )
         )
       })
