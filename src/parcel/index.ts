@@ -22,7 +22,8 @@ export default (initialParcelOptions) =>
       targets: {
         test: {
           distDir: '.epk/dist/browser',
-          browsers: ['last 1 Chrome versions']
+          publicUrl: './'
+          // browsers: ['last 1 Chrome versions']
         }
       },
       cacheDir: '.epk/parcel-cache',
