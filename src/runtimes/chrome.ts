@@ -35,15 +35,6 @@ export default async () => {
             
             return messages =>
               concat(
-              //   from(
-              //     page.evaluate(
-              //       (message, GLOBALS) => globalThis[GLOBALS.MESSAGES].next(message),
-              //       { id, status: TASK_STATUS.START },
-              //       GLOBALS
-              //     )
-              //   )
-              //   |> ignoreElements(),
-
                 messages
                 |> mapFirst(message => ({
                   ...message,
@@ -53,16 +44,6 @@ export default async () => {
                   ...message,
                   status: TASK_STATUS.CANCEL
                 }))
-                // |> finalize(() =>
-                //   !taskFinished
-                //   && cancelledTasks.push(
-                //     page.evaluate(
-                //       (message, GLOBALS) => globalThis[GLOBALS.MESSAGES].next(message),
-                //       { id, status: TASK_STATUS.CANCEL },
-                //       GLOBALS
-                //     )
-                //   )
-                // )
                 |> mergeMap(async message => {
                   if (JSCoverage) {
                     if (coverageRunning) {
