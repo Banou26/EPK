@@ -15,7 +15,7 @@
     "@babel/plugin-proposal-throw-expressions": "^7.2.0",
     "@babel/preset-react": "^7.0.0",
     "@babel/preset-typescript": "^7.6.0",
-    "nodemon": "^1.19.4",
+    "nodemon": "^2.0.1",
     "rollup": "^1.21.4",
     "rollup-plugin-babel": "^4.3.3",
     "standard": "^14.1.0",
