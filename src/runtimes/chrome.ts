@@ -11,14 +11,18 @@ import mapLast from '../utils/mapLast.ts'
 
 
 export default async () => {
-  const puppeteer = await require('puppeteer', __filename)
-  const browser = await puppeteer.launch({ devtools: true })
+  const playwright = await require('playwright', __filename)
+  const browser = await playwright['chromium'].launch({
+    headless: false,
+    devtools: true
+  })
 
   return (
     emit((options, func) =>
       of(func)
       |> mergeMap(async func => {
-        const page = await browser.newPage()
+        const context = await browser.newContext()
+        const page = await context.newPage()
         const pageMessages = new Subject()
         const cancelledTasks = []
 
@@ -80,7 +84,7 @@ export default async () => {
           |> finalize(() =>
             Promise
               .all(cancelledTasks)
-              // .then(() => page.close())
+              .then(() => page.close())
           )
         )
       })
