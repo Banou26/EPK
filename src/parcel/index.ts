@@ -30,7 +30,8 @@ export default (initialParcelOptions) =>
       mode: 'production',
       sourceMaps: true,
       minify: true,
-      scopeHoist: true
+      scopeHoist: true,
+      cache: false
     })
     
     const { unsubscribe } = await parcel.watch((err, build) => {
