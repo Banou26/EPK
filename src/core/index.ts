@@ -33,62 +33,62 @@ export default (parcelOptions) =>
   )
   |> filter(([{ type }]) => type === 'buildSuccess')
   |> switchMap(([parcelBundle, runtime]) =>
-  parcelBundle.changedAssets.values()
-    |> (values => Array.from(values))
-    |> (assets => assets.reduce((arr, asset) => [
-      ...arr,
-      ...getAssetSupportedTargets(asset)
-        .map(target => ({
-          asset,
-          target,
-          parcelBundle
-        }))
-    ], []))
-    |> from
-    |> groupBy(
-      ({ target }) => target,
-      ({ parcelBundle, asset }) => ({ parcelBundle, asset })
-    )
-    // Observable per target that emit assets
-    |> mergeMap((assets) =>
-      combineLatest(
-        assets,
-        runtime(assets.key) |> from
+    parcelBundle.changedAssets.values()
+      |> (values => Array.from(values))
+      |> (assets => assets.reduce((arr, asset) => [
+        ...arr,
+        ...getAssetSupportedTargets(asset)
+          .map(target => ({
+            asset,
+            target,
+            parcelBundle
+          }))
+      ], []))
+      |> from
+      |> groupBy(
+        ({ target }) => target,
+        ({ parcelBundle, asset }) => ({ parcelBundle, asset })
       )
-      |> mergeMap(([{ parcelBundle: { bundleGraph }, asset }, createContext]) => {
-        const bundle =
-          bundleGraph
-            .getBundles()
-            .find(({ isEntry }) => isEntry)
+      // Observable per target that emit assets
+      |> mergeMap((assets) =>
+        combineLatest(
+          assets,
+          runtime(assets.key) |> from
+        )
+        |> mergeMap(([{ parcelBundle: { bundleGraph }, asset }, createContext]) => {
+          const bundle =
+            bundleGraph
+              .getBundles()
+              .find(({ isEntry }) => isEntry)
 
-        const unisolatedContext = createContext({ filePath: bundle.filePath }, run => {
-          const preAnalyze =
-            emit({ type: TASK_TYPE.PRE_ANALYZE })
-            |> run()
-            |> take(1)
-            |> share()
+          const unisolatedContext = createContext({ filePath: bundle.filePath }, run => {
+            const preAnalyze =
+              emit({ type: TASK_TYPE.PRE_ANALYZE })
+              |> run()
+              |> take(1)
+              |> share()
 
-          const tests =
-            preAnalyze
-            |> map(({ tests }) =>
-              tests
-                .filter(({ isolate, serial }) => !isolate && !serial)
+            const tests =
+              preAnalyze
+              |> map(({ tests }) =>
+                tests
+                  .filter(({ isolate, serial }) => !isolate && !serial)
+              )
+              |> map(tests => ({
+                type: TASK_TYPE.RUN,
+                tests
+              }))
+              |> run()
+
+            return merge(
+              tests,
+              preAnalyze
             )
-            |> map(tests => ({
-              type: TASK_TYPE.RUN,
-              tests
-            }))
-            |> run()
+          })
 
           return merge(
-            tests,
-            preAnalyze
+            unisolatedContext
           )
         })
-
-        return merge(
-          unisolatedContext
-        )
-      })
-    )
+      )
   )
