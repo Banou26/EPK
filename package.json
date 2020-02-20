@@ -4,25 +4,23 @@
   "license": "MIT",
   "main": "dist/index.js",
   "dependencies": {
-    "parcel": "^2.0.0-alpha.3.1",
-    "rxjs": "^6.5.3"
+    "parcel": "^2.0.0-nightly.117",
+    "playwright": "^0.11.1",
+    "rxjs": "^6.5.4"
   },
   "devDependencies": {
-    "@babel/core": "^7.0.0-0",
-    "@babel/plugin-proposal-nullish-coalescing-operator": "^7.4.4",
-    "@babel/plugin-proposal-optional-chaining": "^7.6.0",
-    "@babel/plugin-proposal-pipeline-operator": "^7.5.0",
-    "@babel/plugin-proposal-throw-expressions": "^7.2.0",
-    "@babel/preset-react": "^7.0.0",
-    "@babel/preset-typescript": "^7.6.0",
-    "nodemon": "^2.0.1",
-    "rollup": "^1.21.4",
+    "@babel/core": "^7.8.4",
+    "@babel/plugin-proposal-nullish-coalescing-operator": "^7.8.3",
+    "@babel/plugin-proposal-optional-chaining": "^7.8.3",
+    "@babel/plugin-proposal-pipeline-operator": "^7.8.3",
+    "@babel/plugin-proposal-throw-expressions": "^7.8.3",
+    "@babel/preset-react": "^7.8.3",
+    "@babel/preset-typescript": "^7.8.3",
+    "nodemon": "^2.0.2",
+    "rollup": "^1.31.1",
     "rollup-plugin-babel": "^4.3.3",
-    "standard": "^14.1.0",
-    "typescript": "^3.7.2"
-  },
-  "optionalDependencies": {
-    "puppeteer": "^2.0.0"
+    "standard": "^14.3.1",
+    "typescript": "^3.7.5"
   },
   "scripts": {
     "_dev": "parcel src/cli/index.js",
