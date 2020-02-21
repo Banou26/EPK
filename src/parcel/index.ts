@@ -30,7 +30,7 @@ export default (initialParcelOptions) =>
       mode: 'production',
       sourceMaps: true,
       minify: true,
-      scopeHoist: true,
+      scopeHoist: false,
       cache: false
     })
     
