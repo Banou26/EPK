@@ -3,6 +3,7 @@
   "version": "0.4.0",
   "license": "MIT",
   "main": "dist/index.js",
+  "type": "module",
   "dependencies": {
     "parcel": "^2.0.0-nightly.117",
     "playwright": "^0.11.1",

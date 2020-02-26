@@ -1,2 +1,2 @@
 #!/usr/bin/env node --harmony-top-level-await
-import '../dist/cli.js'
+import './index.ts'
