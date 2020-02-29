@@ -12,8 +12,10 @@
       "internalConsoleOptions": "neverOpen",
       "restart": true,
       "args": [
-        "--harmony-top-level-await",
-        "lib/cli.js"
+        "dist/index.js"
+        // "--harmony-top-level-await",
+        // "--experimental-import-meta-resolve",
+        // "lib/cli.js"
       ]
     }
   ]

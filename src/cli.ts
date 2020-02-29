@@ -1,2 +1,4 @@
-#!/usr/bin/env node --harmony-top-level-await
-import './index.ts'
+#!/usr/bin/env node
+import EPK from './index.ts'
+
+EPK().subscribe()
