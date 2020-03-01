@@ -1,59 +1,36 @@
 {
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
   "version": "0.2.0",
   "configurations": [
     {
       "type": "node",
       "request": "launch",
-      "name": "Launch Program",
+      "name": "dev",
+      // "runtimeExecutable": "${workspaceFolder}\\bin\\epk",
       "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/nodemon",
-      "cwd": "${workspaceFolder}",
+      "program": "${workspaceFolder}/bin/cli",
+      // "program": "${workspaceFolder}/.parcel-cache/dist/cli/index.js",
       "sourceMaps": true,
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen",
       "restart": true,
       "args": [
-        "dist/index.js"
-        // "--harmony-top-level-await",
-        // "--experimental-import-meta-resolve",
-        // "lib/cli.js"
+        "./tests/unit/*_test.ts"
+      ],
+      "runtimeArgs": [
+        "--no-stdin",
+        "--ignore",
+        "dist/browser",
+        "--watch",
+        "dist",
+        "--watch",
+        "tests"
+      ],
+      "skipFiles": [
+        "<node_internals>/**"
       ]
     }
   ]
 }
-
-// {
-//   // Use IntelliSense to learn about possible attributes.
-//   // Hover to view descriptions of existing attributes.
-//   // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
-//   "version": "0.2.0",
-//   "configurations": [
-//     {
-//       "type": "node",
-//       "request": "launch",
-//       "name": "dev",
-//       // "runtimeExecutable": "${workspaceFolder}\\bin\\epk",
-//       "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/nodemon",
-//       "program": "${workspaceFolder}/bin/cli",
-//       // "program": "${workspaceFolder}/.parcel-cache/dist/cli/index.js",
-//       "sourceMaps": true,
-//       "console": "integratedTerminal",
-//       "internalConsoleOptions": "neverOpen",
-//       "restart": true,
-//       "args": [
-//         "./tests/unit/*_test.ts"
-//       ],
-//       "runtimeArgs": [
-//         "--no-stdin",
-//         "--ignore",
-//         "dist/browser",
-//         "--watch",
-//         "dist",
-//         "--watch",
-//         "tests"
-//       ],
-//       "skipFiles": [
-//         "<node_internals>/**"
-//       ]
-//     }
-//   ]
-// }

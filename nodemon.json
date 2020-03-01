@@ -1,5 +1,5 @@
 {
   "events": {
-    "restart": "node -e console.clear()"
+    "start": "node -e console.clear()"
   }
 }
