@@ -2,7 +2,7 @@ import { Observable, of, generate, from, BehaviorSubject, zip, combineLatest, me
 import { takeUntil, publish, filter, map, mapTo, switchMap, groupBy, mergeMap, tap, skip, toArray, share, take, shareReplay } from 'rxjs/operators'
 import browsersList from 'browserslist'
 
-import Parcel from '../parcel/index.ts'
+import Parcel from './parcel.ts'
 import { PARCEL_REPORTER_EVENT } from '../parcel/index.ts'
 import WorkerFarm from '../workerFarm/index.ts'
 import Task, { TASK_TYPE, TASK_STATUS } from './task.ts'
