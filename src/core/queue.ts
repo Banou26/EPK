@@ -1,9 +1,9 @@
 import { Observable, Subject, ReplaySubject } from 'rxjs'
 import { pluck, filter } from 'rxjs/operators'
 
-import isBrowser from '../utils/isBrowser.ts'
-import browserWorkerFarm from './browser.ts'
-import nodeWorkerFarm from './node.ts'
+import isBrowser from '../utils/isBrowser'
+import browserWorkerFarm from './browser'
+import nodeWorkerFarm from './node'
 
 export default () => {
   const taskSubject = new Subject()

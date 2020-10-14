@@ -2,9 +2,8 @@
   "name": "epk",
   "version": "0.4.0",
   "license": "MIT",
-  "main": "dist/index.js",
   "dependencies": {
-    "parcel": "^2.0.0-nightly.117",
+    "parcel": "^2.0.0-nightly.425",
     "playwright": "^0.11.1",
     "rxjs": "^6.5.4"
   },
@@ -22,9 +21,24 @@
     "standard": "^14.3.1",
     "typescript": "^3.7.5"
   },
+  "library": "dist/index.js",
+  "cli": "dist/cli.js",
+  "targets": {
+    "cli": {
+      "engines": {
+        "node": ">=12.x"
+      }
+    },
+    "library": {
+      "engines": {
+        "node": ">=12.x"
+      }
+    }
+  },
   "scripts": {
-    "_dev": "parcel src/cli/index.js",
-    "dev": "rollup -m -c -w",
-    "test": "node dist/index.js --test yeet"
+    "_dev": "parcel src/cli/index.ts",
+    "dev": "parcel watch src/cli/index.ts",
+    "__dev": "rollup -m -c -w",
+    "test": "node dist/cli.js --test yeet"
   }
 }

@@ -1,12 +1,12 @@
 import { parentPort } from 'worker_threads'
 
-import { TASK_STATUS, TASK_TYPE } from '../core/task.ts'
+import { TASK_STATUS, TASK_TYPE } from '../core/task'
 import { fromEvent, of, Subject } from 'rxjs'
 import { tap, shareReplay, first, filter, switchMap, groupBy, mergeMap, finalize } from 'rxjs/operators'
 
-import analyze from './analyzer.ts'
-import preAnalyze from './pre-analyzer.ts'
-import run from './runner.ts'
+import analyze from './analyzer'
+import preAnalyze from './pre-analyzer'
+import run from './runner'
 
 const taskMap = new Map([
   [TASK_TYPE.ANALYZE, analyze],

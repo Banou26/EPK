@@ -2,14 +2,14 @@ import { Observable, of, generate, from, BehaviorSubject, zip, combineLatest, me
 import { takeUntil, publish, filter, map, mapTo, switchMap, groupBy, mergeMap, tap, skip, toArray, share, take, shareReplay } from 'rxjs/operators'
 import browsersList from 'browserslist'
 
-import Parcel from './parcel.ts'
-import { PARCEL_REPORTER_EVENT } from '../parcel/index.ts'
-import WorkerFarm from '../workerFarm/index.ts'
-import Task, { TASK_TYPE, TASK_STATUS } from './task.ts'
-import emit from '../utils/emit.ts'
-import AsyncObservable from '../utils/async-observable.ts'
-import runtimeFactory, { RUNTIMES } from '../runtimes/index.ts'
-import preAnalyze from './pre-analyzer.ts'
+import Parcel from './parcel'
+import { PARCEL_REPORTER_EVENT } from '../parcel'
+import WorkerFarm from '../workerFarm'
+import Task, { TASK_TYPE, TASK_STATUS } from './task'
+import emit from '../utils/emit'
+import AsyncObservable from '../utils/async-observable'
+import runtimeFactory, { RUNTIMES } from '../runtimes'
+import preAnalyze from './pre-analyzer'
 
 const getAssetSupportedTargets = asset => [
     ...browsersList(asset.env.engines.browsers)

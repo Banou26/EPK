@@ -18,5 +18,5 @@ const deleteFolderRecursive = function(path) {
 // for debugging purposes
 deleteFolderRecursive('./.epk')
 
-export * from './core/index.ts'
-export * from './runtime/index.ts'
+export * from './core'
+export * from './runtime'

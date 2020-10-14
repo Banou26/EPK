@@ -1,10 +1,10 @@
 import { Subject } from 'rxjs'
 
-import preAnalyze from './pre-analyze.ts'
-import { TASK_TYPE, TASK_STATUS } from '../core/task.ts'
+import preAnalyze from './pre-analyze'
+import { TASK_TYPE, TASK_STATUS } from '../core/task'
 import { groupBy, tap, mergeMap, first, startWith, takeUntil, filter, finalize, map, delay, skip } from 'rxjs/operators'
-import run from './run.ts'
-import mapLast from '../utils/mapLast.ts'
+import run from './run'
+import mapLast from '../utils/mapLast'
 
 export enum GLOBALS {
   MESSAGES = '__EPK_MESSAGES__',

@@ -1,5 +1,5 @@
-import './message.ts'
+import './message'
 
-export * from './test.ts'
-export * from './assert.ts'
-export * from './message.ts'
+export * from './test'
+export * from './assert'
+export * from './message'

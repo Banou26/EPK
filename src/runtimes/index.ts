@@ -1,8 +1,8 @@
 import { of, isObservable, ReplaySubject } from 'rxjs'
 import { finalize, filter, shareReplay } from 'rxjs/operators'
 
-import chrome from './chrome.ts'
-import emit from '../utils/emit.ts'
+import chrome from './chrome'
+import emit from '../utils/emit'
 
 export enum RUNTIMES {
   CHROME = 'chrome'

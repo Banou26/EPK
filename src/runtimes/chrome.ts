@@ -2,12 +2,12 @@
 import { Subject, of, empty, concat, from } from 'rxjs'
 import { mergeMap, map, tap, finalize, shareReplay, filter, combineLatest, takeUntil, ignoreElements, take, first } from 'rxjs/operators'
 
-import { require } from '../utils/package-manager.ts'
-import emit from '../utils/emit.ts'
-import { GLOBALS } from '../runtime/index.ts'
-import { TASK_STATUS } from '../core/task.ts'
-import mapFirst from '../utils/mapFirst.ts'
-import mapLast from '../utils/mapLast.ts'
+import { require } from '../utils/package-manager'
+import emit from '../utils/emit'
+import { GLOBALS } from '../runtime'
+import { TASK_STATUS } from '../core/task'
+import mapFirst from '../utils/mapFirst'
+import mapLast from '../utils/mapLast'
 
 
 export default async () => {

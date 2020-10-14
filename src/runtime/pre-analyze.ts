@@ -1,7 +1,7 @@
 import { of } from 'rxjs'
 import { map } from 'rxjs/operators'
 
-import { tests } from './test.ts'
+import { tests } from './test'
 
 export default () =>
   map(() => ({

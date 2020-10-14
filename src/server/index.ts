@@ -1,6 +1,6 @@
 import path from 'path'
 
-import { installImport, Observable as AsyncObservable, cwd } from '../utils/index.ts'
+import { installImport, Observable as AsyncObservable, cwd } from '../utils'
 
 let imports
 
