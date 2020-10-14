@@ -1,7 +1,8 @@
+import path from 'path'
 import Parcel from '@parcel/core'
 import config from '@parcel/config-default'
 
-import AsyncObservable from '../utils/async-observable.ts'
+import AsyncObservable from '../utils/async-observable'
 
 export enum PARCEL_REPORTER_EVENT {
   BUILD_START = 'buildStart',
@@ -14,11 +15,12 @@ export enum PARCEL_REPORTER_EVENT {
 export default (initialParcelOptions) =>
   AsyncObservable(async observer => {
     const parcel = new Parcel({
-      defaultConfig: {
-        ...config,
-        filePath: require.resolve('@parcel/config-default')
+      defaultEngines: {
+        browsers: ["last 1 Chrome version"],
+        node: "12",
       },
-      entries: ['tests/unit/index_test.ts'],
+      defaultConfig: require.resolve('@parcel/config-default'),
+      entries: path.join(__dirname, '../tests/unit/index.ts'),
       targets: {
         test: {
           distDir: '.epk/dist/browser',
@@ -33,7 +35,7 @@ export default (initialParcelOptions) =>
       scopeHoist: false,
       cache: false
     })
-    
+
     const { unsubscribe } = await parcel.watch((err, build) => {
       if (err) observer.throw(err)
       observer.next(build)

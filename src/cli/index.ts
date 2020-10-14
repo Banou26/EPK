@@ -2,7 +2,7 @@
 
 // console.log(new Parcel())
 
-import EPK from '../core/index.ts'
+import EPK from '../core'
 
 const run = (entryFiles) => {
   const epk = EPK({

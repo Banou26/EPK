@@ -3,9 +3,9 @@ import { Worker } from 'worker_threads'
 import { Observable, Subject, fromEvent, ReplaySubject, of } from 'rxjs'
 import { mergeMap, pluck, map, filter, finalize, shareReplay, publish, withLatestFrom, takeUntil, takeWhile, combineLatest, first } from 'rxjs/operators'
 
-import { cpuCount } from '../utils/cpu.ts'
-import { TaskMessage, TASK_STATUS } from '../core/task.ts'
-import tap from '../utils/tap.ts'
+import { cpuCount } from '../utils/cpu'
+import { TaskMessage, TASK_STATUS } from '../core/task'
+import tap from '../utils/tap'
 
 export default (taskSubject) => {
   const idleWorker =
