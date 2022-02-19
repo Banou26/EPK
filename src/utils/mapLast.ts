@@ -8,23 +8,28 @@ export default
       let lastValue
       const lastStream =
         observable
-        |> last()
-        |> tap(value => {
-          lastEmitted = true
-          lastValue = mapFunction(value)
-        })
-        |> ignoreElements()
+          .pipe(
+            last(),
+            tap(value => {
+              lastEmitted = true
+              lastValue = mapFunction(value)
+            }),
+            ignoreElements()
+          )
+
 
       const stream =
         observable
-        |> map(value =>
-          lastEmitted
-              ? lastValue
-              : value
+        .pipe(
+          map(value =>
+            lastEmitted
+                ? lastValue
+                : value
+          )
         )
 
-      return merge(
+      return merge([
         lastStream,
         stream
-      )
+      ])
     }

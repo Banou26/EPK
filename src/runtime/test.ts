@@ -1,7 +1,7 @@
 
 export const tests = []
 
-export const test = (name, func, params) =>
+export const test = (name: string, func: (...args) => any, params?: any) =>
   tests.push({
     name,
     function: func,

@@ -1,4 +1,4 @@
-import { Observable, Subject, ReplaySubject } from 'rxjs'
+import { Observable, Subject, ReplaySubject, pipe } from 'rxjs'
 import { pluck, filter } from 'rxjs/operators'
 
 import isBrowser from '../utils/isBrowser'
@@ -20,9 +20,11 @@ export default () => {
     idCounter++
 
     const result =
-      (queue
-      |> filter(([_id]) => _id === id)
-      |> pluck(1))
+      queue.pipe(
+        filter(([_id]) => _id === id),
+        pluck(1)
+      )
+
 
     result.subscribe(replay)
 

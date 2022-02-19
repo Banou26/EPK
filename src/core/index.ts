@@ -1,94 +1,94 @@
-import { Observable, of, generate, from, BehaviorSubject, zip, combineLatest, merge } from 'rxjs'
-import { takeUntil, publish, filter, map, mapTo, switchMap, groupBy, mergeMap, tap, skip, toArray, share, take, shareReplay } from 'rxjs/operators'
-import browsersList from 'browserslist'
+import { BuildOutput, BuildOutputFile } from './esbuild'
 
-import Parcel from './parcel'
+
+import { pipe, Observable, of, generate, from, BehaviorSubject, zip, combineLatest, merge } from 'rxjs'
+import { takeUntil, publish, filter, map, mapTo, switchMap, groupBy, mergeMap, tap, skip, toArray, share, take, shareReplay } from 'rxjs/operators'
+
+import esbuild, { BUILD_EVENT } from './esbuild'
 import { PARCEL_REPORTER_EVENT } from '../parcel'
 import WorkerFarm from '../workerFarm'
 import Task, { TASK_TYPE, TASK_STATUS } from './task'
 import emit from '../utils/emit'
 import AsyncObservable from '../utils/async-observable'
-import runtimeFactory, { RUNTIMES } from '../runtimes'
+import runtimeFactory, { RUNTIME } from '../runtimes'
 import preAnalyze from './pre-analyzer'
 
-const getAssetSupportedTargets = asset => [
-    ...browsersList(asset.env.engines.browsers)
-      |> (arr => arr.map(str =>
-        str
-          .split(' ')
-          .shift()
-      ))
-      |> (arr => new Set(arr))
-      |> (set =>
-        Array
-          .from(set)
-          .filter(runtime => runtime.toUpperCase() in RUNTIMES))
-      // todo: add node/electron runtime detection
-  ]
+export type TargetedOutput = {
+  target: RUNTIME,
+  output: BuildOutputFile,
+  buildOutput: BuildOutput
+}
 
-export default (parcelOptions) =>
-  combineLatest(
-    Parcel(parcelOptions),
+export default (options) =>
+  combineLatest([
+    esbuild(options),
     runtimeFactory()
-  )
-  |> filter(([{ type }]) => type === 'buildSuccess')
-  |> switchMap(([parcelBundle, runtime]) =>
-    parcelBundle.changedAssets.values()
-      |> (values => Array.from(values))
-      |> (assets => assets.reduce((arr, asset) => [
-        ...arr,
-        ...getAssetSupportedTargets(asset)
-          .map(target => ({
-            asset,
-            target,
-            parcelBundle
-          }))
-      ], []))
-      |> from
-      |> groupBy(
-        ({ target }) => target,
-        ({ parcelBundle, asset }) => ({ parcelBundle, asset })
-      )
-      // Observable per target that emit assets
-      |> mergeMap((assets) =>
-        combineLatest(
-          assets,
-          runtime(assets.key) |> from
-        )
-        |> mergeMap(([{ parcelBundle: { bundleGraph }, asset }, createContext]) => {
-          const bundle =
-            bundleGraph
-              .getBundles()
-              .find(({ isEntry }) => isEntry)
+  ])
+  .pipe(
+    filter(([{ type }]) => type === BUILD_EVENT.SUCCESS),
+    switchMap(([buildOutput, runtime]) =>
+      of(buildOutput.output)
+        .pipe(
+          mergeMap(outputs =>
+            outputs.reduce<TargetedOutput[]>((arr, output) => [
+              ...arr,
+              {
+                output,
+                target: RUNTIME.CHROME,
+                buildOutput
+              }
+            ], [])
+          ),
+          groupBy(
+            ({ target }) => target,
+            ({ target, buildOutput, output }) => ({ target, buildOutput, output })
+          ),
+          // Observable per target that emit output,
+          mergeMap((output) =>
+            combineLatest([
+              output,
+              from(runtime(output.key))
+            ])
+            .pipe(
+              mergeMap(([{ output }, createContext]) => {
 
-          const unisolatedContext = createContext({ filePath: bundle.filePath }, run => {
-            const preAnalyze =
-              emit({ type: TASK_TYPE.PRE_ANALYZE })
-              |> run()
-              |> take(1)
-              |> share()
-
-            const tests =
-              preAnalyze
-              |> map(({ tests }) =>
-                tests
-                  .filter(({ isolate, serial }) => !isolate && !serial)
-              )
-              |> map(tests => ({
-                type: TASK_TYPE.RUN,
-                tests
-              }))
-              |> run()
-
-            return merge(
-              tests,
-              preAnalyze
+                const unisolatedContext = createContext({ filePath: output.file.path }, run => {
+                  const preAnalyze =
+                    emit({ type: TASK_TYPE.PRE_ANALYZE })
+                      .pipe(
+                        run(),
+                        tap((val) => console.log('tap val', val)),
+                        take(1),
+                        tap((val) => console.log('tap val', val)),
+                        share()
+                      )
+      
+                  const tests =
+                    preAnalyze
+                      .pipe(
+                        map(({ tests }) =>
+                          tests
+                            .filter(({ isolate, serial }) => !isolate && !serial)
+                        ),
+                        map(tests => ({
+                          type: TASK_TYPE.RUN,
+                          tests
+                        })),
+                        run()
+                      )
+      
+                  return merge(
+                    tests,
+                    preAnalyze
+                  )
+                })
+      
+                return merge(
+                  unisolatedContext
+                )
+              })
             )
-          })
-
-          return merge(
-            unisolatedContext
           )
-        })
-      )
+        )
+    )
   )

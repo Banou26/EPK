@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "lib": ["dom", "esnext", "esnext.array"],
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "composite": false,
+    "noImplicitAny": false,
+    "outDir": "./lib",
+    "outFile": "./lib/index",
+    "sourceMap": true,
+    "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
+    "baseUrl": ".",
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "src/service-worker.ts", "src/service-worker/**/*"]
+}

@@ -1,6 +1,6 @@
 import { test } from '../../src/runtime/index'
 
-test('succeed', () => {})
+// test('succeed', () => {})
 // test('fail', () => throw new Error('Test should fail'))
 
 // test('promise succeed', () => Promise.resolve())

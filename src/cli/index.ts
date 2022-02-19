@@ -4,13 +4,11 @@
 
 import EPK from '../core'
 
-const run = (entryFiles) => {
-  const epk = EPK({
-    entryFiles
-  })
+const run = ({ entryFiles }: { entryFiles?: string[] } = { entryFiles: [] }) => {
+  const epk = EPK({})
 
   epk.subscribe(
-    v => console.log(v),
+    v => console.log('CLI', v),
     err => console.error(err)
   )
 }
