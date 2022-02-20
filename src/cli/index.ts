@@ -1,11 +1,14 @@
-// import Parcel from '@parcel/core'
+import type { TestConfig } from '../core'
 
-// console.log(new Parcel())
-
+import { join } from 'path'
+import { cwd } from 'process'
 import EPK from '../core'
+import configs from '../../test.config'
 
-const run = ({ entryFiles }: { entryFiles?: string[] } = { entryFiles: [] }) => {
-  const epk = EPK({})
+const run = async ({ entryFiles }: { entryFiles?: string[] } = { entryFiles: [] }) => {
+  // console.log(join(cwd(), './test.config.ts'))
+  // const epk = EPK({ configs: await import(join(cwd(), './test.config.ts')) })
+  const epk = EPK({ configs: configs as TestConfig[] })
 
   epk.subscribe(
     v => console.log('CLI', v),

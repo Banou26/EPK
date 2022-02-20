@@ -1,25 +1,20 @@
 import type { BuildOptions, Message, OutputFile } from 'esbuild'
 import type { Observer } from 'rxjs'
 
-import { dirname, join } from 'path'
+import { dirname, join, resolve } from 'path'
 import { fileURLToPath } from 'url'
-import { writeFile } from 'fs/promises'
+import { readFile, writeFile } from 'fs/promises'
+import { cwd } from 'process'
 
 import esbuild from 'esbuild'
+import glob from 'glob'
 
-import AsyncObservable from '../utils/async-observable'
+import asyncObservable from '../utils/async-observable'
+import { TestConfig } from '.'
 
-const cwd = process.cwd()
+const __dirname = dirname(fileURLToPath(import.meta.url))
 
-// const __dirname = dirname(fileURLToPath(import.meta.url))
-
-export enum BUILD_EVENT {
-  START = 'start',
-  PROGRESS = 'progress',
-  SUCCESS = 'success',
-  FAILURE = 'failure',
-  LOG = 'log'
-}
+export type BuildStatus = 'start' | 'success' | 'failure'
 
 export type BuildOutputFile = {
   file: OutputFile
@@ -27,8 +22,8 @@ export type BuildOutputFile = {
 }
 
 export type BuildOutput = {
-  type: BUILD_EVENT
-  errors?: Message
+  type: BuildStatus
+  errors?: Message[]
   output?: BuildOutputFile[]
 }
 
@@ -43,34 +38,65 @@ const outputFilesToBuildOutput = (outputFiles: OutputFile[]): BuildOutputFile[] 
       )
     }))
 
-export default (esbuildOptions: BuildOptions) =>
-  AsyncObservable<BuildOutput>(async (observer: Observer<BuildOutput>) => {
-    observer.next({ type: BUILD_EVENT.START })
+export default ({ testConfig, esbuildOptions }: { testConfig: TestConfig, esbuildOptions: BuildOptions }) =>
+  asyncObservable<BuildOutput>(async (observer: Observer<BuildOutput>) => {
+    observer.next({ type: 'start' })
+
+    const testFilePaths =
+      (await new Promise<string[]>((resolve, reject) =>
+        glob(
+          testConfig.browserTestGlob,
+          {},
+          (err, res) => err ? reject(err) : resolve(res)
+        )
+      )).map(relativePath => resolve(cwd(), relativePath))
+
     const { errors, outputFiles, stop } = await esbuild.build({
       ...esbuildOptions,
       bundle: true,
       write: false,
-      entryPoints: [join(cwd, './tests/unit/index.ts')],
-      // entryPoints: [join(cwd, './tests/unit/index.ts'), join(cwd, './tests/unit/example.ts')],
+      entryPoints: testFilePaths,
       sourcemap: true,
-      // outfile: './build/index.js',
       outdir: './tmp/builds',
       publicPath: '/',
       minify: process.argv.includes('-m') || process.argv.includes('--minify'),
       watch: {
         onRebuild(errors, { outputFiles }) {
-          if (errors) observer.error({ type: BUILD_EVENT.FAILURE, errors })
-          else observer.next({ type: BUILD_EVENT.SUCCESS, output: outputFilesToBuildOutput(outputFiles) })
+          if (errors) observer.error({ type: 'failure', errors })
+          else observer.next({ type: 'success', output: outputFilesToBuildOutput(outputFiles) })
         }
-      }
+      },
+      plugins: [
+        ...esbuildOptions.plugins ?? [],
+        {
+          name: 'playwright-browser',
+          setup(build) {
+            build.onLoad({ filter: /\.(tsx|jsx)$/ }, async (args) => {
+              const text = await readFile(args.path, 'utf8')
+              return {
+                contents: testFilePaths.includes(args.path) ? `${text};\nglobalThis.registerTests();` : text,
+                loader: 'tsx'
+              }
+            })
+            build.onLoad({ filter: /\.(js|ts)$/ }, async (args) => {
+              const text = await readFile(args.path, 'utf8')
+              return {
+                contents: testFilePaths.includes(args.path) ? `${text};\nglobalThis.registerTests();` : text,
+                loader: 'ts'
+              }
+            })
+          },
+        }
+      ],
+      inject: [join(__dirname, '../src/runtime/index.ts')],
     })
 
     for (const file of outputFiles) {
       await writeFile(file.path, file.contents)
     }
 
-    if (errors.length) observer.error({ type: BUILD_EVENT.FAILURE, errors })
-    else observer.next({ type: BUILD_EVENT.SUCCESS, output: outputFilesToBuildOutput(outputFiles) })
+    if (errors.length) observer.error({ type: 'failure', errors })
+    else observer.next({ type: 'success', output: outputFilesToBuildOutput(outputFiles) })
 
     return () => stop()
   })

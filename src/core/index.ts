@@ -1,94 +1,66 @@
-import { BuildOutput, BuildOutputFile } from './esbuild'
+import type { BuildOptions } from 'esbuild'
+import { combineLatest, concat, from, merge, of, partition } from 'rxjs'
 
+import { filter, map, mergeMap, share, switchMap, tap } from 'rxjs/operators'
 
-import { pipe, Observable, of, generate, from, BehaviorSubject, zip, combineLatest, merge } from 'rxjs'
-import { takeUntil, publish, filter, map, mapTo, switchMap, groupBy, mergeMap, tap, skip, toArray, share, take, shareReplay } from 'rxjs/operators'
+import buildObservable from './esbuild'
+import platformProvider from '../platforms'
+import esbuild from './esbuild'
+import { createContext } from '../platforms'
 
-import esbuild, { BUILD_EVENT } from './esbuild'
-import { PARCEL_REPORTER_EVENT } from '../parcel'
-import WorkerFarm from '../workerFarm'
-import Task, { TASK_TYPE, TASK_STATUS } from './task'
-import emit from '../utils/emit'
-import AsyncObservable from '../utils/async-observable'
-import runtimeFactory, { RUNTIME } from '../runtimes'
-import preAnalyze from './pre-analyzer'
+export type Platform = 'node' | 'chromium'
+export type LogLevel = 'none' | 'error' | 'warn' | 'info'
 
-export type TargetedOutput = {
-  target: RUNTIME,
-  output: BuildOutputFile,
-  buildOutput: BuildOutput
+export type TestConfig =   {
+  name: string
+  platform: Platform
+  browserTestGlob: string
+  logLevel: LogLevel
+  esbuild: BuildOptions
 }
 
-export default (options) =>
-  combineLatest([
-    esbuild(options),
-    runtimeFactory()
-  ])
-  .pipe(
-    filter(([{ type }]) => type === BUILD_EVENT.SUCCESS),
-    switchMap(([buildOutput, runtime]) =>
-      of(buildOutput.output)
-        .pipe(
-          mergeMap(outputs =>
-            outputs.reduce<TargetedOutput[]>((arr, output) => [
-              ...arr,
-              {
-                output,
-                target: RUNTIME.CHROME,
-                buildOutput
-              }
-            ], [])
-          ),
-          groupBy(
-            ({ target }) => target,
-            ({ target, buildOutput, output }) => ({ target, buildOutput, output })
-          ),
-          // Observable per target that emit output,
-          mergeMap((output) =>
-            combineLatest([
-              output,
-              from(runtime(output.key))
-            ])
-            .pipe(
-              mergeMap(([{ output }, createContext]) => {
+export default ({ configs }: { configs: TestConfig[] }) =>
+  from(configs)
+    .pipe(
+      mergeMap((config) => {
+        const build =
+          esbuild({ testConfig: config, esbuildOptions: config.esbuild })
+            .pipe(map(build => ({ build, config }) as const))
 
-                const unisolatedContext = createContext({ filePath: output.file.path }, run => {
-                  const preAnalyze =
-                    emit({ type: TASK_TYPE.PRE_ANALYZE })
-                      .pipe(
-                        run(),
-                        tap((val) => console.log('tap val', val)),
-                        take(1),
-                        tap((val) => console.log('tap val', val)),
-                        share()
-                      )
+        const [built, error] = partition(build, ({ build }) => build.type === 'success')
+
+        const test =
+          built
+            .pipe(
+              switchMap(({ build, config }) => {
+                const runInContext = createContext({ config, output: build.output[0] })
+
+                const register =
+                  of({ type: 'register' })
+                    .pipe(
+                      runInContext(),
+                      share()
+                    )
       
-                  const tests =
-                    preAnalyze
-                      .pipe(
-                        map(({ tests }) =>
-                          tests
-                            .filter(({ isolate, serial }) => !isolate && !serial)
-                        ),
-                        map(tests => ({
-                          type: TASK_TYPE.RUN,
-                          tests
-                        })),
-                        run()
-                      )
-      
-                  return merge(
-                    tests,
-                    preAnalyze
-                  )
-                })
+                const test =
+                  register
+                    .pipe(
+                      map(tests => ({
+                        type: 'run',
+                        tests
+                      })),
+                      runInContext()
+                    )
       
                 return merge(
-                  unisolatedContext
+                  register,
+                  test
                 )
               })
             )
-          )
+
+        return merge(
+          test
         )
+      })
     )
-  )
