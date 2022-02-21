@@ -1,23 +1,11 @@
-import type { BuildOptions } from 'esbuild'
-import { combineLatest, concat, from, merge, of, partition } from 'rxjs'
+import type { TestConfig } from '../types'
+
+import { from, merge, of, partition } from 'rxjs'
 
 import { filter, map, mergeMap, share, switchMap, tap } from 'rxjs/operators'
 
-import buildObservable from './esbuild'
-import platformProvider from '../platforms'
 import esbuild from './esbuild'
 import { createContext } from '../platforms'
-
-export type Platform = 'node' | 'chromium'
-export type LogLevel = 'none' | 'error' | 'warn' | 'info'
-
-export type TestConfig =   {
-  name: string
-  platform: Platform
-  browserTestGlob: string
-  logLevel: LogLevel
-  esbuild: BuildOptions
-}
 
 export default ({ configs }: { configs: TestConfig[] }) =>
   from(configs)
@@ -39,16 +27,21 @@ export default ({ configs }: { configs: TestConfig[] }) =>
                   of({ type: 'register' })
                     .pipe(
                       runInContext(),
+                      filter(({ data: { tests } }) => tests),
+                      map(({ data: { tests } }) => tests),
+                      tap(tests => console.log('register done', tests)),
                       share()
                     )
       
                 const test =
                   register
                     .pipe(
+                      tap(tests => console.log('tests', tests)),
                       map(tests => ({
                         type: 'run',
-                        tests
+                        data: { tests }
                       })),
+                      tap(tests => console.log('testing done', tests)),
                       runInContext()
                     )
       

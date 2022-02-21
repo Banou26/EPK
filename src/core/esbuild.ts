@@ -1,15 +1,16 @@
 import type { BuildOptions, Message, OutputFile } from 'esbuild'
 import type { Observer } from 'rxjs'
 
-import { dirname, join, resolve } from 'path'
+import { dirname, join, parse, resolve } from 'path'
 import { fileURLToPath } from 'url'
-import { readFile, writeFile } from 'fs/promises'
+import { mkdir, readFile, writeFile } from 'fs/promises'
 import { cwd } from 'process'
 
 import esbuild from 'esbuild'
 import glob from 'glob'
 
 import asyncObservable from '../utils/async-observable'
+import { toGlobal } from '../utils/runtime'
 import { TestConfig } from '.'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -37,6 +38,17 @@ const outputFilesToBuildOutput = (outputFiles: OutputFile[]): BuildOutputFile[] 
         _path.endsWith('.map')
       )
     }))
+
+const pluginOnload = (testFilePaths: string[], loader: esbuild.Loader) => async (args) => {
+  const text = await readFile(args.path, 'utf8')
+  return {
+    contents:
+      testFilePaths.includes(args.path)
+        ? `${text};\nglobalThis.${toGlobal('initDone')}();`
+        : text,
+    loader
+  }
+}
 
 export default ({ testConfig, esbuildOptions }: { testConfig: TestConfig, esbuildOptions: BuildOptions }) =>
   asyncObservable<BuildOutput>(async (observer: Observer<BuildOutput>) => {
@@ -71,30 +83,20 @@ export default ({ testConfig, esbuildOptions }: { testConfig: TestConfig, esbuil
         {
           name: 'playwright-browser',
           setup(build) {
-            build.onLoad({ filter: /\.(tsx|jsx)$/ }, async (args) => {
-              const text = await readFile(args.path, 'utf8')
-              return {
-                contents: testFilePaths.includes(args.path) ? `${text};\nglobalThis.registerTests();` : text,
-                loader: 'tsx'
-              }
-            })
-            build.onLoad({ filter: /\.(js|ts)$/ }, async (args) => {
-              const text = await readFile(args.path, 'utf8')
-              return {
-                contents: testFilePaths.includes(args.path) ? `${text};\nglobalThis.registerTests();` : text,
-                loader: 'ts'
-              }
-            })
+            build.onLoad({ filter: /\.(tsx|jsx)$/ }, pluginOnload(testFilePaths, 'tsx'))
+            build.onLoad({ filter: /\.(js|ts)$/ }, pluginOnload(testFilePaths, 'ts'))
           },
         }
       ],
-      inject: [join(__dirname, '../src/runtime/index.ts')],
+      inject: [join(__dirname, '../src/runtime/index.ts'), join(__dirname, '../src/runtime/console.ts')],
     })
 
     for (const file of outputFiles) {
+      try {
+        await mkdir(parse(file.path).dir, { recursive: true })
+      } catch (err) {}
       await writeFile(file.path, file.contents)
     }
-
     if (errors.length) observer.error({ type: 'failure', errors })
     else observer.next({ type: 'success', output: outputFilesToBuildOutput(outputFiles) })
 

@@ -25,4 +25,4 @@ test('succeed', () => {})
 
 // test.isolate('isolate async succeed', async () => {})
 // test.isolate('isolate async fail', async () => throw new Error('Test should fail'))
-console.log('fooo')
+console.log('foooo')

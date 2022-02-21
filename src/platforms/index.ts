@@ -29,21 +29,24 @@ export default ({ configs }: { configs: TestConfig[] }) =>
   
   import { finalize, share, tap } from 'rxjs/operators'
   
-export const createContext = ({ config, output }: { config: TestConfig, output: BuildOutputFile }) => {
-  const context = platforms[config.platform]({ config, output })
+export const createContext = ({ config, output }: { config: TestConfig, output: BuildOutputFile }) =>
+  platforms[config.platform]({ config, output })
 
-  return (
-    ({ options } = {}) =>
-      observable =>
-        observable
-          .pipe(
-            tap(val => console.log('tap', val)),
-            share(),
-            finalize(() => {
+// export const createContext = ({ config, output }: { config: TestConfig, output: BuildOutputFile }) => {
+//   const context = platforms[config.platform]({ config, output })
 
-            })
-          )
-  )
-    // func(val, getContext)
-}
+//   return (
+//     ({ options } = {}) =>
+//       observable =>
+//         observable
+//           .pipe(
+//             tap(val => console.log('tap', val)),
+//             share(),
+//             finalize(() => {
+
+//             })
+//           )
+//   )
+//     // func(val, getContext)
+// }
 

@@ -1,10 +1,20 @@
-import type { Event } from '../utils/runtime'
+import type { Event, Task } from '../utils/runtime'
 
-
-import { tests } from '.'
+import { tests as registeredTests } from './test'
 import asyncObservable from 'src/utils/async-observable'
 
-export default () =>
+export default ({ tests }: Task<'run'>['data']) =>
   asyncObservable<Event<'run' | 'runs'>>(async (observer) => {
-    // observer.next({ type: 'run', data: { test: } })
+    const results = await Promise.all(
+      tests.map(test =>
+        registeredTests
+          .find(({ name }) => test.name)
+          .function()
+          .then(val => {
+            observer.next({ type: 'run', data: { test: val } })
+            return val
+          })
+      )
+    )
+    observer.next({ type: 'runs', data: { tests: results } })
   })
