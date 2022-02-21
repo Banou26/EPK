@@ -1,5 +1,9 @@
 
 test('succeed', () => {})
+
+test('failed', () => {
+  throw new Error('my error')
+})
 // test('fail', () => throw new Error('Test should fail'))
 
 // test('promise succeed', () => Promise.resolve())

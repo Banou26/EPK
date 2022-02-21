@@ -3,7 +3,7 @@ import {
   // describe as bDescribe,
   // querySelector as bQuerySelector,
   test as bTest,
-} from './src/runtime'
+} from './runtime'
 
 declare global {
   var assert: typeof chaiAssert
@@ -12,3 +12,5 @@ declare global {
   // var querySelector: typeof bQuerySelector
   var test: typeof bTest
 }
+
+export {}

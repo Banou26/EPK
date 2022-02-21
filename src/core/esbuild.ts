@@ -63,8 +63,9 @@ export default ({ testConfig, esbuildOptions }: { testConfig: TestConfig, esbuil
         )
       )).map(relativePath => resolve(cwd(), relativePath))
 
-    const { errors, outputFiles, stop } = await esbuild.build({
+    const { errors, metafile, outputFiles, stop } = await esbuild.build({
       ...esbuildOptions,
+      metafile: true,
       bundle: true,
       write: false,
       entryPoints: testFilePaths,

@@ -8,7 +8,7 @@ export default ({ tests }: Task<'run'>['data']) =>
     const results = await Promise.all(
       tests.map(test =>
         registeredTests
-          .find(({ name }) => test.name)
+          .find(({ name }) => name === test.name)
           .function()
           .then(val => {
             observer.next({ type: 'run', data: { test: val } })

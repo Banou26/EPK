@@ -11,5 +11,7 @@ esbuild.build({
   outfile: './build/cli.js',
   // outdir: './build',
   publicPath: '/',
+  inject: ['./src/react-shim.ts'],
+  jsx: 'transform',
   minify: process.argv.includes('-m') || process.argv.includes('--minify')
-}).catch(() => {})
+})

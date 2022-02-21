@@ -13,7 +13,7 @@
     "moduleResolution": "node",
     "allowSyntheticDefaultImports": true,
     "baseUrl": ".",
+    "jsx": "react"
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "src/service-worker.ts", "src/service-worker/**/*"]
+  "include": ["src/**/*", "tests/**/*"]
 }
