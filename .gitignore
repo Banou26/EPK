@@ -1,7 +1,6 @@
-.epk
-.parcel-cache
-node_modules
+.epk/
+node_modules/
 yarn-error.log
-dist
-tmp
-build
+dist/
+tmp/
+build/
