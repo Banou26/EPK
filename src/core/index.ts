@@ -85,7 +85,7 @@ export default ({ configs }: { configs: TestConfig[] }) =>
                                     }
                                   }))
                               })),
-                              take(1)
+                              // take(1)
                             )
         
                         return (

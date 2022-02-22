@@ -35,6 +35,7 @@ export type TestRun = {
 export type TestConfig = {
   name: string
   platform: Platform
+  environment?: 'background-script'
   browserTestGlob: string
   logLevel: LogLevel
   esbuild: BuildOptions

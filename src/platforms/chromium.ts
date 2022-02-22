@@ -5,7 +5,7 @@ import { dirname, join } from 'path'
 import { rm } from 'fs/promises'
 import { fileURLToPath } from 'url'
 
-import { chromium } from 'playwright'
+import { BrowserContext, chromium } from 'playwright'
 import { cwd } from 'process'
 import { Observable } from 'rxjs'
 
@@ -17,7 +17,9 @@ let runId = 0
 
 export default ({ config, output }: { config: TestConfig, output: BuildOutputFile }) => {
   const id = runId++
-  let _browser
+  let _browser: Promise<BrowserContext>
+  let extensionId
+  // let backgroundPage
 
   let contextsInUse = 0
 
@@ -32,17 +34,26 @@ export default ({ config, output }: { config: TestConfig, output: BuildOutputFil
             args: [
               `--disable-extensions-except=${extensionPath}`,
               `--load-extension=${extensionPath}`
-            ]
+            ],
+            bypassCSP: true
           }).then(async (context) => {
+            const backgroundPage = await context.waitForEvent('backgroundpage')
             const extensionPage = await context.newPage()
             await extensionPage.goto('chrome://extensions/')
             await extensionPage.click('#devMode')
             await extensionPage.reload()
-            const extensionId = (await (await extensionPage.waitForSelector('#extension-id', { state: 'attached' })).textContent())?.replace('ID: ', '')
+            extensionId = (await (await extensionPage.waitForSelector('#extension-id', { state: 'attached' })).textContent())?.replace('ID: ', '')
             await extensionPage.goto(`chrome://extensions/?id=${extensionId}`)
             await extensionPage.click('#allow-incognito #knob')
-            await extensionPage.click('#inspect-views > li:nth-child(2) > a')
             await extensionPage.selectOption('#hostAccess', 'ON_ALL_SITES')
+            console.log(backgroundPage.url())
+            // await extensionPage.click('#enable-section #enableToggle #knob')
+            // await new Promise(resolve => setTimeout(resolve, 5000))
+            // await extensionPage.click('#enable-section #enableToggle #knob')
+            await extensionPage.click('#inspect-views > li:nth-child(2) > a')
+            // await new Promise(resolve => setTimeout(resolve, 5000))
+            // console.log('context.backgroundPages()', context.backgroundPages())
+            // console.log('browser.backgroundPages[0]', context.backgroundPages[0])
             // await extensionPage.close()
             return context
           })
@@ -53,8 +64,16 @@ export default ({ config, output }: { config: TestConfig, output: BuildOutputFil
             .pipe(
               switchMap(val =>
                 new Observable(observer => {
-                  const _page = _browser.then(browser => browser.newPage())
+                  const _page = _browser.then(browser => browser.newPage()
+                    // config.environment === 'background-script'
+                    //   ? browser.backgroundPages[0]
+                    //   : browser.newPage()
+                  )
                   _page.then(async page => {
+                    if (config.environment === 'background-script') {
+                      await page.goto(`chrome-extension://${extensionId}/background-page.html`)
+                      // console.log(page)
+                    }
                     await page.exposeBinding(toGlobal('event'), (_, event) => observer.next(event))
                     page.on('console', msg => {
                       const type = msg.type()
@@ -75,7 +94,11 @@ export default ({ config, output }: { config: TestConfig, output: BuildOutputFil
                       [val, toGlobal('task')] as const
                     )
                   }).catch(err => console.log('chrome err', err))
-                  return () => _page.then(page => page.close())
+                  return () => _page.then(page => page.close()
+                    // config.environment === 'background-script'
+                    // ? undefined
+                    // : page.close()
+                  )
                 })
               ),
               finalize(async () => {

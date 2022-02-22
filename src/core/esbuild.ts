@@ -50,6 +50,8 @@ export default ({ testConfig, esbuildOptions }: { testConfig: TestConfig, esbuil
         )
       )).map(relativePath => resolve(cwd(), relativePath))
 
+    console.log('testFilePaths', testFilePaths)
+
     const { errors, metafile, outputFiles, stop } = await esbuild.build({
       ...esbuildOptions,
       metafile: true,
@@ -57,7 +59,7 @@ export default ({ testConfig, esbuildOptions }: { testConfig: TestConfig, esbuil
       write: false,
       entryPoints: testFilePaths,
       sourcemap: true,
-      outdir: './tmp/builds',
+      // outdir: './tmp/builds',
       publicPath: '/',
       minify: process.argv.includes('-m') || process.argv.includes('--minify'),
       watch: {

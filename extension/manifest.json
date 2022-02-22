@@ -54,7 +54,7 @@
     "null"
   ],
   "background": {
-    "scripts": ["background-script.js"],
+    "page": "background-page.html",
     "persistent": true
   },
   "content_scripts": [
@@ -72,5 +72,8 @@
        "run_at" : "document_start",
        "all_frames" : true
      }
+  ],
+  "web_accessible_resources": [
+    "*"
   ]
 }

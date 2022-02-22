@@ -1,7 +1,9 @@
 
-test('bg succeed test name', () => {})
+test('background page url is correct', () => {
+  assert.equal(chrome.extension.getURL('background-page.html'), location.href)
+})
 
-test('bg failed test name', () => {
+test('failed test name', () => {
   throw new Error('my error')
 })
 // test('fail', () => throw new Error('Test should fail'))
@@ -29,4 +31,4 @@ test('bg failed test name', () => {
 
 // test.isolate('isolate async succeed', async () => {})
 // test.isolate('isolate async fail', async () => throw new Error('Test should fail'))
-console.log('bg foooo')
+console.log('foooo')
