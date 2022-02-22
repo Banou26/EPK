@@ -12,8 +12,12 @@ const resolvers = {
 
 const done = new ReplaySubject()
 
+const _initDone = globalThis[toGlobal('initDone')]
+
 globalThis[toGlobal('initDone')] = () => {
   done.next()
+  console.log('calling _initDone')
+  _initDone()
 }
 
 export const sendMessage = (value) => globalThis[toGlobal('event')](value)

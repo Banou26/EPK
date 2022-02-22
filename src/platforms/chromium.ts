@@ -72,7 +72,6 @@ export default ({ config, output }: { config: TestConfig, output: BuildOutputFil
                   _page.then(async page => {
                     if (config.environment === 'background-script') {
                       await page.goto(`chrome-extension://${extensionId}/background-page.html`)
-                      // console.log(page)
                     }
                     await page.exposeBinding(toGlobal('event'), (_, event) => observer.next(event))
                     page.on('console', msg => {
@@ -88,7 +87,11 @@ export default ({ config, output }: { config: TestConfig, output: BuildOutputFil
                       if (config.logLevel === 'info') return
                       if (type === 'log') observer.next({ type: 'log', log: text })
                     })
-                    await page.mainFrame().addScriptTag({ path: output.file.path, type: 'module' })
+                    const initDone = new Promise(async resolve => {
+                      await page.exposeBinding(toGlobal('initDone'), () => resolve(undefined))
+                      await page.mainFrame().addScriptTag({ path: output.file.path, type: 'module' })
+                    })
+                    await initDone
                     await page.evaluate(
                       ([task, globalVariableTaskName]) => globalThis[globalVariableTaskName].next(task),
                       [val, toGlobal('task')] as const
