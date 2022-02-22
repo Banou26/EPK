@@ -11,22 +11,9 @@ import glob from 'glob'
 
 import asyncObservable from '../utils/async-observable'
 import { toGlobal } from '../utils/runtime'
-import { TestConfig } from '.'
+import { TestConfig, BuildOutput, BuildOutputFile } from '../types'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
-
-export type BuildStatus = 'start' | 'success' | 'failure'
-
-export type BuildOutputFile = {
-  file: OutputFile
-  sourcemap: OutputFile
-}
-
-export type BuildOutput = {
-  type: BuildStatus
-  errors?: Message[]
-  output?: BuildOutputFile[]
-}
 
 const outputFilesToBuildOutput = (outputFiles: OutputFile[]): BuildOutputFile[] =>
   outputFiles
@@ -52,7 +39,7 @@ const pluginOnload = (testFilePaths: string[], loader: esbuild.Loader) => async 
 
 export default ({ testConfig, esbuildOptions }: { testConfig: TestConfig, esbuildOptions: BuildOptions }) =>
   asyncObservable<BuildOutput>(async (observer: Observer<BuildOutput>) => {
-    observer.next({ type: 'start' })
+    observer.next({ type: 'build', name: 'start' })
 
     const testFilePaths =
       (await new Promise<string[]>((resolve, reject) =>
@@ -74,9 +61,15 @@ export default ({ testConfig, esbuildOptions }: { testConfig: TestConfig, esbuil
       publicPath: '/',
       minify: process.argv.includes('-m') || process.argv.includes('--minify'),
       watch: {
-        onRebuild(errors, { outputFiles }) {
-          if (errors) observer.error({ type: 'failure', errors })
-          else observer.next({ type: 'success', output: outputFilesToBuildOutput(outputFiles) })
+        async onRebuild(errors, { outputFiles }) {
+          for (const file of outputFiles) {
+            try {
+              await mkdir(parse(file.path).dir, { recursive: true })
+            } catch (err) {}
+            await writeFile(file.path, file.contents)
+          }
+          if (errors) observer.error({ type: 'build', name: 'failure', errors })
+          else observer.next({ type: 'build', name: 'success', outputs: outputFilesToBuildOutput(outputFiles) })
         }
       },
       plugins: [
@@ -98,8 +91,8 @@ export default ({ testConfig, esbuildOptions }: { testConfig: TestConfig, esbuil
       } catch (err) {}
       await writeFile(file.path, file.contents)
     }
-    if (errors.length) observer.error({ type: 'failure', errors })
-    else observer.next({ type: 'success', output: outputFilesToBuildOutput(outputFiles) })
+    if (errors.length) observer.error({ type: 'build', name: 'failure', errors })
+    else observer.next({ type: 'build', name: 'success', outputs: outputFilesToBuildOutput(outputFiles) })
 
     return () => stop()
   })

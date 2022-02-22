@@ -24,9 +24,9 @@ const incomingMessages =
   subject
     .pipe(
       mergeMap(val => done.pipe(mapTo(val))),
-      tap(v => console.log('received', v)),
+      // tap(v => console.log('received', v)),
       mergeMap(message => resolvers[message.type](message.data)),
-      tap(v => void console.log('sending', v)),
+      // tap(v => void console.log('sending', v)),
       tap(event => sendMessage(event))
     )
 

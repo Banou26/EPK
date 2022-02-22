@@ -1,7 +1,7 @@
 
-test('succeed', () => {})
+test('succeed test name', () => {})
 
-test('failed', () => {
+test('failed test name', () => {
   throw new Error('my error')
 })
 // test('fail', () => throw new Error('Test should fail'))

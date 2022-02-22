@@ -8,13 +8,13 @@ export const test = (name: string, func: (...args) => any) => {
     name,
     function: async (args): Promise<TestRun> => {
       try {
-        return { test, return: await func(args) }
+        return { test, status: 'success', return: await func(args) }
       } catch (err: any) {
         try {
           const stack = await stacktrace.fromError(err)
-          return { test, originalStack: err.stack, errorStack: stack }
+          return { test, status: 'fail', originalStack: err.stack, errorStack: stack }
         } catch (_) {
-          return { test, originalStack: err.stack }
+          return { test, status: 'fail', originalStack: err.stack }
         }
       }
     }

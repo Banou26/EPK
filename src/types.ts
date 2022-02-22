@@ -1,4 +1,5 @@
-import type { BuildOptions } from 'esbuild'
+import type { BuildOptions, Message, OutputFile } from 'esbuild'
+
 import type { JSHandle } from 'playwright'
 
 export type Platform = 'node' | 'chromium'
@@ -25,6 +26,7 @@ export type TestFile = {
 
 export type TestRun = {
   test: Test
+  status: 'success' | 'fail'
   return?: any
   originalStack?: string[]
   errorStack?: any[]
@@ -41,6 +43,20 @@ export type TestConfig = {
 export type TestConfigRun = {
   config: TestConfig
   files: TestFile[]
+}
+
+export type BuildStatus = 'start' | 'success' | 'failure'
+
+export type BuildOutputFile = {
+  file: OutputFile
+  sourcemap: OutputFile
+}
+
+export type BuildOutput = {
+  type: 'build'
+  name: BuildStatus
+  errors?: Message[]
+  outputs?: BuildOutputFile[]
 }
 
 // type Environment = 'browser' | 'content-script' | 'background-script' | 'service-worker' | 'web-worker' | 'shared-worker'
