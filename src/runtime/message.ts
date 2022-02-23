@@ -14,9 +14,16 @@ const done = new ReplaySubject()
 
 const _initDone = globalThis[toGlobal('initDone')]
 
-globalThis[toGlobal('initDone')] = () => {
+globalThis[toGlobal('initDone')] = (args) => {
+  console.log('args', args)
   done.next()
-  _initDone()
+  if (args.environment === 'content-script') {
+    const script = document.createElement('script')
+    script.innerHTML = `globalThis[${JSON.stringify(toGlobal('initDone'))}]()`
+    document.body.appendChild(script)
+  } else {
+    _initDone()
+  }
 }
 
 export const sendMessage = (value) => globalThis[toGlobal('event')](value)
@@ -34,3 +41,4 @@ const incomingMessages =
     )
 
 incomingMessages.subscribe()
+console.log('uhm')

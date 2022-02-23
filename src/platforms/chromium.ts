@@ -4,8 +4,9 @@ import type { BuildOutputFile } from 'src/core/esbuild'
 import { dirname, join } from 'path'
 import { rm } from 'fs/promises'
 import { fileURLToPath } from 'url'
+import { randomUUID } from 'crypto'
 
-import { BrowserContext, chromium } from 'playwright'
+import { BrowserContext, chromium, Page } from 'playwright'
 import { cwd } from 'process'
 import { Observable } from 'rxjs'
 
@@ -58,14 +59,57 @@ export default ({ config, output: rootRoutput }: { config: TestConfig, output?: 
             .pipe(
               switchMap(val =>
                 new Observable(observer => {
-                  const _page = _browser.then(browser => browser.newPage()
-                    // config.environment === 'background-script'
-                    //   ? browser.backgroundPages[0]
-                    //   : browser.newPage()
-                  )
+                  const _page = _browser.then(browser => browser.newPage())
                   _page.then(async page => {
-                    if (config.environment === 'background-script') {
-                      await page.goto(`chrome-extension://${extensionId}/background-page.html`)
+                    if (output.environment === 'content-script') {
+                      const browser = await _browser
+                      const bgPage = await browser.newPage()
+                      await bgPage.goto(`chrome-extension://${extensionId}/_generated_background_page.html`)
+
+                      const { page: contentScriptPage, tabId } = await new Promise<{ page: Page, tabId: number }>(async resolve => {
+                        const uuid = randomUUID()
+                        console.log('uuid', uuid)
+                        let foundPage
+                        let newPages = []
+                        const pageListener = (page: Page) => {
+                          const logListener = (message) => {
+                            const text = message.text()
+                            const type = message.type()
+                            if (type !== 'log' || !text.includes('PAGE_IDENTIFY') || !text.includes(uuid)) return
+                            for (const { page, logListener } of newPages) {
+                              page.removeListener('console', logListener)
+                            }
+                            foundPage = page
+                          }
+                          page.addListener('console', logListener)
+                          newPages = [...newPages, { page, logListener }]
+                        }
+                        browser.addListener('page', pageListener)
+                        const tabId = await bgPage.evaluate(
+                          ([scriptContent, uuid]) =>
+                            new Promise<number>(resolve => {
+                              chrome.tabs.create({ url: 'https://example.com' }, (tab) => {
+                                chrome.tabs.executeScript(tab.id, { code: `console.log('PAGE_IDENTIFY ${uuid}')` }, () => resolve(tab.id))
+                              })
+                            }),
+                          [output.file.text, uuid] as const
+                        )
+                        browser.removeListener('page', pageListener)
+                        resolve({ page: foundPage, tabId })
+                      })
+                      await bgPage.evaluate(
+                        ([scriptContent, tabId]) =>
+                          new Promise(resolve => {
+                            chrome.tabs.executeScript(tabId, { code: scriptContent })
+                          }),
+                        [output.file.text, tabId] as const
+                      )
+                      // console.log('CONTENT_SCRIPT_PAGE URL', tabId, contentScriptPage.url())
+                      // await bgPage.close()
+                      return
+                    }
+                    if (output.environment === 'background-script') {
+                      await page.goto(`chrome-extension://${extensionId}/_generated_background_page.html`)
                     }
                     await page.exposeBinding(toGlobal('event'), (_, event) => observer.next(event))
                     page.on('console', msg => {
@@ -84,6 +128,7 @@ export default ({ config, output: rootRoutput }: { config: TestConfig, output?: 
                     const initDone = new Promise(async resolve => {
                       await page.exposeBinding(toGlobal('initDone'), () => resolve(undefined))
                       await page.mainFrame().addScriptTag({ path: output.file.path, type: 'module' })
+                      // await page.evaluate(output.file.text)
                     })
                     await initDone
                     await page.evaluate(
@@ -91,11 +136,8 @@ export default ({ config, output: rootRoutput }: { config: TestConfig, output?: 
                       [val, toGlobal('task')] as const
                     )
                   }).catch(err => console.log('chrome err', err))
-                  return () => _page.then(page => page.close()
-                    // config.environment === 'background-script'
-                    // ? undefined
-                    // : page.close()
-                  )
+
+                  return () => _page.then(page => page.close())
                 })
               ),
               finalize(async () => {

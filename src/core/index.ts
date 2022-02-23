@@ -31,7 +31,6 @@ export default ({ config }: { config: EPKConfig }) =>
                   from(build.outputs)
                     .pipe(
                       mergeMap((output) => {
-                        // const environment = build. output.file.path
 
                         const runRegister =
                           of({ type: 'register' })

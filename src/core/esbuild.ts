@@ -1,4 +1,4 @@
-import type { BuildOptions, Message, OutputFile } from 'esbuild'
+import type { BuildOptions, Message, OnLoadArgs, OutputFile } from 'esbuild'
 import type { Observer } from 'rxjs'
 
 import { dirname, join, parse, relative, resolve } from 'path'
@@ -15,6 +15,38 @@ import { TestConfig, BuildOutput, BuildOutputFile } from '../types'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
+const includesSourcePath =
+  ({ file, testConfig }: { file: OutputFile, testConfig: TestConfig }) =>
+    path => path.includes(relative(join(cwd(), `./tmp/builds/${testConfig.name}`), file.path).slice(0, -parse(file.path).ext.length))
+
+const buildPathToSourcePath =
+  (
+    { file, testConfig, web, contentScript, backgroundScript }:
+    { file: OutputFile, testConfig: TestConfig, web: string[], contentScript: string[], backgroundScript: string[] }
+  ) =>
+    [...web, ...contentScript, ...backgroundScript]
+      .find(includesSourcePath({ file, testConfig }))
+
+const sourcePathToEnvironment =
+  (
+    { file, web, contentScript, backgroundScript }:
+    { file: OutputFile, web: string[], contentScript: string[], backgroundScript: string[] }
+  ) =>
+      web.includes(file.path) ? 'web' :
+      contentScript.includes(file.path) ? 'content-script' :
+      backgroundScript.includes(file.path) ? 'background-script' :
+      undefined
+
+const buildPathToEnvironment =
+  (
+    { file, testConfig, web, contentScript, backgroundScript }:
+    { file: OutputFile, testConfig: TestConfig, web: string[], contentScript: string[], backgroundScript: string[] }
+  ) =>
+      web.find(includesSourcePath({ file, testConfig })) ? 'web' :
+      contentScript.find(includesSourcePath({ file, testConfig })) ? 'content-script' :
+      backgroundScript.find(includesSourcePath({ file, testConfig })) ? 'background-script' :
+      undefined
+
 const outputFilesToBuildOutput =
   (
     outputFiles: OutputFile[],
@@ -23,15 +55,8 @@ const outputFilesToBuildOutput =
     outputFiles
       .filter(({ path }) => !path.endsWith('.map'))
       .map((file) => ({
-        originalPath:
-          web.find(path => path.includes(relative(join(cwd(), `./tmp/builds/${testConfig.name}`), file.path).slice(0, -parse(file.path).ext.length))) ??
-          contentScript.find(path => path.includes(relative(join(cwd(), `./tmp/builds/${testConfig.name}`), file.path).slice(0, -parse(file.path).ext.length))) ??
-          backgroundScript.find(path => path.includes(relative(join(cwd(), `./tmp/builds/${testConfig.name}`), file.path).slice(0, -parse(file.path).ext.length))),
-        environment:
-          web.find(path => path.includes(relative(join(cwd(), `./tmp/builds/${testConfig.name}`), file.path).slice(0, -parse(file.path).ext.length))) ? 'web' :
-          contentScript.find(path => path.includes(relative(join(cwd(), `./tmp/builds/${testConfig.name}`), file.path).slice(0, -parse(file.path).ext.length))) ? 'content-script' :
-          backgroundScript.find(path => path.includes(relative(join(cwd(), `./tmp/builds/${testConfig.name}`), file.path).slice(0, -parse(file.path).ext.length))) ? 'background-script' :
-          undefined,
+        originalPath: buildPathToSourcePath({ file, testConfig, web, contentScript, backgroundScript }),
+        environment: buildPathToEnvironment({ file, testConfig, web, contentScript, backgroundScript }),
         file,
         sourcemap: outputFiles.find(({ path: _path }) =>
           _path.includes(file.path) &&
@@ -39,16 +64,22 @@ const outputFilesToBuildOutput =
         )
       }))
 
-const pluginOnload = (testFilePaths: string[], loader: esbuild.Loader) => async (args) => {
-  const text = await readFile(args.path, 'utf8')
-  return {
-    contents:
-      testFilePaths.includes(args.path)
-        ? `${text};\nglobalThis.${toGlobal('initDone')}({ path: \`${JSON.stringify(args.path)}\` });`
-        : text,
-    loader
-  }
-}
+const pluginOnload =
+  (
+    { testFilePaths, loader, testConfig, web, contentScript, backgroundScript }:
+    { testFilePaths: string[], loader: esbuild.Loader, testConfig: TestConfig, web: string[], contentScript: string[], backgroundScript: string[] }
+  ) =>
+    async (args: OnLoadArgs) => {
+      const text = await readFile(args.path, 'utf8')
+      const environment = sourcePathToEnvironment({ file: { path: args.path } as unknown as OutputFile, web, contentScript, backgroundScript  })
+      return {
+        contents:
+          testFilePaths.includes(args.path)
+            ? `${text};\nglobalThis.${toGlobal('initDone')}({ path: \`${JSON.stringify(args.path)}\`, environment: \`${environment}\` });`
+            : text,
+        loader
+      }
+    }
 
 const matchGlobFiles = (_glob: string) =>
   new Promise<string[]>(
@@ -110,7 +141,7 @@ export default ({ testConfig, esbuildOptions }: { testConfig: TestConfig, esbuil
       minify: process.argv.includes('-m') || process.argv.includes('--minify'),
       watch: {
         async onRebuild(error, { errors, outputFiles }) {
-          if (errors) makeError(errors)
+          if (errors.length) makeError(errors)
           else await makeSuccess(outputFiles)
         }
       },
@@ -119,8 +150,8 @@ export default ({ testConfig, esbuildOptions }: { testConfig: TestConfig, esbuil
         {
           name: 'playwright-browser',
           setup(build) {
-            build.onLoad({ filter: /\.(tsx|jsx)$/ }, pluginOnload(testFilePaths, 'tsx'))
-            build.onLoad({ filter: /\.(js|ts)$/ }, pluginOnload(testFilePaths, 'ts'))
+            build.onLoad({ filter: /\.(tsx|jsx)$/ }, pluginOnload({ testFilePaths: testFilePaths, loader: 'tsx', testConfig, web: webFilePaths, contentScript: contentScriptfilePaths, backgroundScript: backgroundScriptfilePaths }))
+            build.onLoad({ filter: /\.(js|ts)$/ }, pluginOnload({ testFilePaths: testFilePaths, loader: 'ts', testConfig, web: webFilePaths, contentScript: contentScriptfilePaths, backgroundScript: backgroundScriptfilePaths }))
           },
         }
       ],
