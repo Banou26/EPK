@@ -54,7 +54,7 @@
     "null"
   ],
   "background": {
-    "page": "background-page.html",
+    "scripts": ["background-script.js"],
     "persistent": true
   },
   "content_scripts": [
@@ -64,14 +64,7 @@
       "run_at": "document_start",
       "match_about_blank": true,
       "all_frames": true
-    },
-    {
-      "matches" : [ "<all_urls>" ],
-      "match_about_blank" : true,
-      "js" : ["content-script.js"],
-       "run_at" : "document_start",
-       "all_frames" : true
-     }
+    }
   ],
   "web_accessible_resources": [
     "*"
