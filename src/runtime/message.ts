@@ -13,20 +13,21 @@ const resolvers = {
 const done = new ReplaySubject()
 
 const _initDone = globalThis[toGlobal('initDone')]
-
+let isContextScript = false
 globalThis[toGlobal('initDone')] = (args) => {
-  console.log('args', args)
   done.next()
   if (args.environment === 'content-script') {
-    const script = document.createElement('script')
-    script.innerHTML = `globalThis[${JSON.stringify(toGlobal('initDone'))}]()`
-    document.body.appendChild(script)
+    isContextScript = true
+    window.postMessage({ __epk__: true, name: 'initDone' }, '*')
   } else {
     _initDone()
   }
 }
 
-export const sendMessage = (value) => globalThis[toGlobal('event')](value)
+export const sendMessage = (value) =>
+  isContextScript
+    ? window.postMessage({ __epk__: true, name: 'event', value: JSON.stringify(value) }, '*')
+    : globalThis[toGlobal('event')](value)
 
 export const subject = globalThis[toGlobal('task')] = new Subject<Task<TASK>>()
 
@@ -41,4 +42,3 @@ const incomingMessages =
     )
 
 incomingMessages.subscribe()
-console.log('uhm')
