@@ -77,7 +77,7 @@ export default ({ config }: { config: EPKConfig }) =>
                                     const resultString = result.map(mappedStackFrame => `at ${mappedStackFrame.functionName ?? ''} ${mappedStackFrame.functionName ? '(' : ''}${mappedStackFrame.source || '<anonymous>'}:${mappedStackFrame.line ?? mappedStackFrame.lineNumber ?? 0}:${mappedStackFrame.column ?? mappedStackFrame.columnNumber ?? 0}${mappedStackFrame.functionName ? ')' : ''}`)
                                     const error = {
                                       message: testRun.originalStack.slice(0, testRun.originalStack.indexOf('\n')).replace('Error: ', ''),
-                                      stack: `${testRun.originalStack.slice(0, testRun.originalStack.indexOf('\n'))}\n${resultString.slice(0, -3).join('\n')}`.trim()
+                                      stack: `${testRun.originalStack.slice(0, testRun.originalStack.indexOf('\n'))}\n${resultString.slice(0, -8).join('\n')}`.trim()
                                     }
                                     return {
                                       ...testRun,
