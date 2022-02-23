@@ -3,6 +3,8 @@ import { from, GroupedObservable, Observable } from 'rxjs'
 import React, { Fragment, useEffect, useState } from 'react'
 import { Box, render, Text } from 'ink'
 import { groupBy, map, mergeMap, scan, tap } from 'rxjs/operators'
+import { relative } from 'path'
+import { cwd } from 'process'
 
 const groupByFile =
 	() =>
@@ -52,7 +54,40 @@ const Mount = ({ observable }: { observable: Observable<any> }) => {
 				eventsPerFile
 					.map(({ path, events }) =>
 						<Fragment key={`${path}`}>
-							<Text>{path}</Text>
+							<Text>
+								<Text color="white">{relative(cwd(), path)} </Text>
+								<Text color="white">(</Text>
+								<Text color="greenBright">
+									{
+										events
+											.filter(event => event.type === 'runs')
+											.flatMap(({ testsRuns }) => testsRuns)
+											.filter(({ status }) => status === 'success')
+											.length
+									}
+								</Text>
+								<Text color="white">/</Text>
+								<Text color="redBright">
+									{
+										events
+											.filter(event => event.type === 'runs')
+											.flatMap(({ testsRuns }) => testsRuns)
+											.filter(({ status }) => status === 'fail')
+											.length
+									}
+								</Text>
+								<Text color="white">/</Text>
+								<Text color="grayBright">
+									{
+										events
+											.filter(event => event.type === 'runs')
+											.flatMap(({ testsRuns }) => testsRuns)
+											.filter(({ status }) => status === 'skipped')
+											.length
+									}
+								</Text>
+								<Text color="white">)</Text>
+							</Text>
 							<Box flexDirection="column" paddingLeft={2}>
 								<Box flexDirection="column">
 									{
@@ -79,11 +114,22 @@ const Mount = ({ observable }: { observable: Observable<any> }) => {
 												<Fragment key={i}>
 													{
 														testsRuns
+															.filter(({ status }) => status === 'success')
+															.map(({ test, status, error }) =>
+																<Box key={test.name} flexDirection="column">
+																	<Text color="green">
+																		{test.name} ✓
+																	</Text>
+																</Box>
+															)
+													}
+													{
+														testsRuns
 															.filter(({ status }) => status === 'fail')
 															.map(({ test, status, error }) =>
-																<Box key={test.name} flexDirection="column" paddingLeft={2}>
-																	<Text color="redBright">
-																		{test.name}
+																<Box key={test.name} flexDirection="column">
+																	<Text color="red">
+																		{test.name} ✗
 																	</Text>
 																	<Box flexDirection="column" paddingLeft={2}>
 																		<Text color="redBright">{error.stack}</Text>

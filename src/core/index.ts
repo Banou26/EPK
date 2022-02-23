@@ -7,6 +7,8 @@ import { SourceMapConsumer } from 'source-map-js'
 import esbuild from './esbuild'
 import { createContext } from '../platforms'
 import { readFile } from 'fs/promises'
+import { cwd } from 'process'
+import { relative } from 'path'
 
 export default ({ config }: { config: EPKConfig }) =>
   from(config.configs)
@@ -44,7 +46,7 @@ export default ({ config }: { config: EPKConfig }) =>
                               filter(({ data: { tests } }) => tests),
                               map(({ data: { tests } }) => tests),
                               // tap(tests => console.log('register done', tests)),
-                              // take(1),
+                              take(1),
                               share()
                             )
         
@@ -74,7 +76,9 @@ export default ({ config }: { config: EPKConfig }) =>
                                     const sourceMap = JSON.parse(sourceMapStr)
                                     const sourceMapConsumer = new SourceMapConsumer(sourceMap)
                                     const result = testRun.errorStack.map(stackFrame => ({ ...stackFrame, ...sourceMapConsumer.originalPositionFor({ line: stackFrame.lineNumber, column: stackFrame.columnNumber }) }))
-                                    const resultString = result.map(mappedStackFrame => `at ${mappedStackFrame.functionName ?? ''} ${mappedStackFrame.functionName ? '(' : ''}${mappedStackFrame.source || '<anonymous>'}:${mappedStackFrame.line ?? mappedStackFrame.lineNumber ?? 0}:${mappedStackFrame.column ?? mappedStackFrame.columnNumber ?? 0}${mappedStackFrame.functionName ? ')' : ''}`)
+                                    const resultString = result.map(mappedStackFrame =>
+                                      `at ${mappedStackFrame.functionName ?? ''} ${mappedStackFrame.functionName ? '(' : ''}${relative(cwd(), mappedStackFrame.source).slice(6) || '<anonymous>'}:${mappedStackFrame.line ?? mappedStackFrame.lineNumber ?? 0}:${mappedStackFrame.column ?? mappedStackFrame.columnNumber ?? 0}${mappedStackFrame.functionName ? ')' : ''}`
+                                    )
                                     const error = {
                                       message: testRun.originalStack.slice(0, testRun.originalStack.indexOf('\n')).replace('Error: ', ''),
                                       stack: `${testRun.originalStack.slice(0, testRun.originalStack.indexOf('\n'))}\n${resultString.slice(0, -8).join('\n')}`.trim()
@@ -85,13 +89,13 @@ export default ({ config }: { config: EPKConfig }) =>
                                     }
                                   }))
                               })),
-                              // take(1)
+                              take(1)
                             )
         
                         return (
                           merge(
                             of(build),
-                            registerLogsStream,
+                            // registerLogsStream,
                             testLogsStream,
                             register,
                             test
