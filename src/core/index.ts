@@ -1,4 +1,4 @@
-import type { TestConfig } from '../types'
+import type { EPKConfig, TestConfig } from '../types'
 
 import { from, merge, of, partition } from 'rxjs'
 import { endWith, filter, map, mergeMap, share, switchMap, take, tap } from 'rxjs/operators'
@@ -8,8 +8,8 @@ import esbuild from './esbuild'
 import { createContext } from '../platforms'
 import { readFile } from 'fs/promises'
 
-export default ({ configs }: { configs: TestConfig[] }) =>
-  from(configs)
+export default ({ config }: { config: EPKConfig }) =>
+  from(config.configs)
     .pipe(
       mergeMap((config) => {
         const buildStream = esbuild({ testConfig: config, esbuildOptions: config.esbuild })
@@ -26,16 +26,17 @@ export default ({ configs }: { configs: TestConfig[] }) =>
           build
             .pipe(
               switchMap(({ build, config }) => {
-                
+                const runInContext = createContext({ config })
                 return (
                   from(build.outputs)
                     .pipe(
                       mergeMap((output) => {
-                        const runInContext = createContext({ config, output })
+                        // const environment = build. output.file.path
+
                         const runRegister =
                           of({ type: 'register' })
                             .pipe(
-                              runInContext()
+                              runInContext({ output })
                             )
                         const [registerLogsStream, registerStream] = partition(runRegister, (val) => val.type === 'log')
                         const register =
@@ -44,7 +45,7 @@ export default ({ configs }: { configs: TestConfig[] }) =>
                               filter(({ data: { tests } }) => tests),
                               map(({ data: { tests } }) => tests),
                               // tap(tests => console.log('register done', tests)),
-                              take(1),
+                              // take(1),
                               share()
                             )
         
@@ -57,7 +58,7 @@ export default ({ configs }: { configs: TestConfig[] }) =>
                                 data: { tests }
                               })),
                               // tap(tests => console.log('testing done', tests)),
-                              runInContext()
+                              runInContext({ output })
                             )
                         const [testLogsStream, testStream] = partition(runTest, (val) => val.type === 'log')
                         const test =

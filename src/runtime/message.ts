@@ -16,7 +16,6 @@ const _initDone = globalThis[toGlobal('initDone')]
 
 globalThis[toGlobal('initDone')] = () => {
   done.next()
-  console.log('calling _initDone')
   _initDone()
 }
 

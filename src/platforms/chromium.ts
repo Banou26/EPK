@@ -15,7 +15,7 @@ import { Task, toGlobal } from 'src/utils/runtime'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 let runId = 0
 
-export default ({ config, output }: { config: TestConfig, output: BuildOutputFile }) => {
+export default ({ config, output: rootRoutput }: { config: TestConfig, output?: BuildOutputFile }) => {
   const id = runId++
   let _browser: Promise<BrowserContext>
   let extensionId
@@ -24,7 +24,7 @@ export default ({ config, output }: { config: TestConfig, output: BuildOutputFil
   let contextsInUse = 0
 
   return (
-    ({ options } = {}) =>
+    ({ options, output = rootRoutput } = {}) =>
       (observable: Observable<Task>) => {
         if (!_browser) {
           const extensionPath = join(__dirname, '../extension')
@@ -33,6 +33,7 @@ export default ({ config, output }: { config: TestConfig, output: BuildOutputFil
             devtools: true,
             args: [
               `--disable-extensions-except=${extensionPath}`,
+              // ` --load-extension='./chrome_extensions/lmhkpmbekcpmknklioeibfkpmmfibljd/2.17.0_0,./chrome_extensions/fmkadmapgofadopljbjfkapdkoienihi/3.6.0_0'`
               `--load-extension=${extensionPath}`
             ],
             bypassCSP: true
@@ -46,15 +47,8 @@ export default ({ config, output }: { config: TestConfig, output: BuildOutputFil
             await extensionPage.goto(`chrome://extensions/?id=${extensionId}`)
             await extensionPage.click('#allow-incognito #knob')
             await extensionPage.selectOption('#hostAccess', 'ON_ALL_SITES')
-            console.log(backgroundPage.url())
-            // await extensionPage.click('#enable-section #enableToggle #knob')
-            // await new Promise(resolve => setTimeout(resolve, 5000))
-            // await extensionPage.click('#enable-section #enableToggle #knob')
             await extensionPage.click('#inspect-views > li:nth-child(2) > a')
-            // await new Promise(resolve => setTimeout(resolve, 5000))
-            // console.log('context.backgroundPages()', context.backgroundPages())
-            // console.log('browser.backgroundPages[0]', context.backgroundPages[0])
-            // await extensionPage.close()
+            await extensionPage.close()
             return context
           })
         }

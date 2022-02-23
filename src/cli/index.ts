@@ -11,7 +11,7 @@ import { rm } from 'fs/promises'
 import mime from 'mime'
 
 import EPK from '../core'
-import configs from '../../test.config'
+import config from '../../test.config'
 import cliReporter from '../reporters/cli'
 import { shareReplay } from 'rxjs/operators'
 
@@ -41,7 +41,7 @@ const run = async ({ entryFiles }: { entryFiles?: string[] } = { entryFiles: [] 
   //   .listen(2345)
   
   const epk =
-    EPK({ configs: configs as TestConfig[] })
+    EPK({ config })
       .pipe(
         shareReplay(),
         cliReporter()

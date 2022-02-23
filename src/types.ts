@@ -2,8 +2,9 @@ import type { BuildOptions, Message, OutputFile } from 'esbuild'
 
 import type { JSHandle } from 'playwright'
 
+export type Environment = 'web' | 'content-script' | 'background-script'
 export type Platform = 'node' | 'chromium'
-export type LogLevel = 'none' | 'error' | 'warn' | 'info'
+export type LogLevel = 'none' | 'error' | 'warn' | 'info' | ''
 
 export type Test = {
   name: string
@@ -32,11 +33,26 @@ export type TestRun = {
   errorStack?: any[]
 }
 
+export type EPKConfig = {
+  workers?: number
+  configs: TestConfig[]
+}
+
 export type TestConfig = {
   name: string
   platform: Platform
-  environment?: 'background-script'
-  browserTestGlob: string
+  extensionManifest: {
+    // manifest here
+  },
+  web: {
+    match: string[]
+  },
+  contentScript: {
+    match: string[]
+  },
+  backgroundScript: {
+    match: string[]
+  },
   logLevel: LogLevel
   esbuild: BuildOptions
 }
@@ -49,6 +65,7 @@ export type TestConfigRun = {
 export type BuildStatus = 'start' | 'success' | 'failure'
 
 export type BuildOutputFile = {
+  environment: Environment
   file: OutputFile
   sourcemap: OutputFile
 }
@@ -58,6 +75,9 @@ export type BuildOutput = {
   name: BuildStatus
   errors?: Message[]
   outputs?: BuildOutputFile[]
+  web?: { filePaths: string[] },
+  contentScript?: { filePaths: string[] },
+  backgroundScript?: { filePaths: string[] }
 }
 
 // type Environment = 'browser' | 'content-script' | 'background-script' | 'service-worker' | 'web-worker' | 'shared-worker'

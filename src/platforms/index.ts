@@ -29,7 +29,7 @@ export default ({ configs }: { configs: TestConfig[] }) =>
   
   import { finalize, share, tap } from 'rxjs/operators'
   
-export const createContext = ({ config, output }: { config: TestConfig, output: BuildOutputFile }) =>
+export const createContext = ({ config, output }: { config: TestConfig, output?: BuildOutputFile }) =>
   platforms[config.platform]({ config, output })
 
 // export const createContext = ({ config, output }: { config: TestConfig, output: BuildOutputFile }) => {

@@ -29,7 +29,7 @@ const Mount = ({ observable }: { observable: Observable<any> }) => {
 		const unsub =
 		observable
 			.pipe(
-				groupBy(val => val.path),
+				groupBy(({ output: { originalPath } }) => originalPath),
 				mergeMap(groupByFile()),
 				scan(
 					(files, file) =>
