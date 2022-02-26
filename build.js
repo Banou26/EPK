@@ -14,6 +14,34 @@ esbuild.build({
   minify: process.argv.includes('-m') || process.argv.includes('--minify')
 })
 
+// esbuild.build({
+//   watch: process.argv.includes('-w') || process.argv.includes('--watch'),
+//   bundle: true,
+//   format: 'esm',
+//   platform: 'node',
+//   external: ['./node_modules/*'],
+//   entryPoints: ['./src/cli/index.ts'],
+//   outfile: './build/cli-esm.js',
+//   publicPath: '/',
+//   inject: ['./src/react-shim.ts'],
+//   jsx: 'transform',
+//   minify: process.argv.includes('-m') || process.argv.includes('--minify')
+// })
+
+// esbuild.build({
+//   watch: process.argv.includes('-w') || process.argv.includes('--watch'),
+//   bundle: true,
+//   format: 'cjs',
+//   platform: 'node',
+//   external: ['./node_modules/*'],
+//   entryPoints: ['./src/cli/index.ts'],
+//   outfile: './build/cli.js',
+//   publicPath: '/',
+//   inject: ['./src/react-shim.ts'],
+//   jsx: 'transform',
+//   minify: process.argv.includes('-m') || process.argv.includes('--minify')
+// })
+
 esbuild.build({
   watch: process.argv.includes('-w') || process.argv.includes('--watch'),
   bundle: true,

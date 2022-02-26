@@ -1,18 +1,21 @@
 import type { BuildOutputFile, TestConfig } from '../types'
+import type{ BrowserContext, Page } from 'playwright'
 
 import { dirname, join } from 'path'
 import { rm } from 'fs/promises'
 import { fileURLToPath } from 'url'
 import { randomUUID } from 'crypto'
 
-import { BrowserContext, chromium, Page } from 'playwright'
+import playwright from 'playwright'
+// import { BrowserContext, chromium, Page } from 'playwright'
 import { cwd } from 'process'
 import { Observable } from 'rxjs'
 
 import { finalize, switchMap } from 'rxjs/operators'
 import { Task, toGlobal } from 'src/utils/runtime'
 
-const __dirname = dirname(fileURLToPath(import.meta.url))
+const __dirname = __dirname ?? dirname(fileURLToPath(import.meta.url))
+
 let runId = 0
 
 export default ({ config, output: rootRoutput }: { config: TestConfig, output?: BuildOutputFile }) => {
@@ -28,29 +31,33 @@ export default ({ config, output: rootRoutput }: { config: TestConfig, output?: 
       (observable: Observable<Task>) => {
         if (!_browser) {
           const extensionPath = join(__dirname, '../extension')
-          _browser = chromium.launchPersistentContext(join(cwd(), `tmp/platform/chromium/${id}`), {
-            headless: false,
-            devtools: true,
-            args: [
-              `--disable-extensions-except=${extensionPath}`,
-              // ` --load-extension='./chrome_extensions/lmhkpmbekcpmknklioeibfkpmmfibljd/2.17.0_0,./chrome_extensions/fmkadmapgofadopljbjfkapdkoienihi/3.6.0_0'`
-              `--load-extension=${extensionPath}`
-            ],
-            bypassCSP: true
-          }).then(async (context) => {
-            const backgroundPage = await context.waitForEvent('backgroundpage')
-            const extensionPage = await context.newPage()
-            await extensionPage.goto('chrome://extensions/')
-            await extensionPage.click('#devMode')
-            await extensionPage.reload()
-            extensionId = (await (await extensionPage.waitForSelector('#extension-id', { state: 'attached' })).textContent())?.replace('ID: ', '')
-            await extensionPage.goto(`chrome://extensions/?id=${extensionId}`)
-            await extensionPage.click('#allow-incognito #knob')
-            await extensionPage.selectOption('#hostAccess', 'ON_ALL_SITES')
-            await extensionPage.click('#inspect-views > li:nth-child(2) > a')
-            await extensionPage.close()
-            return context
-          })
+          _browser = import('playwright')
+            .then(playwright =>
+              playwright.chromium.launchPersistentContext(join(cwd(), `tmp/platform/chromium/${id}`), {
+                headless: false,
+                devtools: true,
+                args: [
+                  `--disable-extensions-except=${extensionPath}`,
+                  // ` --load-extension='./chrome_extensions/lmhkpmbekcpmknklioeibfkpmmfibljd/2.17.0_0,./chrome_extensions/fmkadmapgofadopljbjfkapdkoienihi/3.6.0_0'`
+                  `--load-extension=${extensionPath}`
+                ],
+                bypassCSP: true
+              })
+            )
+            .then(async (context) => {
+              const backgroundPage = await context.waitForEvent('backgroundpage')
+              const extensionPage = await context.newPage()
+              await extensionPage.goto('chrome://extensions/')
+              await extensionPage.click('#devMode')
+              await extensionPage.reload()
+              extensionId = (await (await extensionPage.waitForSelector('#extension-id', { state: 'attached' })).textContent())?.replace('ID: ', '')
+              await extensionPage.goto(`chrome://extensions/?id=${extensionId}`)
+              await extensionPage.click('#allow-incognito #knob')
+              await extensionPage.selectOption('#hostAccess', 'ON_ALL_SITES')
+              // await extensionPage.click('#inspect-views > li:nth-child(2) > a')
+              await extensionPage.close()
+              return context
+            })
         }
         contextsInUse++
         return (

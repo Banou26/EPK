@@ -1,4 +1,4 @@
-import { test } from '../../src/runtime/index'
+// import { test } from '../../src/runtime/index'
 
 // test('succeed', () => {})
 // test('fail', () => throw new Error('Test should fail'))
@@ -26,4 +26,4 @@ import { test } from '../../src/runtime/index'
 
 // test.isolate('isolate async succeed', async () => {})
 // test.isolate('isolate async fail', async () => throw new Error('Test should fail'))
-console.log('fooo')
+// console.log('fooo')

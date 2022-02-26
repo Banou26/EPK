@@ -10,11 +10,11 @@ import { readFile } from 'fs/promises'
 import { cwd } from 'process'
 import { relative } from 'path'
 
-export default ({ config }: { config: EPKConfig }) =>
+export default ({ config, watch }: { config: EPKConfig, watch?: boolean }) =>
   from(config.configs)
     .pipe(
       mergeMap((config) => {
-        const buildStream = esbuild({ testConfig: config, esbuildOptions: config.esbuild })
+        const buildStream = esbuild({ testConfig: config, esbuildOptions: config.esbuild, watch })
 
         const [_build, other] = partition(buildStream, build => build.name === 'success')
 

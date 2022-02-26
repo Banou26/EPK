@@ -4,6 +4,7 @@ import { cwd } from 'process'
 import { join } from 'path'
 import path from 'path'
 import { createServer } from 'http'
+import { pathToFileURL } from 'url'
 
 import { createReadStream } from 'fs'
 import { rm } from 'fs/promises'
@@ -11,11 +12,14 @@ import { rm } from 'fs/promises'
 import mime from 'mime'
 
 import EPK from '../core'
-import config from '../../test.config'
 import cliReporter from '../reporters/cli'
 import { shareReplay } from 'rxjs/operators'
+import { EPKConfig } from 'src/types'
 
 const run = async ({ entryFiles }: { entryFiles?: string[] } = { entryFiles: [] }) => {
+  const watch = process.argv.includes('-w') || process.argv.includes('--watch')
+  const configPath = pathToFileURL(undefined ?? join(cwd(), './test.config.js')).toString()
+  const { default: config }: { default: EPKConfig } = await import(configPath)
   await rm(join(cwd(), './tmp'), { recursive: true }).catch(() => {})
 
   // console.log(join(cwd(), './test.config.ts'))
@@ -41,7 +45,7 @@ const run = async ({ entryFiles }: { entryFiles?: string[] } = { entryFiles: [] 
   //   .listen(2345)
   
   const epk =
-    EPK({ config })
+    EPK({ config, watch })
       .pipe(
         shareReplay(),
         cliReporter()

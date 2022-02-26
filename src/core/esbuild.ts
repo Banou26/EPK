@@ -13,7 +13,7 @@ import asyncObservable from '../utils/async-observable'
 import { toGlobal } from '../utils/runtime'
 import { TestConfig, BuildOutput, BuildOutputFile } from '../types'
 
-const __dirname = dirname(fileURLToPath(import.meta.url))
+const __dirname = __dirname ?? dirname(fileURLToPath(import.meta.url))
 
 const includesSourcePath =
   ({ file, testConfig }: { file: OutputFile, testConfig: TestConfig }) =>
@@ -32,10 +32,10 @@ const sourcePathToEnvironment =
     { file, web, contentScript, backgroundScript }:
     { file: OutputFile, web: string[], contentScript: string[], backgroundScript: string[] }
   ) =>
-      web.includes(file.path) ? 'web' :
-      contentScript.includes(file.path) ? 'content-script' :
-      backgroundScript.includes(file.path) ? 'background-script' :
-      undefined
+    web.includes(file.path) ? 'web' :
+    contentScript.includes(file.path) ? 'content-script' :
+    backgroundScript.includes(file.path) ? 'background-script' :
+    undefined
 
 const buildPathToEnvironment =
   (
@@ -66,8 +66,8 @@ const outputFilesToBuildOutput =
 
 const pluginOnload =
   (
-    { testFilePaths, loader, testConfig, web, contentScript, backgroundScript }:
-    { testFilePaths: string[], loader: esbuild.Loader, testConfig: TestConfig, web: string[], contentScript: string[], backgroundScript: string[] }
+    { testFilePaths, loader, web, contentScript, backgroundScript }:
+    { testFilePaths: string[], loader: esbuild.Loader, web: string[], contentScript: string[], backgroundScript: string[] }
   ) =>
     async (args: OnLoadArgs) => {
       const text = await readFile(args.path, 'utf8')
@@ -90,7 +90,7 @@ const matchGlobFiles = (_glob: string) =>
       filePaths.map(relativePath => resolve(cwd(), relativePath))
     )
 
-export default ({ testConfig, esbuildOptions }: { testConfig: TestConfig, esbuildOptions: BuildOptions }) =>
+export default ({ testConfig, esbuildOptions, watch }: { testConfig: TestConfig, esbuildOptions: BuildOptions, watch?: boolean }) =>
   asyncObservable<BuildOutput>(async (observer: Observer<BuildOutput>) => {
     observer.next({ type: 'build', name: 'start' })
 

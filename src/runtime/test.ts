@@ -3,27 +3,32 @@ import { Test, TestRun } from '../types'
 
 export let tests: Test[] = []
 
-export const test = (name: string, func: (...args) => any) => {
-  const test = {
-    name,
-    function: async (args): Promise<TestRun> => {
-      try {
-        return { test, status: 'success', return: await func(args) }
-      } catch (err: any) {
+const makeTest = (options = {}) => {
+  const test = (name: string, func: (...args) => any) => {
+    const test = {
+      name,
+      function: async (args): Promise<TestRun> => {
         try {
-          const stack = await stacktrace.fromError(err)
-          return { test, status: 'fail', originalStack: err.stack, errorStack: stack }
-        } catch (_) {
-          return { test, status: 'fail', originalStack: err.stack }
+          return { test, status: 'success', return: await func(args) }
+        } catch (err: any) {
+          try {
+            const stack = await stacktrace.fromError(err)
+            return { test, status: 'fail', originalStack: err.stack, errorStack: stack }
+          } catch (_) {
+            return { test, status: 'fail', originalStack: err.stack }
+          }
         }
       }
     }
+    tests = [...tests, test]
   }
-  tests = [...tests, test]
+
+  const variants = ['serial', 'isolate', 'only', 'skip'].map(variant => ([variant, { get: () => makeTest({ ...options, [variant]: true }) }]))
+
+  return Object.defineProperties(test, Object.fromEntries(variants))
 }
 
-// test.serial = (name, func) => test(name, func, { serial: true })
-// test.isolate = (name, func) => test(name, func, { isolate: true })
+export const test = makeTest()
 
 export let beforeArray = []
 export let afterArray = []

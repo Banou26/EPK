@@ -1,12 +1,21 @@
-import { EPKConfig } from 'src/types'
 
-const config: EPKConfig = {
+const config = {
   configs: [
     // {
-    //   name: 'browser',
+    //   name: 'built extension',
     //   platform: 'chromium',
-    //   browserTestGlob: './tests/unit/index.ts',
-    //   // browserTestGlob: './tests/unit/**/*.ts',
+    //   extensionManifest: {
+    //     // manifest here
+    //   },
+    //   web: {
+    //     match: ['./tests/unit/web/**/*.ts']
+    //   },
+    //   contentScript: {
+    //     match: ['./tests/unit/content-script/**/*.ts']
+    //   },
+    //   backgroundScript: {
+    //     match: ['./tests/unit/background-script/**/*.ts']
+    //   },
     //   logLevel: '', // none, error, warn, info
     //   esbuild: {
     //     bundle: true,
@@ -19,7 +28,6 @@ const config: EPKConfig = {
     //     resolveExtensions: ['.ts', '.tsx', '.js', '.jsx', '.mjs'],
     //     minify: process.env.NODE_ENV !== 'development',
     //     sourcesContent: true,
-    //     outdir: './tmp/builds/unit',
     //     logLevel: 'error',
     //     sourcemap: 'external',
     //     write: false
@@ -32,8 +40,7 @@ const config: EPKConfig = {
         // manifest here
       },
       web: {
-        // match: ['./tests/unit/**/*.ts']
-        match: ['./tests/unit/web/index.ts']
+        match: ['./tests/unit/web/**/*.ts']
       },
       contentScript: {
         match: ['./tests/unit/content-script/**/*.ts']
@@ -53,7 +60,6 @@ const config: EPKConfig = {
         resolveExtensions: ['.ts', '.tsx', '.js', '.jsx', '.mjs'],
         minify: process.env.NODE_ENV !== 'development',
         sourcesContent: true,
-        outdir: './tmp/builds/unit/background',
         logLevel: 'error',
         sourcemap: 'external',
         write: false
