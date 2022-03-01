@@ -91,7 +91,7 @@ export default (function StackTrace() {
        * @param {Object} opts
        * @returns {Promise} for Array[StackFrame}
        */
-      fromError: function StackTrace$$fromError(error, opts) {
+      fromError: function StackTrace$$fromError(error, opts?: any) {
           opts = _merge(_options, opts);
           var gps = new StackTraceGPS(opts);
           return new Promise(function(resolve) {

@@ -3,6 +3,7 @@ import {
   // describe as bDescribe,
   // querySelector as bQuerySelector,
   test as bTest,
+  describe as bDescribe,
 } from './runtime'
 
 declare global {
@@ -11,6 +12,7 @@ declare global {
   // var describe: typeof bDescribe
   // var querySelector: typeof bQuerySelector
   var test: typeof bTest
+  var describe: typeof bDescribe
 }
 
 export {}

@@ -8,7 +8,13 @@ export type LogLevel = 'none' | 'error' | 'warn' | 'info' | ''
 
 export type Test = {
   name: string
-  function: (args: any) => any
+  function: (args: any) => any | string
+}
+
+export type TestRun = {
+  test: Test
+  function: ((args: any) => any) | string
+  status: 'success' | 'fail'
   return?: any
   originalStack?: string[]
   errorStack?: any[]
@@ -16,6 +22,13 @@ export type Test = {
 
 export type Describe = {
   name: string
+  function: (...args) => any | string
+  tests: Test[]
+}
+
+export type DescribeRun = {
+  name: string
+  function: (...args) => any | string
   tests: Test[]
 }
 
@@ -23,14 +36,6 @@ export type TestFile = {
   path: string
   describes: Describe[]
   tests: Test[]
-}
-
-export type TestRun = {
-  test: Test
-  status: 'success' | 'fail'
-  return?: any
-  originalStack?: string[]
-  errorStack?: any[]
 }
 
 export type EPKConfig = {
@@ -65,6 +70,7 @@ export type TestConfigRun = {
 export type BuildStatus = 'start' | 'success' | 'failure'
 
 export type BuildOutputFile = {
+  originalPath: string
   environment: Environment
   file: OutputFile
   sourcemap: OutputFile

@@ -4,17 +4,9 @@ const config = {
     // {
     //   name: 'built extension',
     //   platform: 'chromium',
-    //   extensionManifest: {
-    //     // manifest here
-    //   },
+    //   extensions: [],
     //   web: {
-    //     match: ['./tests/unit/web/**/*.ts']
-    //   },
-    //   contentScript: {
-    //     match: ['./tests/unit/content-script/**/*.ts']
-    //   },
-    //   backgroundScript: {
-    //     match: ['./tests/unit/background-script/**/*.ts']
+    //     match: ['./tests/e2e/**/*.ts']
     //   },
     //   logLevel: '', // none, error, warn, info
     //   esbuild: {

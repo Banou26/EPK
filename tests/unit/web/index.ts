@@ -1,4 +1,8 @@
 
+describe('my describe', () => {
+  test('described test', () => {})
+})
+
 test('test succeed', () => {})
 
 test('from web page, test fail', () => {

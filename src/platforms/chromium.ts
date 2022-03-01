@@ -12,7 +12,7 @@ import { cwd } from 'process'
 import { Observable } from 'rxjs'
 
 import { finalize, switchMap } from 'rxjs/operators'
-import { Task, toGlobal } from 'src/utils/runtime'
+import { Task, TaskEvents, toGlobal } from 'src/utils/runtime'
 
 const __dirname = __dirname ?? dirname(fileURLToPath(import.meta.url))
 
@@ -27,8 +27,8 @@ export default ({ config, output: rootRoutput }: { config: TestConfig, output?: 
   let contextsInUse = 0
 
   return (
-    ({ options, output = rootRoutput } = {}) =>
-      (observable: Observable<Task>) => {
+    <T extends Task>({ options, output = rootRoutput }: { options?: any, output: BuildOutputFile } = { output: rootRoutput }) =>
+      (observable: Observable<T>): Observable<TaskEvents<T['type']>> => {
         if (!_browser) {
           const extensionPath = join(__dirname, '../extension')
           _browser = import('playwright')
@@ -50,7 +50,7 @@ export default ({ config, output: rootRoutput }: { config: TestConfig, output?: 
               await extensionPage.goto('chrome://extensions/')
               await extensionPage.click('#devMode')
               await extensionPage.reload()
-              extensionId = (await (await extensionPage.waitForSelector('#extension-id', { state: 'attached' })).textContent())?.replace('ID: ', '')
+              extensionId = (await (await extensionPage.waitForSelector('#extension-id:below(div#name:has-text("EPK"), 200)', { state: 'attached' })).textContent())?.replace('ID: ', '')
               await extensionPage.goto(`chrome://extensions/?id=${extensionId}`)
               await extensionPage.click('#allow-incognito #knob')
               await extensionPage.selectOption('#hostAccess', 'ON_ALL_SITES')

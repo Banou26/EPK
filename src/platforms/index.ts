@@ -1,19 +1,21 @@
 import type { Observer } from 'rxjs'
 import type { BuildOutputFile } from 'src/core/esbuild'
 
-import type { Platform, TestConfig } from '../core'
+import type { Platform, TestConfig } from '../types'
 
 import asyncObservable from '../utils/async-observable'
 import chromium from './chromium'
 
 type MapPlatform = ({ config, output }: { config: TestConfig, output: BuildOutputFile }) => any
 
-export type PlatformRuntime = any
+export type PlatformRuntime = typeof chromium | undefined
 
 const platforms: Record<Platform, PlatformRuntime> = {
   'chromium': chromium,
   'node': undefined
 }
+
+export type Platforms = typeof platforms
 
 export default ({ configs }: { configs: TestConfig[] }) =>
   asyncObservable<MapPlatform>(async (observer: Observer<MapPlatform>) => {
