@@ -1,6 +1,9 @@
 
 describe('my describe', () => {
   test('described test', () => {})
+  test('described failed test', () => {
+    throw new Error('thrown error message')
+  })
 })
 
 test('test succeed', () => {})

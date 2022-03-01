@@ -73,29 +73,34 @@ export default ({ config, watch }: { config: EPKConfig, watch?: boolean }) =>
                               mergeMap(async ({ describesRuns, testsRuns, ...rest }) => ({
                                 ...rest,
                                 describesTestsRuns:
-                                  await Promise.all(
-                                    describesRuns.map((describe) =>
-                                      describe.tests.map(async testRun => {
-                                        if (testRun.status === 'success') return testRun
-                                        const sourceMapStr = output.sourcemap.text
-                                        const sourceMap = JSON.parse(sourceMapStr)
-                                        const sourceMapConsumer = new SourceMapConsumer(sourceMap)
-                                        const result = testRun.errorStack.map(stackFrame => ({ ...stackFrame, ...sourceMapConsumer.originalPositionFor({ line: stackFrame.lineNumber, column: stackFrame.columnNumber }) }))
-                                        const resultString = result.map(mappedStackFrame =>
-                                          `at ${mappedStackFrame.functionName ?? ''} ${mappedStackFrame.functionName ? '(' : ''}${relative(cwd(), mappedStackFrame.source).slice(6) || '<anonymous>'}:${mappedStackFrame.line ?? mappedStackFrame.lineNumber ?? 0}:${mappedStackFrame.column ?? mappedStackFrame.columnNumber ?? 0}${mappedStackFrame.functionName ? ')' : ''}`
+                                  (await Promise.all(
+                                    describesRuns.flatMap(async (describe) => ({
+                                      ...describe,
+                                      tests:
+                                        await Promise.all(
+                                          describe.tests.flatMap(async testRun => {
+                                            if (testRun.status === 'success') return testRun
+                                            const sourceMapStr = output.sourcemap.text
+                                            const sourceMap = JSON.parse(sourceMapStr)
+                                            const sourceMapConsumer = new SourceMapConsumer(sourceMap)
+                                            const result = testRun.errorStack.map(stackFrame => ({ ...stackFrame, ...sourceMapConsumer.originalPositionFor({ line: stackFrame.lineNumber, column: stackFrame.columnNumber }) }))
+                                            const resultString = result.map(mappedStackFrame =>
+                                              `at ${mappedStackFrame.functionName ?? ''} ${mappedStackFrame.functionName ? '(' : ''}${relative(cwd(), mappedStackFrame.source).slice(6) || '<anonymous>'}:${mappedStackFrame.line ?? mappedStackFrame.lineNumber ?? 0}:${mappedStackFrame.column ?? mappedStackFrame.columnNumber ?? 0}${mappedStackFrame.functionName ? ')' : ''}`
+                                            )
+                                            const error = {
+                                              message: testRun.originalStack.slice(0, testRun.originalStack.indexOf('\n')).replace('Error: ', ''),
+                                              stack: `${testRun.originalStack.slice(0, testRun.originalStack.indexOf('\n'))}\n${resultString.slice(0, -7).join('\n')}`.trim()
+                                            }
+                                            return {
+                                              describe,
+                                              ...testRun,
+                                              error
+                                            }
+                                          })
                                         )
-                                        const error = {
-                                          message: testRun.originalStack.slice(0, testRun.originalStack.indexOf('\n')).replace('Error: ', ''),
-                                          stack: `${testRun.originalStack.slice(0, testRun.originalStack.indexOf('\n'))}\n${resultString.slice(0, -8).join('\n')}`.trim()
-                                        }
-                                        return {
-                                          describe,
-                                          ...testRun,
-                                          error
-                                        }
-                                      })
-                                    )
-                                  ),
+                                    }))
+                                  ))
+                                  .flat(),
                                 testsRuns:
                                   await Promise.all(testsRuns.map(async testRun => {
                                     if (testRun.status === 'success') return testRun
@@ -108,7 +113,7 @@ export default ({ config, watch }: { config: EPKConfig, watch?: boolean }) =>
                                     )
                                     const error = {
                                       message: testRun.originalStack.slice(0, testRun.originalStack.indexOf('\n')).replace('Error: ', ''),
-                                      stack: `${testRun.originalStack.slice(0, testRun.originalStack.indexOf('\n'))}\n${resultString.slice(0, -8).join('\n')}`.trim()
+                                      stack: `${testRun.originalStack.slice(0, testRun.originalStack.indexOf('\n'))}\n${resultString.slice(0, -3).join('\n')}`.trim()
                                     }
                                     return {
                                       ...testRun,
