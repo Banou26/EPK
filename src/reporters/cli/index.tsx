@@ -157,7 +157,7 @@ const TestFile = ({ file, file: { path, events }, ...rest }) => {
           {
             events
               .filter(event => event.type === 'log')
-              .map(({ error, warn, info, log }, i) =>
+              .map(({ data: { error, warn, info, log } }, i) =>
                 <Fragment key={i}>
                   {
                     error ? <Text><Text color="redBright">err</Text>{error}</Text> :
