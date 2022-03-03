@@ -24,7 +24,7 @@ const makeDescribe = (options = {}) => {
 
   return Object.defineProperties(describe, Object.fromEntries([
     ...variants,
-    ['with', { get: () => (func: (...args) => any, args: any[]) => makeDescribe({ ...options, withFunction: func, withArguments: args }) }]
+    ['use', { get: () => (func: (...args) => any, args: any[]) => makeDescribe({ ...options, useFunction: func, useArguments: args }) }]
   ]))
 }
 

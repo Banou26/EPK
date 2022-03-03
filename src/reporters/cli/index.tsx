@@ -5,7 +5,7 @@ import { Box, render, Text } from 'ink'
 import { groupBy, map, mergeMap, scan, tap } from 'rxjs/operators'
 import { relative } from 'path'
 import { cwd } from 'process'
-import { parse } from 'path/posix'
+import { parse } from 'path'
 
 // const groupByFile =
   // () =>

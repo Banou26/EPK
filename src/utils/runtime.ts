@@ -19,11 +19,12 @@ export type Task<T extends TASK = TASK> = {
 export type Event<T extends EVENT = EVENT> = {
   type: T
   data:
+    T extends 'initDone' ? {  } :
     T extends 'log' ? { type: string, args: any[] } :
     T extends 'error' ? { message: string, stack: string[], errorStack?: any[] } :
     T extends 'register' ? { tests: Test[], describes: Describe[] } :
     T extends 'run' ? { describe: DescribeRun, test: TestRun } :
-    T extends 'runs' ? { describes: DescribeRun[],tests: TestRun[] } :
+    T extends 'runs' ? { describes: DescribeRun[], tests: TestRun[] } :
     never
 }
 
