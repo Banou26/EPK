@@ -1,11 +1,19 @@
-import stacktrace from '../stracktrace/stacktrace'
+import { EPKPage } from '../platforms/chromium/types'
+import stacktrace from '../stacktrace/stacktrace'
 import { Test, TestRun, Describe } from '../types'
 
 let currentDescribe: Describe | undefined
 
 export let describes: Describe[] = []
 
-const makeDescribe = (options = {}) => {
+type UseEvaluate<T, T2> = ({ getPage, run }: { getPage: () => Promise<EPKPage>, run: (page: EPKPage, data: any) => any }, args: T) => T2
+
+export type DescribeFunction = {
+  use: <T extends any, T2 extends any>(func: UseEvaluate<T, T2>, args: T) => DescribeFunction
+  (name: string, func: (...args: unknown[]) => unknown): void 
+}
+
+const makeDescribe = (options = {}): DescribeFunction => {
   const describe = (name: string, func: (...args) => any) => {
     const describe = {
       ...options,
@@ -22,6 +30,7 @@ const makeDescribe = (options = {}) => {
 
   const variants = ['serial', 'isolate', 'only', 'skip'].map(variant => ([variant, { get: () => makeTest({ ...options, [variant]: true }) }] as const))
 
+  // @ts-ignore
   return Object.defineProperties(describe, Object.fromEntries([
     ...variants,
     ['use', { get: () => (func: (...args) => any, args: any[]) => makeDescribe({ ...options, useFunction: func, useArguments: args }) }]

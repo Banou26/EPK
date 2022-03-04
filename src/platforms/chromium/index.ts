@@ -13,7 +13,8 @@ import { finalize, switchMap } from 'rxjs/operators'
 
 import { newPage, sendTask } from './page'
 
-const __dirname = __dirname ?? dirname(fileURLToPath(import.meta.url))
+// @ts-ignore
+const __dirname: string = __dirname ?? dirname(fileURLToPath(import.meta.url))
 
 let runId = 0
 
@@ -61,8 +62,8 @@ export default ({ config, output: rootRoutput }: { config: TestConfig, output?: 
         return (
           observable
             .pipe(
-              switchMap(task =>
-                new Observable(observer => {
+              switchMap(task => {
+                return new Observable(observer => {
                   const _page = _browser.then(browser => newPage({ output, config, browser, extensionId }))
                   _page
                     .then(async ({ page, tabId, backgroundPage }) => {
@@ -71,14 +72,13 @@ export default ({ config, output: rootRoutput }: { config: TestConfig, output?: 
                       _page.on('epkError', data => observer.next({ type: 'error', data }))
                       _page.on('epkRegister', data => observer.next({ type: 'register', data }))
                       _page.on('epkRun', data => observer.next({ type: 'run', data }))
-                      _page.on('epkRuns', data => observer.next({ type: 'runs', data }))
                       await sendTask({ task, output, page, tabId, backgroundPage })
                     })
                     .catch(err => console.log('chrome err', err))
 
                   return () => _page.then(({ page }) => page.close())
                 })
-              ),
+              }),
               finalize(async () => {
                 contextsInUse--
                 if (contextsInUse === 0) {

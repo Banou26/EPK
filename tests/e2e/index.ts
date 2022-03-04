@@ -3,11 +3,14 @@ import type { Page } from 'playwright'
 const urls = ['https://google.com', 'https://example.com']
 
 describe
-  .use(async ({ page, run }: { page: Page }, [urls]) => {
-    for (const url of urls) {
-      await page.goto(url)
-      await run({ data: { } })
-    }
+  .use(async ({ getPage, run }, [urls]) => {
+    Promise.all(
+      urls.map(async url => {
+        const page = await getPage()
+        await page.goto(url)
+        await run(page, { data: {  } })
+      })
+    )
   }, [urls])
   (
     'my describe',

@@ -10,6 +10,7 @@ import { readFile } from 'fs/promises'
 import { cwd } from 'process'
 import { relative } from 'path'
 import { Event, Task } from 'src/utils/runtime'
+import { parseErrorStack } from '../stacktrace'
 
 export default ({ config, watch }: { config: EPKConfig, watch?: boolean }) =>
   from(config.configs)
@@ -63,15 +64,17 @@ export default ({ config, watch }: { config: EPKConfig, watch?: boolean }) =>
                               runInContext({ output }),
                               // tap(tests => console.log('testing done', tests)),
                             )
-                        const [testLogsStream, testStream] = partition(runTest, (val) => val.type === 'log') as [Observable<Event<"log">>, Observable<Event<"error"> | Event<"run"> | Event<"runs">>]
+                        const [testLogsStream, testStream] = partition(runTest, (val) => val.type === 'log') as [Observable<Event<"log">>, Observable<Event<"error"> | Event<"run">>]
                         const test =
                           testStream
                             .pipe(
-                              filter(({ type }) => type === 'runs'),
+                              filter(({ type }) => type === 'run'),
+                              filter(({ data }: Event<'run'>) => data.done),
                               // filter(({ data: { describes, tests } }) => describes && tests),
-                              map(({ data: { describes, tests }, ...rest }: Event<'runs'>) => ({ ...rest, describesRuns: describes, testsRuns: tests })),
+                              map(({ data, data: { describes, tests }, ...rest }: Event<'run'>) => ({ ...rest, describesRuns: describes, testsRuns: tests })),
                               mergeMap(async ({ describesRuns, testsRuns, ...rest }) => ({
                                 ...rest,
+                                done: true,
                                 describesTestsRuns:
                                   (await Promise.all(
                                     describesRuns.flatMap(async (describe) => ({
@@ -80,17 +83,7 @@ export default ({ config, watch }: { config: EPKConfig, watch?: boolean }) =>
                                         await Promise.all(
                                           describe.tests.flatMap(async testRun => {
                                             if (testRun.status === 'success') return testRun
-                                            const sourceMapStr = output.sourcemap.text
-                                            const sourceMap = JSON.parse(sourceMapStr)
-                                            const sourceMapConsumer = new SourceMapConsumer(sourceMap)
-                                            const result = testRun.errorStack.map(stackFrame => ({ ...stackFrame, ...sourceMapConsumer.originalPositionFor({ line: stackFrame.lineNumber, column: stackFrame.columnNumber }) }))
-                                            const resultString = result.map(mappedStackFrame =>
-                                              `at ${mappedStackFrame.functionName ?? ''} ${mappedStackFrame.functionName ? '(' : ''}${relative(cwd(), mappedStackFrame.source).slice(6) || '<anonymous>'}:${mappedStackFrame.line ?? mappedStackFrame.lineNumber ?? 0}:${mappedStackFrame.column ?? mappedStackFrame.columnNumber ?? 0}${mappedStackFrame.functionName ? ')' : ''}`
-                                            )
-                                            const error = {
-                                              message: testRun.originalStack.slice(0, testRun.originalStack.indexOf('\n')).replace('Error: ', ''),
-                                              stack: `${testRun.originalStack.slice(0, testRun.originalStack.indexOf('\n'))}\n${resultString.slice(0, -7).join('\n')}`.trim()
-                                            }
+                                            const error = parseErrorStack({ describe: true, errorStack: testRun.errorStack, originalStack: testRun.originalStack, sourceMapString: output.sourcemap.text })
                                             return {
                                               describe,
                                               ...testRun,
@@ -104,17 +97,7 @@ export default ({ config, watch }: { config: EPKConfig, watch?: boolean }) =>
                                 testsRuns:
                                   await Promise.all(testsRuns.map(async testRun => {
                                     if (testRun.status === 'success') return testRun
-                                    const sourceMapStr = output.sourcemap.text
-                                    const sourceMap = JSON.parse(sourceMapStr)
-                                    const sourceMapConsumer = new SourceMapConsumer(sourceMap)
-                                    const result = testRun.errorStack.map(stackFrame => ({ ...stackFrame, ...sourceMapConsumer.originalPositionFor({ line: stackFrame.lineNumber, column: stackFrame.columnNumber }) }))
-                                    const resultString = result.map(mappedStackFrame =>
-                                      `at ${mappedStackFrame.functionName ?? ''} ${mappedStackFrame.functionName ? '(' : ''}${relative(cwd(), mappedStackFrame.source).slice(6) || '<anonymous>'}:${mappedStackFrame.line ?? mappedStackFrame.lineNumber ?? 0}:${mappedStackFrame.column ?? mappedStackFrame.columnNumber ?? 0}${mappedStackFrame.functionName ? ')' : ''}`
-                                    )
-                                    const error = {
-                                      message: testRun.originalStack.slice(0, testRun.originalStack.indexOf('\n')).replace('Error: ', ''),
-                                      stack: `${testRun.originalStack.slice(0, testRun.originalStack.indexOf('\n'))}\n${resultString.slice(0, -3).join('\n')}`.trim()
-                                    }
+                                    const error = parseErrorStack({ errorStack: testRun.errorStack, originalStack: testRun.originalStack, sourceMapString: output.sourcemap.text })
                                     return {
                                       ...testRun,
                                       error
@@ -145,7 +128,7 @@ export default ({ config, watch }: { config: EPKConfig, watch?: boolean }) =>
                             scan((file, ev) => ({
                               ...file,
                               events: [...file.events, ev],
-                              ...ev.type === 'runs' && {
+                              ...ev.type === 'run' && ev.done && {
                                 describesTestsRuns: ev.describesTestsRuns,
                                 testsRuns: ev.testsRuns
                               }

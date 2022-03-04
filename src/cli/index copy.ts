@@ -20,7 +20,9 @@ import { fileURLToPath } from 'url'
 const run = async ({ entryFiles }: { entryFiles?: string[] } = { entryFiles: [] }) => {
   await rm(join(cwd(), './tmp'), { recursive: true }).catch(() => {})
 
-  const __dirname = dirname(fileURLToPath(import.meta.url))
+  // @ts-ignore
+  const __dirname: string = __dirname ?? dirname(fileURLToPath(import.meta.url))
+  
   const extensionPath = join(__dirname, '../extension')
   const context = await chromium.launchPersistentContext(join(cwd(), `tmp/platform/chromium/test`), {
     headless: false,

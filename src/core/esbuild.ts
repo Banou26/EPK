@@ -13,7 +13,8 @@ import asyncObservable from '../utils/async-observable'
 import { toGlobal } from '../utils/runtime'
 import { TestConfig, BuildOutput, BuildOutputFile } from '../types'
 
-const __dirname = __dirname ?? dirname(fileURLToPath(import.meta.url))
+// @ts-ignore
+const __dirname: string = __dirname ?? dirname(fileURLToPath(import.meta.url))
 
 const includesSourcePath =
   ({ file, testConfig }: { file: OutputFile, testConfig: TestConfig }) =>

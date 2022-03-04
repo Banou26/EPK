@@ -4,7 +4,7 @@ import { describes as registeredDescribes, tests as registeredTests } from './te
 import asyncObservable from 'src/utils/async-observable'
 
 export default ({ describes, tests }: Task<'run'>['data']) =>
-  asyncObservable<Event<'run' | 'runs'>>(async (observer) => {
+  asyncObservable<Event<'run'>>(async (observer) => {
     // register tests inside describes
     registeredDescribes.map(describe => describe.function())
 
@@ -39,5 +39,5 @@ export default ({ describes, tests }: Task<'run'>['data']) =>
       )
     )
 
-    observer.next({ type: 'runs', data: { describes: describesResults, tests: results } })
+    observer.next({ type: 'run', data: { describes: describesResults, tests: results, done: true } })
   })

@@ -10,7 +10,8 @@ import { fileURLToPath } from 'url'
 import { toGlobal } from '../../utils/runtime'
 import { eventToEpkEvent } from './utils'
 
-const __dirname = __dirname ?? dirname(fileURLToPath(import.meta.url))
+// @ts-ignore
+const __dirname: string = __dirname ?? dirname(fileURLToPath(import.meta.url))
 
 export const newPage =
   async <T extends BuildOutputFile>({ config, output, browser, extensionId }: { config: TestConfig, output: T, browser: BrowserContext, extensionId: number }) => {
@@ -101,7 +102,7 @@ export const prepareContext = async ({ config, extensionId, output, page, tabId,
   await initDone
 }
 
-export const sendTask = async ({ task, output, page, tabId, backgroundPage }: { task: Task, page: Page, tabId: number, backgroundPage: Page, output: BuildOutputFile, browser: BrowserContext }) => {
+export const sendTask = async ({ task, output, page, tabId, backgroundPage }: { task: Task, page: EPKPage, tabId: number, backgroundPage: EPKPage, output: BuildOutputFile }) => {
   if (output.environment === 'content-script') {
     await backgroundPage.evaluate(
       ([task, globalVariableTaskName, tabId]) =>

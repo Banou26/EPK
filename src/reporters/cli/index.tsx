@@ -53,10 +53,10 @@ const TestFileTitle = ({ file: { path, events, describesTestsRuns, testsRuns } }
           )
       }
       <Text>
-        <Text color="gray">{parse(relative(cwd(), path)).dir} </Text>
-        <Text color="white">{parse(relative(cwd(), path)).name}{parse(relative(cwd(), path)).ext} </Text>
+        <Text color="gray">{parse(relative(cwd(), path)).dir}\</Text>
+        <Text color="white">{parse(relative(cwd(), path)).name}{parse(relative(cwd(), path)).ext}</Text>
       </Text>
-      <Text color="white">(</Text>
+      <Text color="white"> (</Text>
       <Text color="greenBright">
         {suceededTests.length}
       </Text>
