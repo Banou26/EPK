@@ -12,6 +12,7 @@ import { Observable } from 'rxjs'
 import { finalize, switchMap } from 'rxjs/operators'
 
 import { newPage, sendTask } from './page'
+import { createContext, enableExtension } from './browser'
 
 // @ts-ignore
 const __dirname: string = __dirname ?? dirname(fileURLToPath(import.meta.url))
@@ -29,33 +30,22 @@ export default ({ config, output: rootRoutput }: { config: TestConfig, output?: 
       (observable: Observable<T>): Observable<TaskEvents<T['type']>> => {
         if (!_browser) {
           const extensionPath = join(__dirname, '../extension')
-          _browser = import('playwright')
-            .then(playwright =>
-              playwright.chromium.launchPersistentContext(join(cwd(), `tmp/platform/chromium/${id}`), {
-                headless: false,
-                devtools: true,
-                args: [
-                  `--disable-extensions-except=${extensionPath}`,
-                  // ` --load-extension='./chrome_extensions/lmhkpmbekcpmknklioeibfkpmmfibljd/2.17.0_0,./chrome_extensions/fmkadmapgofadopljbjfkapdkoienihi/3.6.0_0'`
-                  `--load-extension=${extensionPath}`
-                ],
-                bypassCSP: true
-              })
-            )
-            .then(async (context) => {
-              await context.waitForEvent('backgroundpage')
-              const extensionPage = await context.newPage()
-              await extensionPage.goto('chrome://extensions/')
-              await extensionPage.click('#devMode')
-              await extensionPage.reload()
-              extensionId = (await (await extensionPage.waitForSelector('#extension-id:below(div#name:has-text("EPK"), 200)', { state: 'attached' })).textContent())?.replace('ID: ', '')
-              await extensionPage.goto(`chrome://extensions/?id=${extensionId}`)
-              await extensionPage.click('#allow-incognito #knob')
-              await extensionPage.selectOption('#hostAccess', 'ON_ALL_SITES')
-              // await extensionPage.click('#inspect-views > li:nth-child(2) > a')
-              await extensionPage.close()
-              return context
-            })
+          _browser = createContext({
+            userDataDir: join(cwd(), `tmp/platform/chromium/${id}`),
+            options: {
+              headless: false,
+              devtools: true,
+              args: [
+                `--disable-extensions-except=${extensionPath}`,
+                // ` --load-extension='./chrome_extensions/lmhkpmbekcpmknklioeibfkpmmfibljd/2.17.0_0,./chrome_extensions/fmkadmapgofadopljbjfkapdkoienihi/3.6.0_0'`
+                `--load-extension=${extensionPath}`
+              ],
+              bypassCSP: true
+            }
+          }).then(async context => {
+            await enableExtension({ context, extensionName: 'EPK' })
+            return context
+          })
         }
         contextsInUse++
         // @ts-ignore
@@ -63,6 +53,7 @@ export default ({ config, output: rootRoutput }: { config: TestConfig, output?: 
           observable
             .pipe(
               switchMap(task => {
+                console.log('task', task.data?.describes)
                 return new Observable(observer => {
                   const _page = _browser.then(browser => newPage({ output, config, browser, extensionId }))
                   _page

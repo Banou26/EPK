@@ -21,6 +21,8 @@ export type TestRun = {
 }
 
 export type Describe = {
+  useFunction?: (...args) => any
+  useArguments?: any[]
   name: string
   function: (...args) => any | string
   tests: Test[]
@@ -49,13 +51,13 @@ export type TestConfig = {
   extensionManifest: {
     // manifest here
   },
-  web: {
+  web?: {
     match: string[]
   },
-  contentScript: {
+  contentScript?: {
     match: string[]
   },
-  backgroundScript: {
+  backgroundScript?: {
     match: string[]
   },
   logLevel: LogLevel

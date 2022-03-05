@@ -46,10 +46,11 @@ export default ({ config, watch }: { config: EPKConfig, watch?: boolean }) =>
                             .pipe(
                               filter(({ type }) => type === 'register'),
                               map(({ data: { describes, tests } }: Event<'register'> ) => ({ describes, tests })),
-                              take(1),
-                              share()
+                              // take(1),
+                              share(),
+                              // tap(val => console.log('val', val))
                             )
-        
+
                         const runTest =
                           register
                             .pipe(

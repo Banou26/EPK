@@ -2,7 +2,7 @@
 const config = {
   configs: [
     // {
-    //   name: 'built extension',
+    //   name: 'extension e2e',
     //   platform: 'chromium',
     //   extensions: [],
     //   web: {
@@ -34,12 +34,12 @@ const config = {
       web: {
         match: ['./tests/unit/web/**/*.ts']
       },
-      contentScript: {
-        match: ['./tests/unit/content-script/**/*.ts']
-      },
-      backgroundScript: {
-        match: ['./tests/unit/background-script/**/*.ts']
-      },
+      // contentScript: {
+      //   match: ['./tests/unit/content-script/**/*.ts']
+      // },
+      // backgroundScript: {
+      //   match: ['./tests/unit/background-script/**/*.ts']
+      // },
       logLevel: '', // none, error, warn, info
       esbuild: {
         bundle: true,

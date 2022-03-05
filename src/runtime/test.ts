@@ -15,7 +15,7 @@ export type DescribeFunction = {
 
 const makeDescribe = (options = {}): DescribeFunction => {
   const describe = (name: string, func: (...args) => any) => {
-    const describe = {
+    const describe: Describe = {
       ...options,
       name,
       function: (...args) => {
@@ -33,7 +33,7 @@ const makeDescribe = (options = {}): DescribeFunction => {
   // @ts-ignore
   return Object.defineProperties(describe, Object.fromEntries([
     ...variants,
-    ['use', { get: () => (func: (...args) => any, args: any[]) => makeDescribe({ ...options, useFunction: func, useArguments: args }) }]
+    ['use', { get: () => (func: (...args) => any, args: any[]) => makeDescribe({ ...options, useFunction: func.toString(), useArguments: args }) }]
   ]))
 }
 

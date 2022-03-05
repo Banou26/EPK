@@ -95,9 +95,9 @@ export default ({ testConfig, esbuildOptions, watch }: { testConfig: TestConfig,
   asyncObservable<BuildOutput>(async (observer: Observer<BuildOutput>) => {
     observer.next({ type: 'build', name: 'start' })
 
-    const _webFilePaths = Promise.all(testConfig.web.match?.map(matchGlobFiles)).then(arr => arr.flat())
-    const _contentScriptfilePaths = Promise.all(testConfig.contentScript.match?.map(matchGlobFiles)).then(arr => arr.flat())
-    const _backgroundScriptfilePaths = Promise.all(testConfig.backgroundScript.match?.map(matchGlobFiles)).then(arr => arr.flat())
+    const _webFilePaths = Promise.all(testConfig.web?.match?.map(matchGlobFiles) ?? []).then(arr => arr.flat())
+    const _contentScriptfilePaths = Promise.all(testConfig.contentScript?.match?.map(matchGlobFiles) ?? []).then(arr => arr.flat())
+    const _backgroundScriptfilePaths = Promise.all(testConfig.backgroundScript?.match?.map(matchGlobFiles) ?? []).then(arr => arr.flat())
 
     const [webFilePaths, contentScriptfilePaths, backgroundScriptfilePaths] = await Promise.all([_webFilePaths, _contentScriptfilePaths, _backgroundScriptfilePaths])
 
