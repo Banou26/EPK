@@ -1,7 +1,7 @@
 import type { EPKConfig, TestConfig } from '../types'
 
 import { from, merge, Observable, of, partition } from 'rxjs'
-import { endWith, filter, map, mergeMap, scan, share, switchMap, take, tap } from 'rxjs/operators'
+import { endWith, filter, map, mergeMap, scan, share, switchMap, take, takeWhile, tap } from 'rxjs/operators'
 import { SourceMapConsumer } from 'source-map-js'
 
 import esbuild from './esbuild'
@@ -45,9 +45,7 @@ export default ({ config, watch }: { config: EPKConfig, watch?: boolean }) =>
                           registerStream
                             .pipe(
                               filter(({ type }) => type === 'register'),
-                              // filter(({ data: { describes, tests } }) => describes && tests),
                               map(({ data: { describes, tests } }: Event<'register'> ) => ({ describes, tests })),
-                              // tap(({ describes, tests }) => console.log('register done', describes[0]?.tests, tests)),
                               take(1),
                               share()
                             )
@@ -55,26 +53,21 @@ export default ({ config, watch }: { config: EPKConfig, watch?: boolean }) =>
                         const runTest =
                           register
                             .pipe(
-                              // tap(tests => console.log('tests', tests)),
                               map(({ describes, tests }) => ({
                                 type: 'run',
                                 data: { describes, tests }
                               } as Task<'run'>)),
-                              // tap(tests => console.log('testing done', tests)),
                               runInContext({ output }),
-                              // tap(tests => console.log('testing done', tests)),
+                              // takeWhile(({ data }) => !('done' in data), true),
                             )
                         const [testLogsStream, testStream] = partition(runTest, (val) => val.type === 'log') as [Observable<Event<"log">>, Observable<Event<"error"> | Event<"run">>]
                         const test =
                           testStream
                             .pipe(
                               filter(({ type }) => type === 'run'),
-                              filter(({ data }: Event<'run'>) => data.done),
-                              // filter(({ data: { describes, tests } }) => describes && tests),
-                              map(({ data, data: { describes, tests }, ...rest }: Event<'run'>) => ({ ...rest, describesRuns: describes, testsRuns: tests })),
+                              map(({ data, data: { describes, tests, done }, ...rest }: Event<'run'>) => ({ ...rest, describesRuns: describes, testsRuns: tests, done })),
                               mergeMap(async ({ describesRuns, testsRuns, ...rest }) => ({
                                 ...rest,
-                                done: true,
                                 describesTestsRuns:
                                   (await Promise.all(
                                     describesRuns.flatMap(async (describe) => ({
@@ -104,8 +97,7 @@ export default ({ config, watch }: { config: EPKConfig, watch?: boolean }) =>
                                     }
                                   }))
                               })),
-                              // tap(tests => console.log('testing done', tests)),
-                              take(1)
+                              takeWhile(({ done }) => !done, true)
                             )
 
                         return (
@@ -116,7 +108,6 @@ export default ({ config, watch }: { config: EPKConfig, watch?: boolean }) =>
                             register,
                             test
                           ).pipe(
-                            // tap(val => console.log('val', val)),
                             endWith({
                               type: 'status'
                             }),
@@ -128,10 +119,8 @@ export default ({ config, watch }: { config: EPKConfig, watch?: boolean }) =>
                             scan((file, ev) => ({
                               ...file,
                               events: [...file.events, ev],
-                              ...ev.type === 'run' && ev.done && {
-                                describesTestsRuns: ev.describesTestsRuns,
-                                testsRuns: ev.testsRuns
-                              }
+                              describesTestsRuns: ev.type === 'run' ? ev.describesTestsRuns : [],
+                              testsRuns: ev.type === 'run' ? ev.testsRuns : []
                             }), {
                               path: output.originalPath,
                               build,
@@ -140,7 +129,7 @@ export default ({ config, watch }: { config: EPKConfig, watch?: boolean }) =>
                               events: [],
                               describesTestsRuns: [],
                               testsRuns: []
-                            })
+                            }),
                           )
                         )
                       })

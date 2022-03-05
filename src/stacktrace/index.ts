@@ -17,6 +17,6 @@ export const parseErrorStack = ({ describe, sourceMapString, originalStack, erro
   })
   return {
     message: originalStack.slice(0, originalStack.indexOf('\n')).replace('Error: ', ''),
-    stack: `${originalStack.slice(0, originalStack.indexOf('\n'))}\n${resultString.slice(0, describe ? -7 : -3).join('\n')}`.trim()
+    stack: `${originalStack.slice(0, originalStack.indexOf('\n'))}\n${resultString.slice(0, describe ? -13 : -9).join('\n')}`.trim()
   }
 }

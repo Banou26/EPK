@@ -23,7 +23,7 @@ export type Event<T extends EVENT = EVENT> = {
     T extends 'log' ? { error: string } | { warn: string } | { info: string } | { log: string } :
     T extends 'error' ? { message: string, stack: string[], errorStack?: any[] } :
     T extends 'register' ? { tests: Test[], describes: Describe[] } :
-    T extends 'run' ? { describe: DescribeRun, test: TestRun, done?: boolean } :
+    T extends 'run' ? { describe?: DescribeRun, test?: TestRun } | { describes?: DescribeRun[], tests?: TestRun[], done?: boolean } :
     never
 }
 

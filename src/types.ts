@@ -29,7 +29,7 @@ export type Describe = {
 export type DescribeRun = {
   name: string
   function: (...args) => any | string
-  tests: Test[]
+  tests: TestRun[]
 }
 
 export type TestFile = {

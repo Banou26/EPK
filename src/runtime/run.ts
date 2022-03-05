@@ -1,43 +1,83 @@
-import type { Event, Task } from '../utils/runtime'
+import type { Task } from '../utils/runtime'
+import type { Describe, DescribeRun, Test, TestRun } from 'src/types'
 
 import { describes as registeredDescribes, tests as registeredTests } from './test'
-import asyncObservable from 'src/utils/async-observable'
+import { combineLatest, from, merge, Observable, of } from 'rxjs'
+import { endWith, finalize, last, map, mergeMap, scan, share, shareReplay, startWith, switchMap, tap } from 'rxjs/operators'
 
-export default ({ describes, tests }: Task<'run'>['data']) =>
-  asyncObservable<Event<'run'>>(async (observer) => {
-    // register tests inside describes
-    registeredDescribes.map(describe => describe.function())
-
-    const describesResults = await Promise.all(
-      describes.map(async describe => ({
-        ...describe,
-        tests: await Promise.all(
-          describe.tests.map(test =>
+const runTests = (tests: Test[], describe?: Describe): Observable<TestRun[]> =>
+  from(tests)
+    .pipe(
+      mergeMap(test =>
+        describe
+          ? (
             registeredDescribes
               .find(({ name }) => name === describe.name)
               .tests
               .find(({ name }) => name === test.name)
-              .function()
-              .then(val => {
-                observer.next({ type: 'run', data: { test: val } })
-                return val
-              })
+              .function(undefined)
           )
-        )
+          : (
+            registeredTests
+              .find(({ name }) => name === test.name)
+              .function(undefined)
+          )
+      ),
+      scan((tests, test) => [...tests, test], [])
+    )
+
+export default ({ describes, tests }: Task<'run'>['data']) => {
+  // register tests inside describes
+  registeredDescribes.map(describe => describe.function())
+
+  const testsResults =
+    runTests(tests)
+      .pipe(
+        startWith([]),
+      )
+
+  const describesResults =
+    from(describes)
+      .pipe(
+        mergeMap(describe =>
+          runTests(
+            registeredDescribes
+              .find(({ name }) => name === describe.name)
+              .tests,
+            describe
+          )
+            .pipe(
+              scan((describe, tests) => ({ ...describe, tests }), { ...describe, tests: [] })
+            )
+        ),
+        scan((describes: DescribeRun[], describe: DescribeRun) => [...describes.filter(({ name }) => name !== describe.name), describe], []),
+        startWith([])
+      )
+
+  const combined =
+    combineLatest([testsResults, describesResults])
+      .pipe(
+        map(([tests, describes]) => ({
+          type: 'run',
+          data: {
+            tests,
+            describes
+          }
+        })),
+        shareReplay()
+      )
+
+  const endResult =
+    combined.pipe(
+      last(),
+      map(event => ({
+        ...event,
+        data: {
+          ...event.data,
+          done: true
+        }
       }))
     )
 
-    const results = await Promise.all(
-      tests.map(test =>
-        registeredTests
-          .find(({ name }) => name === test.name)
-          .function()
-          .then(val => {
-            observer.next({ type: 'run', data: { test: val } })
-            return val
-          })
-      )
-    )
-
-    observer.next({ type: 'run', data: { describes: describesResults, tests: results, done: true } })
-  })
+  return merge(combined, endResult)
+}
