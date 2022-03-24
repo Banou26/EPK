@@ -14,10 +14,10 @@ import { eventToEpkEvent } from './utils'
 const __dirname: string = __dirname ?? dirname(fileURLToPath(import.meta.url))
 
 export const newPage =
-  async <T extends BuildOutputFile>({ config, output, browser, extensionId }: { config: TestConfig, output: T, browser: BrowserContext, extensionId: number }) => {
+  async <T extends BuildOutputFile>({ config, output, browser, extensionId, skipPrepare = false }: { config: TestConfig, output: T, browser: BrowserContext, extensionId: number, skipPrepare?: boolean }) => {
     if (output.environment !== 'content-script') {
       const page = await browser.newPage() as EPKPage
-      await prepareContext({ config, extensionId, output, page })
+      if (!skipPrepare) await prepareContext({ config, extensionId, output, page })
       return { page }
     }
 
@@ -57,7 +57,7 @@ export const newPage =
 
     await page.mainFrame().addScriptTag({ path: join(__dirname, './content-script-proxy.js'), type: 'module' })
 
-    await prepareContext({ config, extensionId, output, page, tabId, backgroundPage })
+    if (!skipPrepare) await prepareContext({ config, extensionId, output, page, tabId, backgroundPage })
 
     return {
       page,

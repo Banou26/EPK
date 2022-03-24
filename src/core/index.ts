@@ -46,6 +46,7 @@ export default ({ config, watch }: { config: EPKConfig, watch?: boolean }) =>
                             .pipe(
                               filter(({ type }) => type === 'register'),
                               map(({ data: { describes, tests } }: Event<'register'> ) => ({ describes, tests })),
+                              // tap(val => console.log('val', val)),
                               // take(1),
                               share(),
                               // tap(val => console.log('val', val))
@@ -54,11 +55,13 @@ export default ({ config, watch }: { config: EPKConfig, watch?: boolean }) =>
                         const runTest =
                           register
                             .pipe(
+                              // tap(val => console.log('val2', val)),
                               map(({ describes, tests }) => ({
                                 type: 'run',
                                 data: { describes, tests }
                               } as Task<'run'>)),
                               runInContext({ output }),
+                              share()
                               // takeWhile(({ data }) => !('done' in data), true),
                             )
                         const [testLogsStream, testStream] = partition(runTest, (val) => val.type === 'log') as [Observable<Event<"log">>, Observable<Event<"error"> | Event<"run">>]

@@ -11,8 +11,10 @@ import { fileURLToPath } from 'url'
 import { Observable } from 'rxjs'
 import { finalize, switchMap } from 'rxjs/operators'
 
-import { newPage, sendTask } from './page'
+import { newPage, sendTask, prepareContext } from './page'
 import { createContext, enableExtension } from './browser'
+import { runInNewContext, runInThisContext } from 'vm'
+import { EPKPage } from './types'
 
 // @ts-ignore
 const __dirname: string = __dirname ?? dirname(fileURLToPath(import.meta.url))
@@ -53,7 +55,83 @@ export default ({ config, output: rootRoutput }: { config: TestConfig, output?: 
           observable
             .pipe(
               switchMap(task => {
-                console.log('task', task.data?.describes)
+                const describe = task.data?.describes[0]
+                if (task.type === 'run' && describe.useFunction) {
+                  return new Observable(observer => {
+                    let pages: { page: EPKPage, tabId: number, backgroundPage: EPKPage }[] = []
+                    let epkRunDone
+                    const getPage = () => {
+                      return (
+                        _browser
+                          .then(async browser => {
+                            const page = await newPage({ output, config, browser, extensionId, skipPrepare: true }) as { page: EPKPage, tabId: number, backgroundPage: EPKPage }
+                            pages = [...pages, page]
+                            return page
+                          })
+                      )
+                    }
+                    const run = ({ page, tabId, backgroundPage }: { page: EPKPage, tabId: number, backgroundPage: EPKPage }, data: any) =>
+                      new Promise(resolve => {
+                        const _page = page
+                        _page.on('epkLog', data => observer.next({ type: 'log', data }))
+                        _page.on('epkError', data => observer.next({ type: 'error', data }))
+                        _page.on('epkRegister', data => observer.next({ type: 'register', data }))
+                        _page.on('epkRun', data => {
+                          // @ts-ignore
+                          if (!data.done) return
+                          // console.log('epkRun', data)
+                          epkRunDone = data
+                          resolve(data.describes.find(({ name }) => name === describe.name))
+                        })
+                        sendTask({ task, output, page, tabId, backgroundPage })
+                      })
+                    try {
+                      const func = runInThisContext(
+                        // @ts-ignore
+                        describe.useFunction as string,
+                        // { console },
+                        { timeout: 1000, filename: '__epk_generated_use.js' }
+                      )
+                      const funcRes = func(
+                        {
+                          getPage,
+                          run,
+                          prepareContext: ({ page, tabId, backgroundPage }) =>
+                            prepareContext({ config, extensionId, output, page, tabId, backgroundPage })
+                        },
+                        describe.useArguments
+                      )
+                      funcRes
+                        .then(data => observer.next({
+                          type: 'run',
+                          data: ({
+                            ...epkRunDone,
+                            describes:
+                              epkRunDone
+                                .describes
+                                .map(_describe =>
+                                  _describe.name === describe.name
+                                    ? data
+                                    : _describe
+                                )
+                          })
+                        }))
+                      
+                      // funcRes
+                      //   .then(res => console.log('funcRes then', res))
+                      //   .catch(err => console.log('funcRes catch', err))
+                      // console.log('funcRes', funcRes)
+                    } catch (err) {
+                      // console.log('FUNC ERRRRRRRRRRR', err)
+                    }
+                    return () => {
+                      for (const { page } of pages) {
+                        page.close()
+                      }
+                    }
+                  })
+                }
+
                 return new Observable(observer => {
                   const _page = _browser.then(browser => newPage({ output, config, browser, extensionId }))
                   _page
