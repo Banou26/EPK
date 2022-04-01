@@ -1,7 +1,7 @@
-import type { EPKConfig, TestConfig } from '../types'
+import type { EPKConfig, TestConfig, TestRun } from '../types'
 
 import { from, merge, Observable, of, partition } from 'rxjs'
-import { endWith, filter, map, mergeMap, scan, share, switchMap, take, takeWhile, tap } from 'rxjs/operators'
+import { endWith, filter, map, mapTo, mergeMap, scan, share, switchMap, take, takeWhile, tap } from 'rxjs/operators'
 import { SourceMapConsumer } from 'source-map-js'
 
 import esbuild from './esbuild'
@@ -11,6 +11,12 @@ import { cwd } from 'process'
 import { relative } from 'path'
 import { Event, Task } from 'src/utils/runtime'
 import { parseErrorStack } from '../stacktrace'
+
+const keepNewTests = (oldTests: TestRun[] = [], newTests: TestRun[] = []) =>
+  [
+    ...oldTests.filter(test => !newTests.some(({ test: { name } }) => name === test.test.name)),
+    ...newTests ?? []
+  ]
 
 export default ({ config, watch }: { config: EPKConfig, watch?: boolean }) =>
   from(config.configs)
@@ -101,7 +107,7 @@ export default ({ config, watch }: { config: EPKConfig, watch?: boolean }) =>
                                     }
                                   }))
                               })),
-                              takeWhile(({ done }) => !done, true)
+                              // takeWhile(({ done }) => !done, true)
                             )
 
                         return (
@@ -121,10 +127,20 @@ export default ({ config, watch }: { config: EPKConfig, watch?: boolean }) =>
                               ...val,
                             })),
                             scan((file, ev) => ({
+                              // ...file,
+                              // events: [...file.events, ev],
+                              // describesTestsRuns: ev.type === 'run' ? ev.describesTestsRuns : [],
+                              // testsRuns: ev.type === 'run' ? ev.testsRuns : []
                               ...file,
                               events: [...file.events, ev],
-                              describesTestsRuns: ev.type === 'run' ? ev.describesTestsRuns : [],
-                              testsRuns: ev.type === 'run' ? ev.testsRuns : []
+                              describesTestsRuns: [
+                                ...file.describesTestsRuns.filter(describe => !ev.describesTestsRuns?.some(({ name }) => name === describe.name)),
+                                ...ev.describesTestsRuns ?? []
+                              ].map(describe => ({
+                                ...describe,
+                                tests: keepNewTests(file.describesTestsRuns.find(({ name }) => name === describe.name)?.tests, describe.tests)
+                              })), // ev.type === 'run' ? ev.describesTestsRuns : [],
+                              testsRuns: keepNewTests(file.testsRuns, ev.testsRuns) // [...file.testsRuns.filter(test => ev.testsRuns.some(({ name }) => name !== test.name)), ...ev.testsRuns ?? []]// ev.type === 'run' ? ev.testsRuns : []
                             }), {
                               path: output.originalPath,
                               build,
@@ -133,7 +149,7 @@ export default ({ config, watch }: { config: EPKConfig, watch?: boolean }) =>
                               events: [],
                               describesTestsRuns: [],
                               testsRuns: []
-                            }),
+                            })
                           )
                         )
                       })

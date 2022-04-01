@@ -8,7 +8,7 @@ export type LogLevel = 'none' | 'error' | 'warn' | 'info' | ''
 
 export type Test = {
   name: string
-  function: (args: any) => any | string
+  function: ((args: any) => any) | string
 }
 
 export type TestRun = {
@@ -24,13 +24,13 @@ export type Describe = {
   useFunction?: (...args) => any
   useArguments?: any[]
   name: string
-  function: (...args) => any | string
+  function: ((...args) => any) | string
   tests: Test[]
 }
 
 export type DescribeRun = {
   name: string
-  function: (...args) => any | string
+  function: ((...args) => any) | string
   tests: TestRun[]
 }
 
