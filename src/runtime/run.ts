@@ -28,7 +28,10 @@ const runTests = (tests: Test[], describe?: Describe): Observable<TestRun[]> =>
 
 export default ({ describes, tests }: Task<'run'>['data']) => {
   // register tests inside describes
-  registeredDescribes.map(describe => describe.function())
+  registeredDescribes.map(describe => {
+    if (!describes.some(({ name }) => name === describe.name)) return
+    describe.function()
+  })
 
   const testsResults =
     runTests(tests)
