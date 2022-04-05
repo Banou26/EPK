@@ -5,7 +5,13 @@ esbuild.build({
   bundle: true,
   format: 'esm',
   platform: 'node',
-  external: ['./node_modules/*'],
+  plugins: [{
+    name: 'make-all-packages-external',
+    setup(build) {
+      let filter = /^[^.\/]|^\.[^.\/]|^\.\.[^\/]/ // Must not start with "/" or "./" or "../"
+      build.onResolve({ filter }, args => ({ path: args.path, external: true }))
+    },
+  }],
   entryPoints: ['./src/cli/index.ts'],
   outfile: './build/cli.js',
   publicPath: '/',
