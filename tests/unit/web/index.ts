@@ -1,3 +1,4 @@
+import { runInUrls } from '../../../src/runtime'
 
 // describe('my describe', () => {
 //   test('described test', () => {})
@@ -25,19 +26,7 @@ describe('my describe pre', () => {
 })
 
 describe
-  .use(async ({ getPage, run, prepareContext }, [urls]) => {
-    const results = await Promise.all(
-      urls.map(async url => {
-        const { page, tabId, backgroundPage } = await getPage()
-        await page.goto(url)
-        await prepareContext({ page, tabId, backgroundPage })
-        return await run({ page, tabId, backgroundPage }, { data: { url } })
-      })
-    )
-    const failedResults = results.filter(({ tests }) => tests.some(test => test.status !== 'success'))
-    if (failedResults.length) return failedResults[0]
-    return results[0]
-  }, [urls])
+  .use(runInUrls, [urls])
   (
     'my describe',
     ({ data } = {}) => {
@@ -54,19 +43,7 @@ describe
   )
 
 describe
-  .use(async ({ getPage, run, prepareContext }, [urls]) => {
-    const results = await Promise.all(
-      urls.map(async url => {
-        const { page, tabId, backgroundPage } = await getPage()
-        await page.goto(url)
-        await prepareContext({ page, tabId, backgroundPage })
-        return await run({ page, tabId, backgroundPage }, { data: { url } })
-      })
-    )
-    const failedResults = results.filter(({ tests }) => tests.some(test => test.status !== 'success'))
-    if (failedResults.length) return failedResults[0]
-    return results[0]
-  }, [urls2])
+  .use(runInUrls, [urls2])
   (
     'my describe url 2',
     ({ data } = {}) => {

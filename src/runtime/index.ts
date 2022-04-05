@@ -5,7 +5,7 @@ import './message'
 import { afterAll, afterEach, beforeAll, beforeEach, test, describe } from './test'
 export * from './assert'
 export * from './message'
-
+export * from './useFunctions'
 
 export {
   assert,
