@@ -1,4 +1,4 @@
-import { runInUrls } from '../../../src/runtime'
+import { runInUrls } from '../../../lib/lib'
 
 // describe('my describe', () => {
 //   test('described test', () => {})

@@ -14,6 +14,19 @@ esbuild.build({
   minify: process.argv.includes('-m') || process.argv.includes('--minify')
 })
 
+esbuild.build({
+  watch: process.argv.includes('-w') || process.argv.includes('--watch'),
+  bundle: true,
+  format: 'esm',
+  platform: 'browser',
+  entryPoints: ['./src/lib'],
+  outfile: './lib/lib.js',
+  publicPath: '/',
+  jsx: 'transform',
+  minify: process.argv.includes('-m') || process.argv.includes('--minify')
+})
+
+
 // esbuild.build({
 //   watch: process.argv.includes('-w') || process.argv.includes('--watch'),
 //   bundle: true,

@@ -8,12 +8,11 @@
     "composite": false,
     "noImplicitAny": false,
     "outDir": "./lib",
-    "outFile": "./lib/index",
     "sourceMap": true,
     "moduleResolution": "node",
     "allowSyntheticDefaultImports": true,
     "baseUrl": ".",
     "jsx": "react"
   },
-  "include": ["src/**/*", "tests/**/*"]
+  "include": ["src/**/*"]
 }
