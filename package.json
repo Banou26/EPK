@@ -6,7 +6,8 @@
   "files": [
     "build/",
     "lib/",
-    "src/"
+    "src/",
+    "extension/"
   ],
   "exports": {
     "default": "./lib/index.js"
