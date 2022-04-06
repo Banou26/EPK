@@ -1,11 +1,12 @@
 {
   "name": "epk",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "license": "MIT",
   "bin": "./bin/cli.js",
   "files": [
     "build/",
-    "lib/"
+    "lib/",
+    "src/"
   ],
   "exports": {
     "default": "./lib/index.js"
