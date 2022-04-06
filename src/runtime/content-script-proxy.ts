@@ -1,4 +1,4 @@
-import { toGlobal } from 'src/utils/runtime'
+import { toGlobal } from '../utils/runtime'
 
 window.addEventListener('message', ({ data }) => {
   if (typeof data !== 'object' || data === null || data.__epk__ !== true) return

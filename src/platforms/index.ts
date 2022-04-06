@@ -1,5 +1,5 @@
 import type { Observer } from 'rxjs'
-import type { BuildOutputFile } from 'src/core/esbuild'
+import type { BuildOutputFile } from '../types'
 
 import type { Platform, TestConfig } from '../types'
 

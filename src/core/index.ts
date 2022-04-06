@@ -9,7 +9,7 @@ import { createContext } from '../platforms'
 import { readFile } from 'fs/promises'
 import { cwd } from 'process'
 import { relative } from 'path'
-import { Event, Task } from 'src/utils/runtime'
+import { Event, Task } from '../utils/runtime'
 import { parseErrorStack } from '../stacktrace'
 
 const keepNewTests = (oldTests: TestRun[] = [], newTests: TestRun[] = []) =>

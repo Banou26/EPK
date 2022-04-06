@@ -2,7 +2,7 @@ import type { Event } from '../utils/runtime'
 
 
 import { tests, describes } from './test'
-import asyncObservable from 'src/utils/async-observable'
+import asyncObservable from '../utils/async-observable'
 
 export default () =>
   asyncObservable<Event<'register'>>(async (observer) => {

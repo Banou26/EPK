@@ -14,7 +14,7 @@ import mime from 'mime'
 import EPK from '../core'
 import cliReporter from '../reporters/cli'
 import { shareReplay } from 'rxjs/operators'
-import { EPKConfig } from 'src/types'
+import { EPKConfig } from '../types'
 
 const run = async ({ entryFiles }: { entryFiles?: string[] } = { entryFiles: [] }) => {
   const watch = process.argv.includes('-w') || process.argv.includes('--watch')

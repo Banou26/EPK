@@ -1,5 +1,5 @@
 import type { Task } from '../utils/runtime'
-import type { Describe, DescribeRun, Test, TestRun } from 'src/types'
+import type { Describe, DescribeRun, Test, TestRun } from '../types'
 
 import { describes as registeredDescribes, tests as registeredTests } from './test'
 import { combineLatest, from, merge, Observable, of } from 'rxjs'

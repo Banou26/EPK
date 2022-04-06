@@ -15,7 +15,7 @@ import { newPage, sendTask, prepareContext } from './page'
 import { createContext, enableExtension } from './browser'
 import { runInNewContext, runInThisContext } from 'vm'
 import { EPKPage } from './types'
-import { describes } from 'src/runtime/test'
+import { describes } from '../../runtime/test'
 
 // @ts-ignore
 const __dirname: string = __dirname ?? dirname(fileURLToPath(import.meta.url))
