@@ -156,9 +156,9 @@ export default ({ config, output: rootRoutput }: { config: TestConfig, output?: 
               headless: false,
               devtools: true,
               args: [
-                `--disable-extensions-except=${extensionPath}`,
+                `--disable-extensions-except=${[extensionPath, ...config.extensions ?? []].join(',')}`,
                 // ` --load-extension='./chrome_extensions/lmhkpmbekcpmknklioeibfkpmmfibljd/2.17.0_0,./chrome_extensions/fmkadmapgofadopljbjfkapdkoienihi/3.6.0_0'`
-                `--load-extension=${extensionPath}`
+                `--load-extension=${[extensionPath, ...config.extensions ?? []].join(',')}`
               ],
               bypassCSP: true
             }

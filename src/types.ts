@@ -48,6 +48,7 @@ export type EPKConfig = {
 export type TestConfig = {
   name: string
   platform: Platform
+  extensions?: string[]
   extensionManifest: {
     // manifest here
   },
