@@ -16,7 +16,7 @@ const _initDone = globalThis[toGlobal('initDone')]
 let isContextScript = false
 globalThis[toGlobal('initDone')] = (args) => {
   done.next()
-  if (args.environment === 'content-script') {
+  if (args?.environment === 'content-script') {
     isContextScript = true
     window.postMessage({ __epk__: true, name: 'initDone' }, '*')
   } else {

@@ -8,6 +8,6 @@ export default () =>
   asyncObservable<Event<'register'>>(async (observer) => {
     // todo: wait for tests to register via esbuild inject
     // register tests inside describes
-    describes.map(describe => describe.function())
+    describes.map(describe => describe.function({}))
     observer.next({ type: 'register', data: { tests, describes } })
   })

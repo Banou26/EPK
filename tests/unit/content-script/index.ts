@@ -1,3 +1,4 @@
+import { test } from '../../../lib/lib'
 
 test('from content script, background page url is correct', () => {
   assert.equal(chrome.extension.getURL('_generated_background_page.html'), `chrome-extension://${chrome.runtime.id}/_generated_background_page.html`)

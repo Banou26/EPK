@@ -49,13 +49,12 @@ const runDescribeWithUse = ({ describe, output, config, browser: _browser, exten
           epkRunDone = data
           resolve(data.describes.find(({ name }) => name === describe.name))
         })
-        // console.log('sending TASK', task)
         sendTask({
           task: {
             type: 'run',
             data: {
-              describes: [describe],
-              tests: [],
+              describes: [{ ...describe, useArguments: data }],
+              tests: []
             }
           },
           output,

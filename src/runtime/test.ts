@@ -6,7 +6,15 @@ let currentDescribe: Describe | undefined
 
 export let describes: Describe[] = []
 
-type UseEvaluate<T, T2> = ({ getPage, run }: { getPage: () => Promise<{ page: EPKPage, tabId: number, backgroundPage: EPKPage }>, run: (ctx: { page: EPKPage, tabId: number, backgroundPage: EPKPage }, data: any) => any }, args: T) => T2
+export type UseEvaluate<T = any, T2 = any> = ({
+  getPage,
+  run,
+  prepareContext
+}: {
+  getPage: () => Promise<{ page: EPKPage, tabId: number, backgroundPage: EPKPage }>
+  run: (ctx: { page: EPKPage, tabId: number, backgroundPage: EPKPage }, data: any) => any,
+  prepareContext: (options: { page: EPKPage, tabId?: number, backgroundPage?: EPKPage }) => Promise<void>
+}, args: T) => T2
 
 export type DescribeFunction = {
   use: <T extends any, T2 extends any>(func: UseEvaluate<T, T2>, args: T) => DescribeFunction
