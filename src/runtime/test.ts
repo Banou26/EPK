@@ -1,10 +1,21 @@
 import { EPKPage } from '../platforms/chromium/types'
 import stacktrace from '../stacktrace/stacktrace'
-import { Test, TestRun, Describe } from '../types'
+import { Test, TestRun, Group } from '../types'
 
-let currentDescribe: Describe<true> | undefined
+export let setupArray = []
+export let teardownArray = []
 
-export let describes: Describe<true>[] = []
+export const setup = (func) => setupArray = [...setupArray, func]
+export const teardown = (func) => teardownArray = [...teardownArray, func]
+
+export let beforeEachArray = []
+export let afterEachArray = []
+
+export const beforeEach = (func) => beforeEachArray = [...beforeEachArray, func]
+export const afterEach = (func) => afterEachArray = [...afterEachArray, func]
+
+export let groups: Group<true>[] = []
+let currentGroup: Group<true> | undefined
 
 export type UseEvaluate<T = any, T2 = any> = ({
   getPage,
@@ -16,36 +27,36 @@ export type UseEvaluate<T = any, T2 = any> = ({
   prepareContext: (options: { page: EPKPage, tabId?: number, backgroundPage?: EPKPage }) => Promise<void>
 }, args: T) => T2
 
-export type DescribeFunction = {
-  use: <T extends any, T2 extends any>(func: UseEvaluate<T, T2>, args: T) => DescribeFunction
+export type GroupFunction = {
+  use: <T extends any, T2 extends any>(func: UseEvaluate<T, T2>, args: T) => GroupFunction
   (name: string, func: (...args: unknown[]) => unknown): void 
 }
 
-const makeDescribe = (options = {}): DescribeFunction => {
-  const describe = (name: string, func: (...args) => any) => {
-    const describe: Describe<true> = {
+const makeGroup = (options = {}): GroupFunction => {
+  const group = (name: string, func: (...args) => any) => {
+    const group: Group<true> = {
       ...options,
       name,
       function: (...args) => {
-        currentDescribe = describe
+        currentGroup = group
         func(...args)
-        currentDescribe = undefined
+        currentGroup = undefined
       },
       tests: []
     }
-    describes = [...describes, describe]
+    groups = [...groups, group]
   }
 
   const variants = ['serial', 'isolate', 'only', 'skip'].map(variant => ([variant, { get: () => makeTest({ ...options, [variant]: true }) }] as const))
 
   // @ts-ignore
-  return Object.defineProperties(describe, Object.fromEntries([
+  return Object.defineProperties(group, Object.fromEntries([
     ...variants,
-    ['use', { get: () => (func: (...args) => any, args: any[]) => makeDescribe({ ...options, useFunction: func.toString(), useArguments: args }) }]
+    ['use', { get: () => (func: (...args) => any, args: any[]) => makeGroup({ ...options, useFunction: func.toString(), useArguments: args }) }]
   ]))
 }
 
-export const describe = makeDescribe()
+export const group = makeGroup()
 
 export let tests: Test<true>[] = []
 
@@ -67,8 +78,8 @@ const makeTest = (options = {}) => {
         }
       }
     }
-    if (currentDescribe) {
-      currentDescribe.tests = [...currentDescribe.tests, test]
+    if (currentGroup) {
+      currentGroup.tests = [...currentGroup.tests, test]
     } else {
       tests = [...tests, test]
     }
@@ -80,15 +91,3 @@ const makeTest = (options = {}) => {
 }
 
 export const test = makeTest()
-
-export let beforeArray = []
-export let afterArray = []
-
-export const beforeAll = (func) => beforeArray = [...beforeArray, func]
-export const afterAll = (func) => afterArray = [...afterArray, func]
-
-export let beforeEachArray = []
-export let afterEachArray = []
-
-export const beforeEach = (func) => beforeEachArray = [...beforeEachArray, func]
-export const afterEach = (func) => afterEachArray = [...afterEachArray, func]

@@ -1,18 +1,18 @@
 import type { Task } from '../utils/runtime'
-import type { Describe, DescribeRun, Test, TestRun } from '../types'
+import type { Group, GroupRun, Test, TestRun } from '../types'
 
-import { describes as registeredDescribes, tests as registeredTests } from './test'
+import { groups as registeredGroups, tests as registeredTests } from './test'
 import { combineLatest, from, merge, Observable, of } from 'rxjs'
 import { endWith, finalize, last, map, mergeMap, scan, share, shareReplay, startWith, switchMap, tap } from 'rxjs/operators'
 
-const runTests = (tests: Test<true>[], describe?: Describe<true>): Observable<TestRun<true>[]> =>
+const runTests = (tests: Test<true>[], group?: Group<true>): Observable<TestRun<true>[]> =>
   from(tests)
     .pipe(
       mergeMap(test =>
-        describe
+        group
           ? (
-            registeredDescribes
-              .find(({ name }) => name === describe.name)
+            registeredGroups
+              .find(({ name }) => name === group.name)
               .tests
               .find(({ name }) => name === test.name)
               .function(undefined)
@@ -26,11 +26,11 @@ const runTests = (tests: Test<true>[], describe?: Describe<true>): Observable<Te
       scan((tests, test) => [...tests, test], [])
     )
 
-export default ({ describes, tests }: Task<'run'>['data']) => {
-  // register tests inside describes
-  registeredDescribes.map(describe => {
-    if (!describes.some(({ name }) => name === describe.name)) return
-    describe.function(...describe.useArguments ?? [])
+export default ({ groups, tests }: Task<'run'>['data']) => {
+  // register tests inside groups
+  registeredGroups.map(group => {
+    if (!groups.some(({ name }) => name === group.name)) return
+    group.function(...group.useArguments ?? [])
   })
 
   const testsResults =
@@ -39,32 +39,32 @@ export default ({ describes, tests }: Task<'run'>['data']) => {
         startWith([]),
       )
 
-  const describesResults =
-    from(describes)
+  const groupsResults =
+    from(groups)
       .pipe(
-        mergeMap(describe =>
+        mergeMap(group =>
           runTests(
-            registeredDescribes
-              .find(({ name }) => name === describe.name)
+            registeredGroups
+              .find(({ name }) => name === group.name)
               .tests,
-            describe
+            group
           )
             .pipe(
-              scan((describe, tests) => ({ ...describe, tests }), { ...describe, tests: [] })
+              scan((group, tests) => ({ ...group, tests }), { ...group, tests: [] })
             )
         ),
-        scan((describes: DescribeRun<true>[], describe: DescribeRun<true>) => [...describes.filter(({ name }) => name !== describe.name), describe], []),
+        scan((groups: GroupRun<true>[], group: GroupRun<true>) => [...groups.filter(({ name }) => name !== group.name), group], []),
         startWith([])
       )
 
   const combined =
-    combineLatest([testsResults, describesResults])
+    combineLatest([testsResults, groupsResults])
       .pipe(
-        map(([tests, describes]) => ({
+        map(([tests, groups]) => ({
           type: 'run',
           data: {
             tests,
-            describes
+            groups
           }
         })),
         shareReplay()

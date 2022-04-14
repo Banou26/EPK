@@ -2,7 +2,7 @@ import type { Page } from 'playwright'
 
 const urls = ['https://google.com', 'https://example.com']
 
-describe
+group
   .use(async ({ getPage, run }, [urls]) => {
     Promise.all(
       urls.map(async url => {
@@ -13,7 +13,7 @@ describe
     )
   }, [urls])
   (
-    'my describe',
+    'my group',
     ({ data }) => {
 
     }

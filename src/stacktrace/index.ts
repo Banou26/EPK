@@ -4,7 +4,7 @@ import { SourceMapConsumer } from 'source-map-js'
 import { relative } from 'path'
 import { cwd } from 'process'
 
-export const parseErrorStack = ({ describe, sourceMapString, originalStack, errorStack }: { describe?: boolean, sourceMapString: string, originalStack: string, errorStack: StackFrame[] }) => {
+export const parseErrorStack = ({ group, sourceMapString, originalStack, errorStack }: { group?: boolean, sourceMapString: string, originalStack: string, errorStack: StackFrame[] }) => {
   const sourceMap = JSON.parse(sourceMapString)
   const sourceMapConsumer = new SourceMapConsumer(sourceMap)
   const result = errorStack.map(stackFrame => ({ ...stackFrame, ...sourceMapConsumer.originalPositionFor({ line: stackFrame.lineNumber, column: stackFrame.columnNumber }) }))
@@ -17,6 +17,6 @@ export const parseErrorStack = ({ describe, sourceMapString, originalStack, erro
   })
   return {
     message: originalStack.slice(0, originalStack.indexOf('\n')).replace('Error: ', ''),
-    stack: `${originalStack.slice(0, originalStack.indexOf('\n'))}\n${resultString.slice(0, describe ? -13 : -9).join('\n')}`.trim()
+    stack: `${originalStack.slice(0, originalStack.indexOf('\n'))}\n${resultString.slice(0, group ? -9 : -9).join('\n')}`.trim()
   }
 }

@@ -20,7 +20,7 @@ export type TestRun<Runtime extends boolean = false> = {
   errorStack?: any[]
 }
 
-export type Describe<Runtime extends boolean = false> = {
+export type Group<Runtime extends boolean = false> = {
   useFunction?: (...args) => any
   useArguments?: any[]
   name: string
@@ -28,7 +28,7 @@ export type Describe<Runtime extends boolean = false> = {
   tests: Test<Runtime>[]
 }
 
-export type DescribeRun<Runtime extends boolean = false> = {
+export type GroupRun<Runtime extends boolean = false> = {
   name: string
   function: Runtime extends true ? ((...args: any[]) => any) : string
   tests: TestRun<Runtime>[]
@@ -36,7 +36,7 @@ export type DescribeRun<Runtime extends boolean = false> = {
 
 export type TestFile = {
   path: string
-  describes: Describe[]
+  groups: Group[]
   tests: Test[]
 }
 
@@ -101,7 +101,7 @@ export type BuildOutput = {
 
 // export type Test = {
 //   path: string
-//   describeName?: string
+//   groupName?: string
 //   name: string
 //   function: (args: any) => any
 //   result?: any
@@ -111,7 +111,7 @@ export type BuildOutput = {
 //   urls?: string[]
 // }
 
-// export type Describe = {
+// export type Group = {
 //   name: string
 //   urls: string[]
 //   tests: Test[]
@@ -125,7 +125,7 @@ export type BuildOutput = {
 //     T
 //   >
 
-// export type RunnerDescribe = ReplaceTestWithTestRunner<Describe>
+// export type RunnerGroup = ReplaceTestWithTestRunner<Group>
 
 // export type RunnerTest =
 //   Omit<Test, 'function'> & {
@@ -149,7 +149,7 @@ export type BuildOutput = {
 //   ReplaceTestWithTestRunner<{
 //     path: string,
 //     tests: Test[],
-//     describes: Describe[]
+//     groups: Group[]
 //   }>
 
 // export type EnvironmentIndex = {

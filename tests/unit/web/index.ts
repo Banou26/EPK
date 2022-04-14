@@ -1,9 +1,9 @@
 import { expect } from 'chai'
-import { describe, test, runInUrls, withData } from '../../../lib/lib'
+import { group, test, runInUrls, withData } from '../../../lib/lib'
 
-// describe('my describe', () => {
-//   test('described test', () => {})
-//   test('described failed test', () => {
+// group('my group', () => {
+//   test('group test', () => {})
+//   test('group failed test', () => {
 //     throw new Error('thrown error message')
 //   })
 // })
@@ -19,61 +19,61 @@ import { describe, test, runInUrls, withData } from '../../../lib/lib'
 const urls = ['https://www.google.com/', 'https://sourcemapped.dev/functional-ish-js-and-state']
 const urls2 = ['https://en.wikipedia.org/wiki/Main_Page', 'https://developer.mozilla.org/en-US/']
 
-// describe('my describe pre', () => {
-//   test('my pre describe test', () => {})
-//   test('my pre describe test failed', () => {
+// group('my group pre', () => {
+//   test('my pre group test', () => {})
+//   test('my pre group test failed', () => {
 //     throw new Error('thrown error message')
 //   })
 // })
 
-describe
+group
   .use(withData, [{ data: 'foo' }])
   (
-    'my describe data',
+    'my group data',
     ({ data }) => {
-      test('described test ran with data', () => {
+      test('group test ran with data', () => {
         expect(data).to.equal('foo')
       })
     }
   )
 
-describe
+group
   .use(runInUrls, [urls])
   (
-    'my describe',
+    'my group',
     () => {
       console.log('location.href', location.href)
-      test('described test ran in url', () => {
+      test('group test ran in url', () => {
         if (!urls.includes(location.href)) throw new Error(`location.href (${location.href}) value wasnt in ${urls.join(', ')}`)
         // expect(data.url).eq(window.location.href)
       })
-      test('described test', () => {})
-      test('described failed test', () => {
+      test('group test', () => {})
+      test('group failed test', () => {
         throw new Error('thrown error message')
       })
     }
   )
 
-describe
+group
   .use(runInUrls, [urls2])
   (
-    'my describe url 2',
+    'my group url 2',
     () => {
       console.log('location.href 2', location.href)
-      test('described url 2 test ran in url', () => {
+      test('group url 2 test ran in url', () => {
         if (!urls2.includes(location.href)) throw new Error(`location.href (${location.href}) value wasnt in ${urls2.join(', ')}`)
         // expect(data.url).eq(window.location.href)
       })
-      test('described url 2 test', () => {})
-      test('described failed test', () => {
+      test('group url 2 test', () => {})
+      test('group failed test', () => {
         throw new Error('thrown error message')
       })
     }
   )
 
-describe('my describe 3', () => {
-  test('my 3rd describe test', () => {})
-  test('my 3rd describe test failed', () => {
+group('my group 3', () => {
+  test('my 3rd group test', () => {})
+  test('my 3rd group test failed', () => {
     throw new Error('thrown error message')
   })
 })

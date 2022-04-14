@@ -1,7 +1,7 @@
 import type{ BrowserContext } from 'playwright'
 
 import type { Task, TaskEvents } from '../../utils/runtime'
-import type { BuildOutputFile, Describe, Test, TestConfig } from '../../types'
+import type { BuildOutputFile, Group, Test, TestConfig } from '../../types'
 
 import { cwd } from 'process'
 import { rm } from 'fs/promises'
@@ -15,14 +15,14 @@ import { newPage, sendTask, prepareContext } from './page'
 import { createContext, enableExtension } from './browser'
 import { runInNewContext, runInThisContext } from 'vm'
 import { EPKPage } from './types'
-import { describes } from '../../runtime/test'
+import { groups } from '../../runtime/test'
 
 // @ts-ignore
 const __dirname: string = __dirname ?? dirname(fileURLToPath(import.meta.url))
 
 let runId = 0
 
-const runDescribeWithUse = ({ describe, output, config, browser: _browser, extensionId }: { describe: Describe, config: TestConfig, output?: BuildOutputFile, browser: Promise<BrowserContext>, extensionId?: number }) =>
+const runGroupWithUse = ({ group, output, config, browser: _browser, extensionId }: { group: Group, config: TestConfig, output?: BuildOutputFile, browser: Promise<BrowserContext>, extensionId?: number }) =>
   new Observable(observer => {
     let pages: { page: EPKPage, tabId: number, backgroundPage: EPKPage }[] = []
     let epkRunDone
@@ -43,15 +43,15 @@ const runDescribeWithUse = ({ describe, output, config, browser: _browser, exten
         _page.on('epkError', data => observer.next({ type: 'error', data }))
         _page.on('epkRegister', data => observer.next({ type: 'register', data }))
         _page.on('epkRun', data => {
-          if (!data.done || !data.describes) return
+          if (!data.done || !data.groups) return
           epkRunDone = data
-          resolve(data.describes.find(({ name }) => name === describe.name))
+          resolve(data.groups.find(({ name }) => name === group.name))
         })
         sendTask({
           task: {
             type: 'run',
             data: {
-              describes: [{ ...describe, useArguments: data }],
+              groups: [{ ...group, useArguments: data }],
               tests: []
             }
           },
@@ -62,10 +62,10 @@ const runDescribeWithUse = ({ describe, output, config, browser: _browser, exten
         })
       })
     try {
-      // console.log('describe.useArguments', describe.useArguments)
+      // console.log('group.useArguments', group.useArguments)
       const func = runInThisContext(
         // @ts-ignore
-        describe.useFunction as string,
+        group.useFunction as string,
         // { console },
         { timeout: 1000, filename: '__epk_generated_use.js' }
       )
@@ -76,22 +76,22 @@ const runDescribeWithUse = ({ describe, output, config, browser: _browser, exten
           prepareContext: ({ page, tabId, backgroundPage }) =>
             prepareContext({ config, extensionId, output, page, tabId, backgroundPage })
         },
-        describe.useArguments
+        group.useArguments
       )
       funcRes
         .then(data => {
-          // console.log('describe.name ran', data)
+          // console.log('group.name ran', data)
           observer.next({
             type: 'run',
             data: ({
               ...epkRunDone,
-              describes:
+              groups:
                 epkRunDone
-                  .describes
-                  .map(_describe =>
-                    _describe.name === describe.name
+                  .groups
+                  .map(_group =>
+                    _group.name === group.name
                       ? data
-                      : _describe
+                      : _group
                   )
             })
           })
@@ -111,7 +111,7 @@ const runDescribeWithUse = ({ describe, output, config, browser: _browser, exten
     }
   })
 
-const runRootTestsAndVanillaDescribes = ({ browser: _browser, output, config, extensionId, task, tests, describes }: ({ task: Task } | { tests: Test[], describes: Describe[] }) & { config: TestConfig, output?: BuildOutputFile, browser: Promise<BrowserContext>, extensionId?: number }) =>
+const runRootTestsAndVanillaGroups = ({ browser: _browser, output, config, extensionId, task, tests, groups }: ({ task: Task } | { tests: Test[], groups: Group[] }) & { config: TestConfig, output?: BuildOutputFile, browser: Promise<BrowserContext>, extensionId?: number }) =>
   new Observable(observer => {
     const _page = _browser.then(browser => newPage({ output, config, browser, extensionId }))
     _page
@@ -125,7 +125,7 @@ const runRootTestsAndVanillaDescribes = ({ browser: _browser, output, config, ex
           task ?? {
             type: 'run',
             data: {
-              describes,
+              groups,
               tests
             }
           }
@@ -172,12 +172,12 @@ export default ({ config, output: rootRoutput }: { config: TestConfig, output?: 
               // wait for the browser context to be created as we need the extensionId before continuing
               switchMap(task => _browser.then(() => task)),
               switchMap(task => {
-                if (task.type === 'register') return runRootTestsAndVanillaDescribes({ task, browser: _browser, output, config, extensionId })
-                const useDescribes = task.data?.describes.filter(({ useFunction }) => !!useFunction) ?? []
-                const vanillaDescribes = task.data?.describes.filter(describe => !useDescribes.includes(describe)) ?? []
+                if (task.type === 'register') return runRootTestsAndVanillaGroups({ task, browser: _browser, output, config, extensionId })
+                const useGroups = task.data?.groups.filter(({ useFunction }) => !!useFunction) ?? []
+                const vanillaGroups = task.data?.groups.filter(group => !useGroups.includes(group)) ?? []
                 return merge(
-                  ...useDescribes.map(describe => runDescribeWithUse({ browser: _browser, output, config, extensionId, describe })),
-                  runRootTestsAndVanillaDescribes({ browser: _browser, output, config, extensionId, describes: vanillaDescribes, tests: task.data?.tests })
+                  ...useGroups.map(group => runGroupWithUse({ browser: _browser, output, config, extensionId, group })),
+                  runRootTestsAndVanillaGroups({ browser: _browser, output, config, extensionId, groups: vanillaGroups, tests: task.data?.tests })
                 )
               }),
               finalize(async () => {
@@ -197,11 +197,11 @@ export default ({ config, output: rootRoutput }: { config: TestConfig, output?: 
 
 
                 // console.log('TASK', task)
-                // const describesWithUse = task.data?.describes.filter(({ useFunction }) => !!useFunction) ?? []
-                // if (task.type === 'run' && describesWithUse.length) {
+                // const groupsWithUse = task.data?.groups.filter(({ useFunction }) => !!useFunction) ?? []
+                // if (task.type === 'run' && groupsWithUse.length) {
                 //   return new Observable(observer => {
                 //     let pages: { page: EPKPage, tabId: number, backgroundPage: EPKPage }[] = []
-                //     for (const describe of describesWithUse) {
+                //     for (const group of groupsWithUse) {
                 //       let epkRunDone
                 //       const getPage = () => {
                 //         return (
@@ -224,14 +224,14 @@ export default ({ config, output: rootRoutput }: { config: TestConfig, output?: 
                 //             if (!data.done) return
                 //             // console.log('epkRun', data)
                 //             epkRunDone = data
-                //             resolve(data.describes.find(({ name }) => name === describe.name))
+                //             resolve(data.groups.find(({ name }) => name === group.name))
                 //           })
                 //           // console.log('sending TASK', task)
                 //           sendTask({
                 //             task: {
                 //               ...task,
                 //               data: {
-                //                 describes: [describe],
+                //                 groups: [group],
                 //                 tests: [],
                 //               }
                 //             },
@@ -242,10 +242,10 @@ export default ({ config, output: rootRoutput }: { config: TestConfig, output?: 
                 //           })
                 //         })
                 //       try {
-                //         // console.log('describe.useArguments', describe.useArguments)
+                //         // console.log('group.useArguments', group.useArguments)
                 //         const func = runInThisContext(
                 //           // @ts-ignore
-                //           describe.useFunction as string,
+                //           group.useFunction as string,
                 //           // { console },
                 //           { timeout: 1000, filename: '__epk_generated_use.js' }
                 //         )
@@ -256,22 +256,22 @@ export default ({ config, output: rootRoutput }: { config: TestConfig, output?: 
                 //             prepareContext: ({ page, tabId, backgroundPage }) =>
                 //               prepareContext({ config, extensionId, output, page, tabId, backgroundPage })
                 //           },
-                //           describe.useArguments
+                //           group.useArguments
                 //         )
                 //         funcRes
                 //           .then(data => {
-                //             // console.log('describe.name ran', data)
+                //             // console.log('group.name ran', data)
                 //             observer.next({
                 //               type: 'run',
                 //               data: ({
                 //                 ...epkRunDone,
-                //                 describes:
+                //                 groups:
                 //                   epkRunDone
-                //                     .describes
-                //                     .map(_describe =>
-                //                       _describe.name === describe.name
+                //                     .groups
+                //                     .map(_group =>
+                //                       _group.name === group.name
                 //                         ? data
-                //                         : _describe
+                //                         : _group
                 //                     )
                 //               })
                 //             })
@@ -299,9 +299,9 @@ export default ({ config, output: rootRoutput }: { config: TestConfig, output?: 
                 //     //   data: {
                 //     //     ...accTask.data,
                 //     //     ...task.data,
-                //     //     describes: [
-                //     //       ...accTask.data?.describes?.filter(describe => describe.name !== task.data?.describes?.[0]?.name) ?? [],
-                //     //       task.data?.describes?.[0]
+                //     //     groups: [
+                //     //       ...accTask.data?.groups?.filter(group => group.name !== task.data?.groups?.[0]?.name) ?? [],
+                //     //       task.data?.groups?.[0]
                 //     //     ].flat()
                 //     //   }
                 //     // }))),

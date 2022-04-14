@@ -25,20 +25,20 @@ import { parse } from 'path'
   //         }))
   //       )
 
-const TestFileTitle = ({ file: { path, events, describesTestsRuns, testsRuns } }) => {
+const TestFileTitle = ({ file: { path, events, groupsTestsRuns, testsRuns } }) => {
   const suceededTests = [
     ...testsRuns,
-    ...describesTestsRuns.flatMap(({ tests }) => tests),
+    ...groupsTestsRuns.flatMap(({ tests }) => tests),
   ].filter(({ status }) => status === 'success')
 
   const failedTests = [
     ...testsRuns,
-    ...describesTestsRuns.flatMap(({ tests }) => tests),
+    ...groupsTestsRuns.flatMap(({ tests }) => tests),
   ].filter(({ status }) => status === 'fail')
 
   const skippedTests = [
     ...testsRuns,
-    ...describesTestsRuns.flatMap(({ tests }) => tests),
+    ...groupsTestsRuns.flatMap(({ tests }) => tests),
   ].filter(({ status }) => status === 'skip')
 
   return (
@@ -91,19 +91,19 @@ const TestFileTest = ({ file, test, ...rest }) => {
         {test.name} ✗
       </Text>
       <Box flexDirection="column" paddingLeft={2}>
-        <Text color="grayBright">{test.error.stack.slice(0, test.error.stack.indexOf('\n')).trim()}</Text>
-        <Text color="gray">{test.error.stack.slice(test.error.stack.indexOf('\n')).trim()}</Text>
+        <Text color="grayBright">{test.error.stack.slice(0, test.error.stack.indexOf('\n') + 1).trim()}</Text>
+        <Text color="gray">{test.error.stack.slice(test.error.stack.indexOf('\n') + 1).trim()}</Text>
       </Box>
     </Box>
   )
 }
 
-const TestFileTests = ({ file, file: { describesTestsRuns, testsRuns } }) => {
+const TestFileTests = ({ file, file: { groupsTestsRuns, testsRuns } }) => {
 
   return (
     <Fragment>
       {
-        describesTestsRuns
+        groupsTestsRuns
           .map(({ name, tests }) =>
             <Box key={name} flexDirection="column">
               <Text color="grayBright">{name}</Text>

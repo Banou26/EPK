@@ -80,7 +80,7 @@ export default ({ configPath, watch }: { configPath: string, watch?: boolean }) 
                                 registerStream
                                   .pipe(
                                     filter(({ type }) => type === 'register'),
-                                    map(({ data: { describes, tests } }: Event<'register'> ) => ({ describes, tests })),
+                                    map(({ data: { groups, tests } }: Event<'register'> ) => ({ groups, tests })),
                                     // tap(val => console.log('val', val)),
                                     // take(1),
                                     share(),
@@ -91,9 +91,9 @@ export default ({ configPath, watch }: { configPath: string, watch?: boolean }) 
                                 register
                                   .pipe(
                                     // tap(val => console.log('val2', val)),
-                                    map(({ describes, tests }) => ({
+                                    map(({ groups, tests }) => ({
                                       type: 'run',
-                                      data: { describes, tests }
+                                      data: { groups, tests }
                                     } as Task<'run'>)),
                                     runInContext({ output }),
                                     share()
@@ -104,20 +104,20 @@ export default ({ configPath, watch }: { configPath: string, watch?: boolean }) 
                                 testStream
                                   .pipe(
                                     filter(({ type }) => type === 'run'),
-                                    map(({ data, data: { describes, tests, done }, ...rest }: Event<'run'>) => ({ ...rest, describesRuns: describes, testsRuns: tests, done })),
-                                    mergeMap(async ({ describesRuns, testsRuns, ...rest }) => ({
+                                    map(({ data, data: { groups, tests, done }, ...rest }: Event<'run'>) => ({ ...rest, groupsRuns: groups, testsRuns: tests, done })),
+                                    mergeMap(async ({ groupsRuns, testsRuns, ...rest }) => ({
                                       ...rest,
-                                      describesTestsRuns:
+                                      groupsTestsRuns:
                                         (await Promise.all(
-                                          describesRuns.flatMap(async (describe) => ({
-                                            ...describe,
+                                          groupsRuns.flatMap(async (group) => ({
+                                            ...group,
                                             tests:
                                               await Promise.all(
-                                                describe.tests.flatMap(async testRun => {
+                                                group.tests.flatMap(async testRun => {
                                                   if (testRun.status === 'success') return testRun
-                                                  const error = parseErrorStack({ describe: true, errorStack: testRun.errorStack, originalStack: testRun.originalStack, sourceMapString: output.sourcemap.text })
+                                                  const error = parseErrorStack({ group: true, errorStack: testRun.errorStack, originalStack: testRun.originalStack, sourceMapString: output.sourcemap.text })
                                                   return {
-                                                    describe,
+                                                    group,
                                                     ...testRun,
                                                     error
                                                   }
@@ -158,17 +158,17 @@ export default ({ configPath, watch }: { configPath: string, watch?: boolean }) 
                                   scan((file, ev) => ({
                                     // ...file,
                                     // events: [...file.events, ev],
-                                    // describesTestsRuns: ev.type === 'run' ? ev.describesTestsRuns : [],
+                                    // groupsTestsRuns: ev.type === 'run' ? ev.groupsTestsRuns : [],
                                     // testsRuns: ev.type === 'run' ? ev.testsRuns : []
                                     ...file,
                                     events: [...file.events, ev],
-                                    describesTestsRuns: [
-                                      ...file.describesTestsRuns.filter(describe => !ev.describesTestsRuns?.some(({ name }) => name === describe.name)),
-                                      ...ev.describesTestsRuns ?? []
-                                    ].map(describe => ({
-                                      ...describe,
-                                      tests: keepNewTests(file.describesTestsRuns.find(({ name }) => name === describe.name)?.tests, describe.tests)
-                                    })), // ev.type === 'run' ? ev.describesTestsRuns : [],
+                                    groupsTestsRuns: [
+                                      ...file.groupsTestsRuns.filter(group => !ev.groupsTestsRuns?.some(({ name }) => name === group.name)),
+                                      ...ev.groupsTestsRuns ?? []
+                                    ].map(group => ({
+                                      ...group,
+                                      tests: keepNewTests(file.groupsTestsRuns.find(({ name }) => name === group.name)?.tests, group.tests)
+                                    })), // ev.type === 'run' ? ev.groupsTestsRuns : [],
                                     testsRuns: keepNewTests(file.testsRuns, ev.testsRuns) // [...file.testsRuns.filter(test => ev.testsRuns.some(({ name }) => name !== test.name)), ...ev.testsRuns ?? []]// ev.type === 'run' ? ev.testsRuns : []
                                   }), {
                                     path: output.originalPath,
@@ -176,7 +176,7 @@ export default ({ configPath, watch }: { configPath: string, watch?: boolean }) 
                                     output,
                                     config,
                                     events: [],
-                                    describesTestsRuns: [],
+                                    groupsTestsRuns: [],
                                     testsRuns: []
                                   })
                                 )

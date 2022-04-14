@@ -1,18 +1,18 @@
 import { assert as chaiAssert, expect as chaiExpect } from 'chai'
 import {
-  // describe as bDescribe,
+  // group as bGroup,
   // querySelector as bQuerySelector,
   test as bTest,
-  describe as bDescribe,
+  group as bGroup,
 } from './runtime'
 
 declare global {
   var assert: typeof chaiAssert
   var expect: typeof chaiExpect
-  // var describe: typeof bDescribe
+  // var group: typeof bGroup
   // var querySelector: typeof bQuerySelector
   var test: typeof bTest
-  var describe: typeof bDescribe
+  var group: typeof bGroup
 }
 
 export {}

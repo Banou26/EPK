@@ -1,4 +1,4 @@
-import { Describe, DescribeRun, Test, TestRun } from '../types'
+import { Group, GroupRun, Test, TestRun } from '../types'
 
 export type Global = 'task' | 'event' | 'initDone'
 
@@ -12,7 +12,7 @@ export type Task<T extends TASK = TASK> = {
   type: T
   data:
     T extends 'register' ? undefined :
-    T extends 'run' ? { describes: Describe<true>[], tests: Test<true>[] } :
+    T extends 'run' ? { groups: Group<true>[], tests: Test<true>[] } :
     never
 }
 
@@ -22,8 +22,8 @@ export type Event<T extends EVENT = EVENT> = {
     T extends 'initDone' ? undefined :
     T extends 'log' ? { error: string } | { warn: string } | { info: string } | { log: string } :
     T extends 'error' ? { message: string, stack: string[], errorStack?: any[] } :
-    T extends 'register' ? { tests: Test[], describes: Describe[] } :
-    T extends 'run' ? { describe?: DescribeRun, test?: TestRun } | { describes?: DescribeRun[], tests?: TestRun[], done?: boolean } :
+    T extends 'register' ? { tests: Test[], groups: Group[] } :
+    T extends 'run' ? { group?: GroupRun, test?: TestRun } | { groups?: GroupRun[], tests?: TestRun[], done?: boolean } :
     never
 }
 
