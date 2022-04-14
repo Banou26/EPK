@@ -18,8 +18,8 @@ import { EPKConfig } from '../types'
 
 const run = async ({ entryFiles }: { entryFiles?: string[] } = { entryFiles: [] }) => {
   const watch = process.argv.includes('-w') || process.argv.includes('--watch')
-  const configPath = pathToFileURL(undefined ?? join(cwd(), './test.config.js')).toString()
-  const { default: config }: { default: EPKConfig } = await import(configPath)
+  const configPath = join(cwd(), './test.config.js') // pathToFileURL(undefined ?? join(cwd(), './test.config.js')).toString()
+  
   await rm(join(cwd(), './tmp'), { recursive: true }).catch(() => {})
 
   // console.log(join(cwd(), './test.config.ts'))
@@ -45,7 +45,7 @@ const run = async ({ entryFiles }: { entryFiles?: string[] } = { entryFiles: [] 
   //   .listen(2345)
   
   const epk =
-    EPK({ config, watch })
+    EPK({ configPath, watch })
       .pipe(
         shareReplay(),
         cliReporter()
