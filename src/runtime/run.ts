@@ -30,7 +30,7 @@ export default ({ describes, tests }: Task<'run'>['data']) => {
   // register tests inside describes
   registeredDescribes.map(describe => {
     if (!describes.some(({ name }) => name === describe.name)) return
-    describe.function(...describe.useArguments)
+    describe.function(...describe.useArguments ?? [])
   })
 
   const testsResults =
