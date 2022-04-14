@@ -2,9 +2,9 @@ import { EPKPage } from '../platforms/chromium/types'
 import stacktrace from '../stacktrace/stacktrace'
 import { Test, TestRun, Describe } from '../types'
 
-let currentDescribe: Describe | undefined
+let currentDescribe: Describe<true> | undefined
 
-export let describes: Describe[] = []
+export let describes: Describe<true>[] = []
 
 export type UseEvaluate<T = any, T2 = any> = ({
   getPage,
@@ -23,7 +23,7 @@ export type DescribeFunction = {
 
 const makeDescribe = (options = {}): DescribeFunction => {
   const describe = (name: string, func: (...args) => any) => {
-    const describe: Describe = {
+    const describe: Describe<true> = {
       ...options,
       name,
       function: (...args) => {
@@ -47,7 +47,7 @@ const makeDescribe = (options = {}): DescribeFunction => {
 
 export const describe = makeDescribe()
 
-export let tests: Test[] = []
+export let tests: Test<true>[] = []
 
 const makeTest = (options = {}) => {
   const test = (name: string, func: (...args) => any) => {

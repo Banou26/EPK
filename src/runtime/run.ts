@@ -5,7 +5,7 @@ import { describes as registeredDescribes, tests as registeredTests } from './te
 import { combineLatest, from, merge, Observable, of } from 'rxjs'
 import { endWith, finalize, last, map, mergeMap, scan, share, shareReplay, startWith, switchMap, tap } from 'rxjs/operators'
 
-const runTests = (tests: Test[], describe?: Describe): Observable<TestRun[]> =>
+const runTests = (tests: Test<true>[], describe?: Describe<true>): Observable<TestRun<true>[]> =>
   from(tests)
     .pipe(
       mergeMap(test =>
@@ -53,7 +53,7 @@ export default ({ describes, tests }: Task<'run'>['data']) => {
               scan((describe, tests) => ({ ...describe, tests }), { ...describe, tests: [] })
             )
         ),
-        scan((describes: DescribeRun[], describe: DescribeRun) => [...describes.filter(({ name }) => name !== describe.name), describe], []),
+        scan((describes: DescribeRun<true>[], describe: DescribeRun<true>) => [...describes.filter(({ name }) => name !== describe.name), describe], []),
         startWith([])
       )
 

@@ -12,7 +12,7 @@ export type Task<T extends TASK = TASK> = {
   type: T
   data:
     T extends 'register' ? undefined :
-    T extends 'run' ? { describes: Describe[], tests: Test[] } :
+    T extends 'run' ? { describes: Describe<true>[], tests: Test<true>[] } :
     never
 }
 

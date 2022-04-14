@@ -6,32 +6,32 @@ export type Environment = 'web' | 'content-script' | 'background-script'
 export type Platform = 'node' | 'chromium'
 export type LogLevel = 'none' | 'error' | 'warn' | 'info' | ''
 
-export type Test = {
+export type Test<Runtime extends boolean = false> = {
   name: string
-  function: ((args: any) => any) | string
+  function: Runtime extends true ? ((...args: any[]) => any) : string
 }
 
-export type TestRun = {
-  test: Test
-  function: ((args: any) => any) | string
+export type TestRun<Runtime extends boolean = false> = {
+  test: Test<Runtime>
+  function: Runtime extends true ? ((...args: any[]) => any) : string
   status: 'success' | 'fail'
   return?: any
   originalStack?: string[]
   errorStack?: any[]
 }
 
-export type Describe = {
+export type Describe<Runtime extends boolean = false> = {
   useFunction?: (...args) => any
   useArguments?: any[]
   name: string
-  function: ((...args) => any) | string
-  tests: Test[]
+  function: Runtime extends true ? ((...args: any[]) => any) : string
+  tests: Test<Runtime>[]
 }
 
-export type DescribeRun = {
+export type DescribeRun<Runtime extends boolean = false> = {
   name: string
-  function: ((...args) => any) | string
-  tests: TestRun[]
+  function: Runtime extends true ? ((...args: any[]) => any) : string
+  tests: TestRun<Runtime>[]
 }
 
 export type TestFile = {

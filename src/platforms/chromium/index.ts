@@ -43,9 +43,7 @@ const runDescribeWithUse = ({ describe, output, config, browser: _browser, exten
         _page.on('epkError', data => observer.next({ type: 'error', data }))
         _page.on('epkRegister', data => observer.next({ type: 'register', data }))
         _page.on('epkRun', data => {
-          // @ts-ignore
-          if (!data.done) return
-          // console.log('epkRun', data)
+          if (!data.done || !data.describes) return
           epkRunDone = data
           resolve(data.describes.find(({ name }) => name === describe.name))
         })
