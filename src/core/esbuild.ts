@@ -141,7 +141,9 @@ export default ({ testConfig, esbuildOptions, watch }: { testConfig: TestConfig,
       publicPath: '/',
       minify: process.argv.includes('-m') || process.argv.includes('--minify'),
       watch: {
-        async onRebuild(error, { errors, outputFiles }) {
+        async onRebuild(error, result) {
+          if (!result) return
+          const { errors, outputFiles } = result
           if (errors.length) makeError(errors)
           else await makeSuccess(outputFiles)
         }
