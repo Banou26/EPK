@@ -139,7 +139,7 @@ const runRootTestsAndVanillaDescribes = ({ browser: _browser, output, config, ex
 export default ({ config, output: rootRoutput }: { config: TestConfig, output?: BuildOutputFile }) => {
   const id = runId++
   let _browser: Promise<BrowserContext>
-  let extensionId
+  let extensionId: string
   let contextsInUse = 0
 
   return (
@@ -160,7 +160,7 @@ export default ({ config, output: rootRoutput }: { config: TestConfig, output?: 
               bypassCSP: true
             }
           }).then(async context => {
-            await enableExtension({ context, extensionName: 'EPK' })
+            extensionId = await enableExtension({ context, extensionName: 'EPK' })
             return context
           })
         }
@@ -169,6 +169,8 @@ export default ({ config, output: rootRoutput }: { config: TestConfig, output?: 
         return (
           observable
             .pipe(
+              // wait for the browser context to be created as we need the extensionId before continuing
+              switchMap(task => _browser.then(() => task)),
               switchMap(task => {
                 if (task.type === 'register') return runRootTestsAndVanillaDescribes({ task, browser: _browser, output, config, extensionId })
                 const useDescribes = task.data?.describes.filter(({ useFunction }) => !!useFunction) ?? []
