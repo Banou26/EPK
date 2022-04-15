@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { group, test, runInUrls, withData } from '../../../lib/lib'
+import { setup, teardown, group, test, runInUrls, withData } from '../../../lib/lib'
 
 // group('my group', () => {
 //   test('group test', () => {})
@@ -19,70 +19,76 @@ import { group, test, runInUrls, withData } from '../../../lib/lib'
 const urls = ['https://www.google.com/', 'https://sourcemapped.dev/functional-ish-js-and-state']
 const urls2 = ['https://en.wikipedia.org/wiki/Main_Page', 'https://developer.mozilla.org/en-US/']
 
-// group('my group pre', () => {
-//   test('my pre group test', () => {})
-//   test('my pre group test failed', () => {
-//     throw new Error('thrown error message')
-//   })
-// })
-
-group
-  .use(withData, [{ data: 'foo' }])
-  (
-    'my group data',
-    ({ data }) => {
-      test('group test ran with data', () => {
-        expect(data).to.equal('foo')
-      })
-    }
-  )
-
-group
-  .use(runInUrls, [urls])
-  (
-    'my group',
-    () => {
-      console.log('location.href', location.href)
-      test('group test ran in url', () => {
-        if (!urls.includes(location.href)) throw new Error(`location.href (${location.href}) value wasnt in ${urls.join(', ')}`)
-        // expect(data.url).eq(window.location.href)
-      })
-      test('group test', () => {})
-      test('group failed test', () => {
-        throw new Error('thrown error message')
-      })
-    }
-  )
-
-group
-  .use(runInUrls, [urls2])
-  (
-    'my group url 2',
-    () => {
-      console.log('location.href 2', location.href)
-      test('group url 2 test ran in url', () => {
-        if (!urls2.includes(location.href)) throw new Error(`location.href (${location.href}) value wasnt in ${urls2.join(', ')}`)
-        // expect(data.url).eq(window.location.href)
-      })
-      test('group url 2 test', () => {})
-      test('group failed test', () => {
-        throw new Error('thrown error message')
-      })
-    }
-  )
-
-group('my group 3', () => {
-  test('my 3rd group test', () => {})
-  test('my 3rd group test failed', () => {
+group('my group pre', () => {
+  setup(() => {
+    console.log('setup')
+  })
+  teardown(() => {
+    console.log('teardown')
+  })
+  test('my pre group test', () => {})
+  test.skip('my pre group test failed', () => {
     throw new Error('thrown error message')
   })
 })
 
-test('e2e test succeed', () => {})
+// group
+//   .use(withData, [{ data: 'foo' }])
+//   (
+//     'my group data',
+//     ({ data }) => {
+//       test('group test ran with data', () => {
+//         expect(data).to.equal('foo')
+//       })
+//     }
+//   )
 
-test('from e2e, test fail', () => {
-  throw new Error('thrown error message')
-})
+// group
+//   .use(runInUrls, [urls])
+//   (
+//     'my group',
+//     () => {
+//       console.log('location.href', location.href)
+//       test('group test ran in url', () => {
+//         if (!urls.includes(location.href)) throw new Error(`location.href (${location.href}) value wasnt in ${urls.join(', ')}`)
+//         // expect(data.url).eq(window.location.href)
+//       })
+//       test('group test', () => {})
+//       test('group failed test', () => {
+//         throw new Error('thrown error message')
+//       })
+//     }
+//   )
+
+// group
+//   .use(runInUrls, [urls2])
+//   (
+//     'my group url 2',
+//     () => {
+//       console.log('location.href 2', location.href)
+//       test('group url 2 test ran in url', () => {
+//         if (!urls2.includes(location.href)) throw new Error(`location.href (${location.href}) value wasnt in ${urls2.join(', ')}`)
+//         // expect(data.url).eq(window.location.href)
+//       })
+//       test('group url 2 test', () => {})
+//       test('group failed test', () => {
+//         throw new Error('thrown error message')
+//       })
+//     }
+//   )
+
+// group('my group 3', () => {
+//   test('my 3rd group test', () => {})
+//   test('my 3rd group test failed', () => {
+//     throw new Error('thrown error message')
+//   })
+// })
+
+// test('e2e test succeed', () => {})
+
+// test('from e2e, test fail', () => {
+//   throw new Error('thrown error message')
+// })
 
 // console.log('e2e test file log')
 

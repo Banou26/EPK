@@ -1,6 +1,6 @@
 import { EPKPage } from '../platforms/chromium/types'
 import stacktrace from '../stacktrace/stacktrace'
-import { Test, TestRun, Group } from '../types'
+import { Hook, Test, TestRun, Group } from '../types'
 
 
 
@@ -16,23 +16,17 @@ import { Test, TestRun, Group } from '../types'
 // export const beforeEach = (func) => beforeEachArray = [...beforeEachArray, func]
 // export const afterEach = (func) => afterEachArray = [...afterEachArray, func]
 
-type Hook = {
-  name: string
-  function: (func: (...args: unknown[]) => unknown) => void
-  each?: boolean
-}
-
-export let hooks: Hook[] = []
-let currentHook: Hook | undefined
+export let hooks: Hook<true>[] = []
+let currentHook: Hook<true> | undefined
 
 export type HookFunction<T extends (...args: any[]) => any> = ((hookFunction: T) => void) & {
   each: HookFunction<T>
   // (func: (...args: unknown[]) => unknown): void
 }
 
-const makeHook = <T extends (...args: any[]) => any>(options: Pick<Hook, 'name'> & Partial<Pick<Hook, 'each'>>): HookFunction<T> => {
+const makeHook = <T extends (...args: any[]) => any>(options: Pick<Hook<true>, 'name'> & Partial<Pick<Hook<true>, 'each'>>): HookFunction<T> => {
   const hook = (func: T) => {
-    const hook: Hook = {
+    const hook: Hook<true> = {
       ...options,
       function: (...args) => {
         currentHook = hook
@@ -40,15 +34,16 @@ const makeHook = <T extends (...args: any[]) => any>(options: Pick<Hook, 'name'>
         currentHook = undefined
       }
     }
-    hooks = [...hooks, hook]
+    if (currentGroup) {
+      currentGroup.hooks = [...currentGroup.hooks, hook]
+    } else {
+      hooks = [...hooks, hook]
+    }
   }
 
   const variants = ['serial', 'isolate', 'only', 'skip'].map(variant => ([variant, { get: () => makeTest({ ...options, [variant]: true }) }] as const))
 
-  return Object.defineProperties(hook, Object.fromEntries([
-    ...variants,
-    ['use', { get: () => (func: (...args) => any, args: any[]) => makeGroup({ ...options, useFunction: func.toString(), useArguments: args }) }]
-  ])) as HookFunction<T>
+  return Object.defineProperties(hook, Object.fromEntries(variants)) as HookFunction<T>
 }
 
 export const setup = makeHook<() => (() => void) | undefined | void>({ name: 'setup' })
@@ -84,6 +79,7 @@ const makeGroup = (options = {}): GroupFunction => {
         func(...args)
         currentGroup = undefined
       },
+      hooks: [],
       tests: []
     }
     groups = [...groups, group]

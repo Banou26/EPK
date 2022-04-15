@@ -6,6 +6,12 @@ export type Environment = 'web' | 'content-script' | 'background-script'
 export type Platform = 'node' | 'chromium'
 export type LogLevel = 'none' | 'error' | 'warn' | 'info' | ''
 
+export type Hook<Runtime> = {
+  name: string
+  function: Runtime extends true ? ((...args: any[]) => any) : string
+  each?: boolean
+}
+
 export type Test<Runtime extends boolean = false> = {
   name: string
   function: Runtime extends true ? ((...args: any[]) => any) : string
@@ -26,12 +32,14 @@ export type Group<Runtime extends boolean = false> = {
   name: string
   function: Runtime extends true ? ((...args: any[]) => any) : string
   tests: Test<Runtime>[]
+  hooks: Hook<Runtime>[]
 }
 
 export type GroupRun<Runtime extends boolean = false> = {
   name: string
   function: Runtime extends true ? ((...args: any[]) => any) : string
   tests: TestRun<Runtime>[]
+  hooks: Hook<Runtime>[]
 }
 
 export type TestFile = {

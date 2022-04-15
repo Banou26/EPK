@@ -1,9 +1,9 @@
 import type { Task } from '../utils/runtime'
 import type { Group, GroupRun, Test, TestRun } from '../types'
 
-import { groups as registeredGroups, tests as registeredTests } from './test'
+import { hooks as registeredHooks, groups as registeredGroups, tests as registeredTests } from './test'
 import { combineLatest, from, merge, Observable, of } from 'rxjs'
-import { endWith, finalize, last, map, mergeMap, scan, share, shareReplay, startWith, switchMap, tap } from 'rxjs/operators'
+import { endWith, finalize, last, map, mapTo, mergeMap, scan, share, shareReplay, startWith, switchMap, tap } from 'rxjs/operators'
 
 const runTests = (tests: Test<true>[], group?: Group<true>): Observable<TestRun<true>[]> =>
   from(tests)
@@ -31,6 +31,7 @@ export default ({ groups, tests }: Task<'run'>['data']) => {
   registeredGroups.map(group => {
     if (!groups.some(({ name }) => name === group.name)) return
     group.function(...group.useArguments ?? [])
+    console.log('hooks', group.hooks)
   })
 
   const testsResults =
@@ -42,17 +43,31 @@ export default ({ groups, tests }: Task<'run'>['data']) => {
   const groupsResults =
     from(groups)
       .pipe(
-        mergeMap(group =>
-          runTests(
-            registeredGroups
-              .find(({ name }) => name === group.name)
-              .tests,
-            group
-          )
-            .pipe(
-              scan((group, tests) => ({ ...group, tests }), { ...group, tests: [] })
+        mergeMap(_group => {
+          const group = registeredGroups.find(({ name }) => name === _group.name)
+          const setupHooks = group.hooks.filter(({ name }) => name === 'setup')
+          console.log('hooks', setupHooks)
+          const hooksResolved = Promise.all(setupHooks.map(async (hook) => ({ hook, result: await hook.function() })))
+          return from(hooksResolved).pipe(map(hooks => ({ group: _group, hooks })))
+        }),
+        mergeMap(({ group, hooks }) => {
+          return (
+            runTests(
+              registeredGroups
+                .find(({ name }) => name === group.name)
+                .tests,
+              group
             )
-        ),
+              .pipe(
+                scan((group, tests) => ({ ...group, tests }), { ...group, tests: [] }),
+                finalize(() => {
+                  console.log('hooks result', hooks)
+                  hooks.filter(({ hook, result }) => hook.name === 'setup' && typeof result === 'function').map(({ result }) => result())
+                  hooks.filter(({ hook }) => hook.name === 'teardown').map(({ hook }) => hook.function())
+                })
+              )
+          )
+        }),
         scan((groups: GroupRun<true>[], group: GroupRun<true>) => [...groups.filter(({ name }) => name !== group.name), group], []),
         startWith([])
       )
