@@ -2,7 +2,7 @@ import { assert, expect } from 'chai'
 
 import './message'
 
-import { afterAll, afterEach, beforeAll, beforeEach, test, group } from './test'
+import { setup, teardown, test, group } from './test'
 export * from './assert'
 export * from './message'
 import { runInUrls, withData } from './useFunctions'
@@ -11,10 +11,8 @@ import { runInUrls, withData } from './useFunctions'
 export {
   assert,
   expect,
-  afterAll,
-  afterEach,
-  beforeAll,
-  beforeEach,
+  setup,
+  teardown,
   test,
   group,
   runInUrls,
