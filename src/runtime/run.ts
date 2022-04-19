@@ -46,7 +46,6 @@ export default ({ groups, tests }: Task<'run'>['data']) => {
         mergeMap(_group => {
           const group = registeredGroups.find(({ name }) => name === _group.name)
           const setupHooks = group.hooks.filter(({ name }) => name === 'setup')
-          console.log('hooks', setupHooks)
           const hooksResolved = Promise.all(setupHooks.map(async (hook) => ({ hook, result: await hook.function() })))
           return from(hooksResolved).pipe(map(hooks => ({ group: _group, hooks })))
         }),
@@ -61,7 +60,6 @@ export default ({ groups, tests }: Task<'run'>['data']) => {
               .pipe(
                 scan((group, tests) => ({ ...group, tests }), { ...group, tests: [] }),
                 finalize(() => {
-                  console.log('hooks result', hooks)
                   hooks.filter(({ hook, result }) => hook.name === 'setup' && typeof result === 'function').map(({ result }) => result())
                   hooks.filter(({ hook }) => hook.name === 'teardown').map(({ hook }) => hook.function())
                 })

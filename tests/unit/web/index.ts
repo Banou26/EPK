@@ -22,6 +22,9 @@ const urls2 = ['https://en.wikipedia.org/wiki/Main_Page', 'https://developer.moz
 group('my group pre', () => {
   setup(() => {
     console.log('setup')
+    return () => {
+      console.log('setup teardown')
+    }
   })
   teardown(() => {
     console.log('teardown')

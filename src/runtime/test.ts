@@ -28,10 +28,11 @@ const makeHook = <T extends (...args: any[]) => any>(options: Pick<Hook<true>, '
   const hook = (func: T) => {
     const hook: Hook<true> = {
       ...options,
-      function: (...args) => {
+      function: async (...args) => {
         currentHook = hook
-        func(...args)
+        const result = await func(...args)
         currentHook = undefined
+        return result
       }
     }
     if (currentGroup) {
