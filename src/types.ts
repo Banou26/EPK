@@ -12,15 +12,21 @@ export type Hook<Runtime> = {
   each?: boolean
 }
 
-export type Test<Runtime extends boolean = false> = {
-  name: string
-  function: Runtime extends true ? ((...args: any[]) => any) : string
+export type TestOptions = {
+  skip?: boolean
 }
+
+export type Test<Runtime extends boolean = false> =
+  TestOptions &
+  {
+    name: string
+    function: Runtime extends true ? ((...args: any[]) => any) : string
+  }
 
 export type TestRun<Runtime extends boolean = false> = {
   test: Test<Runtime>
   function: Runtime extends true ? ((...args: any[]) => any) : string
-  status: 'success' | 'fail'
+  status: 'success' | 'fail' | 'skip'
   return?: any
   originalStack?: string[]
   errorStack?: any[]

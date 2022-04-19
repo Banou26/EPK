@@ -114,7 +114,7 @@ export default ({ configPath, watch }: { configPath: string, watch?: boolean }) 
                                             tests:
                                               await Promise.all(
                                                 group.tests.flatMap(async testRun => {
-                                                  if (testRun.status === 'success') return testRun
+                                                  if (testRun.status === 'success' || testRun.status === 'skip') return testRun
                                                   const error = parseErrorStack({ group: true, errorStack: testRun.errorStack, originalStack: testRun.originalStack, sourceMapString: output.sourcemap.text })
                                                   return {
                                                     group,
@@ -128,7 +128,7 @@ export default ({ configPath, watch }: { configPath: string, watch?: boolean }) 
                                         .flat(),
                                       testsRuns:
                                         await Promise.all(testsRuns.map(async testRun => {
-                                          if (testRun.status === 'success') return testRun
+                                          if (testRun.status === 'success' || testRun.status === 'skip') return testRun
                                           const error = parseErrorStack({ errorStack: testRun.errorStack, originalStack: testRun.originalStack, sourceMapString: output.sourcemap.text })
                                           return {
                                             ...testRun,

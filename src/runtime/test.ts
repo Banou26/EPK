@@ -1,6 +1,6 @@
 import { EPKPage } from '../platforms/chromium/types'
 import stacktrace from '../stacktrace/stacktrace'
-import { Hook, Test, TestRun, Group } from '../types'
+import { Hook, Test, TestRun, Group, TestOptions } from '../types'
 
 
 
@@ -104,12 +104,20 @@ export type TestFunction = {
   (name: string, func: (...args: unknown[]) => unknown): void
 }
 
-const makeTest = (options = {}): TestFunction => {
+const makeTest = (options: TestOptions = {}): TestFunction => {
   const test = (name: string, func: (...args) => any) => {
     const test: Test<true> = {
       ...options,
       name,
       function: async (args): Promise<TestRun> => {
+        if (options.skip) {
+          return {
+            test: { ...test, function: func.toString() } as unknown as Test<false>,
+            function: func.toString(),
+            status: 'skip',
+            return: undefined
+          }
+        }
         try {
           return {
             test: { ...test, function: func.toString() } as unknown as Test<false>,

@@ -30,7 +30,7 @@ group('my group pre', () => {
     console.log('teardown')
   })
   test('my pre group test', () => {})
-  test.skip('my pre group test failed', () => {
+  test.skip('my pre group test skipped', () => {
     throw new Error('thrown error message')
   })
 })

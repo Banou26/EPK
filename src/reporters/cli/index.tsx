@@ -85,6 +85,16 @@ const TestFileTest = ({ file, test, ...rest }) => {
     )
   }
 
+  if (test.status === 'skip') {
+    return (
+      <Box flexDirection="column">
+        <Text color="gray">
+          {test.name}
+        </Text>
+      </Box>
+    )
+  }
+
   return (
     <Box flexDirection="column">
       <Text color="red">
