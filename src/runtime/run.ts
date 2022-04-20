@@ -14,16 +14,17 @@ const runTests = (tests: Test<true>[], group?: Group<true>): Observable<TestRun<
             registeredGroups
               .find(({ name }) => name === group.name)
               .tests
+              .filter(({ name }) => group.tests.some(test => name === test.name))
               .find(({ name }) => name === test.name)
-              .function(undefined)
+              ?.function(undefined) ?? Promise.resolve(undefined)
           )
           : (
             registeredTests
               .find(({ name }) => name === test.name)
-              .function(undefined)
+              ?.function(undefined) ?? Promise.resolve(undefined)
           )
       ),
-      scan((tests, test) => [...tests, test], [])
+      scan((tests, test) => [...tests, test].filter(Boolean), [])
     )
 
 export default ({ groups, tests }: Task<'run'>['data']) => {
@@ -31,7 +32,7 @@ export default ({ groups, tests }: Task<'run'>['data']) => {
   registeredGroups.map(group => {
     if (!groups.some(({ name }) => name === group.name)) return
     group.function(...group.useArguments ?? [])
-    console.log('hooks', group.hooks)
+    // console.log('hooks', group.hooks)
   })
 
   const testsResults =

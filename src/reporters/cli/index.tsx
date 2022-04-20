@@ -133,6 +133,17 @@ const TestFileTests = ({ file, file: { groupsTestsRuns, testsRuns } }) => {
       }
       {
         testsRuns
+          .filter(({ status }) => status === 'skip')
+          .map(({ test, ...rest }) =>
+            <TestFileTest
+              key={test.name}
+              file={file}
+              test={{ ...test, ...rest }}
+            />
+          )
+      }
+      {
+        testsRuns
           .filter(({ status }) => status === 'success')
           .map(({ test, ...rest }) =>
             <TestFileTest

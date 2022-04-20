@@ -29,10 +29,23 @@ group('my group pre', () => {
   teardown(() => {
     console.log('teardown')
   })
-  test('my pre group test', () => {})
+  test('my pre group test', () => {
+    console.log('normal test run')
+  })
   test.skip('my pre group test skipped', () => {
+    console.log('skipped test run')
     throw new Error('thrown error message')
   })
+  test.only('my pre group test only', () => {
+    console.log('only test run')
+    throw new Error('thrown error message')
+  })
+})
+
+test('e2e test succeed', () => {})
+
+test('from e2e, test fail', () => {
+  throw new Error('thrown error message')
 })
 
 // group

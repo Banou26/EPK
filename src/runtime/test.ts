@@ -110,14 +110,6 @@ const makeTest = (options: TestOptions = {}): TestFunction => {
       ...options,
       name,
       function: async (args): Promise<TestRun> => {
-        if (options.skip) {
-          return {
-            test: { ...test, function: func.toString() } as unknown as Test<false>,
-            function: func.toString(),
-            status: 'skip',
-            return: undefined
-          }
-        }
         try {
           return {
             test: { ...test, function: func.toString() } as unknown as Test<false>,

@@ -1,4 +1,4 @@
-import type { EPKConfig, TestConfig, TestRun } from '../types'
+import type { EPKConfig, Group, Test, TestConfig, TestRun } from '../types'
 
 import { from, merge, Observable, of, partition } from 'rxjs'
 import { endWith, filter, map, mapTo, mergeMap, scan, share, switchMap, take, takeWhile, tap } from 'rxjs/operators'
@@ -95,7 +95,135 @@ export default ({ configPath, watch }: { configPath: string, watch?: boolean }) 
                                       type: 'run',
                                       data: { groups, tests }
                                     } as Task<'run'>)),
-                                    runInContext({ output }),
+                                    mergeMap(({ data: { tests: _tests, groups: _groups } }) => {
+                                      // console.log('registerd', _tests, _groups)
+                                      const onlyTests = _tests.filter(({ only }) => only)
+                                      const onlyGroups = _groups.filter(({ only, tests }) => only || tests.some(({ only }) => only))
+                                      const skipTests = _tests.filter(({ skip }) => skip)
+                                      const skipGroups = _groups.filter(({ skip }) => skip)
+
+                                      const isOnly = onlyTests.length || onlyGroups.length
+                                      console.log('IS ONLY TEST', isOnly)
+
+                                      const nonSkipTests = _tests.filter(test => isOnly ? onlyTests.includes(test) : !skipTests.includes(test))
+                                      const nonSkipGroups =
+                                        _groups
+                                          .filter(group => isOnly ? onlyGroups.includes(group) : !skipGroups.includes(group))
+                                          .map((group) => {
+                                            const onlyGroupTests = group.tests.filter(({ only }) => only)
+                                            const skipGroupTests = group.tests.filter(({ skip }) => skip)
+                                            const nonSkipGroupTests = group.tests.filter(test => isOnly ? onlyGroupTests.includes(test) : !skipGroupTests.includes(test))
+                                            
+                                            return {
+                                              ...group,
+                                              tests: [
+                                                ...nonSkipGroupTests,
+                                                ...group.tests
+                                                  .filter(test =>!nonSkipGroupTests.includes(test))
+                                                  .map(test => ({ ...test, skip: true }))
+                                              ]
+                                            }
+                                          })
+
+                                      const tests = [
+                                        ...nonSkipTests,
+                                        ..._tests
+                                          .filter(test => !nonSkipTests.includes(test))
+                                          .map(test => ({ ...test, skip: true }))
+                                      ]
+                                      // const groups = [
+                                      //   ...nonSkipGroups,
+                                      //   ..._groups
+                                      //     .filter(group => !nonSkipGroups.some(({ name }) => name === group.name))
+                                      //     .map(group => ({ ...group, skip: true }))
+                                      // ]
+
+                                      // console.log('tests', tests)
+                                      // console.log('groups', JSON.stringify(groups, null, 2))
+
+                                      const groups = nonSkipGroups.map((group) => ({ ...group, tests: group.tests.filter(({ skip }) => !skip) }))
+
+                                      // console.log('event', event)
+                                      
+                                      // console.log('REEEEEEEEEEEE',
+                                      // _tests
+                                      // .filter(test => !nonSkipTests.some(({ name }) => name === test.name))
+                                      // .map(test => ({
+                                      //   test,
+                                      //   function: test.function,
+                                      //   status: 'skip',
+                                      //   return: undefined,
+                                      //   originalStack: undefined,
+                                      //   errorStack: undefined
+                                      // })))
+
+                                      return (
+                                        runInContext({ output })(of({ type: 'run', data: { tests: nonSkipTests, groups } }))
+                                          .pipe(
+                                            // tap(val => console.log('TESTTTTTTT RAN', val.data)),
+                                            map(event =>
+                                              event.type === 'run'
+                                                ? (
+                                                  {
+                                                    ...event,
+                                                    data: {
+                                                      tests: [
+                                                        ...event.data.tests,
+                                                        ...(
+                                                          _tests
+                                                            .filter(test => !nonSkipTests.some(({ name }) => name === test.name))
+                                                            .map(test => ({
+                                                              test,
+                                                              function: test.function,
+                                                              status: 'skip',
+                                                              return: undefined,
+                                                              originalStack: undefined,
+                                                              errorStack: undefined
+                                                            }))
+                                                        )
+                                                      ],
+                                                      groups: [
+                                                        ...event.data.groups.map(group => ({
+                                                          ...group,
+                                                          tests: [
+                                                            ...group.tests,
+                                                            ...(
+                                                              nonSkipGroups
+                                                                .find(({ name }) => group.name === name)
+                                                                .tests
+                                                                .filter(test =>
+                                                                  !group.tests.some(({ test: _test }) => _test.name === test.name)
+                                                                )
+                                                                .map(test => ({
+                                                                  test,
+                                                                  function: test.function,
+                                                                  status: 'skip',
+                                                                  return: undefined,
+                                                                  originalStack: undefined,
+                                                                  errorStack: undefined
+                                                                }))
+                                                            )
+                                                          ]
+                                                        })),
+                                                        ...(
+                                                          _groups
+                                                            .filter(group => !nonSkipGroups.some(({ name }) => name === group.name))
+                                                            .map(group => ({
+                                                              ...group,
+                                                              skip: true
+                                                            }))
+                                                        )
+                                                      ]
+                                                    }
+                                                  }
+                                                )
+                                                : event
+                                            ),
+                                            // tap(val => console.log('TESTTTTTTT', val.data)),
+                                          )
+                                      )
+                                    }),
+                                    // tap(val => console.log('val', val)),
                                     share()
                                     // takeWhile(({ data }) => !('done' in data), true),
                                   )

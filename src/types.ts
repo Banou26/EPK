@@ -14,6 +14,7 @@ export type Hook<Runtime> = {
 
 export type TestOptions = {
   skip?: boolean
+  only?: boolean
 }
 
 export type Test<Runtime extends boolean = false> =
@@ -32,14 +33,21 @@ export type TestRun<Runtime extends boolean = false> = {
   errorStack?: any[]
 }
 
-export type Group<Runtime extends boolean = false> = {
-  useFunction?: (...args) => any
-  useArguments?: any[]
-  name: string
-  function: Runtime extends true ? ((...args: any[]) => any) : string
-  tests: Test<Runtime>[]
-  hooks: Hook<Runtime>[]
+export type GroupOptions = {
+  skip?: boolean
+  only?: boolean
 }
+
+export type Group<Runtime extends boolean = false> =
+  GroupOptions &
+  {
+    useFunction?: (...args) => any
+    useArguments?: any[]
+    name: string
+    function: Runtime extends true ? ((...args: any[]) => any) : string
+    tests: Test<Runtime>[]
+    hooks: Hook<Runtime>[]
+  }
 
 export type GroupRun<Runtime extends boolean = false> = {
   name: string
