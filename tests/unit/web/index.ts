@@ -36,8 +36,8 @@ group('my group pre', () => {
     console.log('skipped test run')
     throw new Error('thrown error message')
   })
-  test.only('my pre group test only', () => {
-    console.log('only test run')
+  test('my pre group test 2', () => {
+    console.log('test run')
     throw new Error('thrown error message')
   })
 })
