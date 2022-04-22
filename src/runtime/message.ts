@@ -29,7 +29,7 @@ export const sendMessage = (value) =>
     ? window.postMessage({ __epk__: true, name: 'event', value: JSON.stringify(value) }, '*')
     : globalThis[toGlobal('event')](value)
 
-export const subject = globalThis[toGlobal('task')] = new Subject<Task<TASK>>()
+export const subject = globalThis[toGlobal('task')] = new Subject<Task<TASK, true>>()
 
 const incomingMessages =
   subject

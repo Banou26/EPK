@@ -27,7 +27,7 @@ const runTests = (tests: Test<true>[], group?: Group<true>): Observable<TestRun<
       scan((tests, test) => [...tests, test].filter(Boolean), [])
     )
 
-export default ({ groups, tests }: Task<'run'>['data']) => {
+export default ({ groups, tests }: Task<'run', true>['data']) => {
   // register tests inside groups
   registeredGroups.map(group => {
     if (!groups.some(({ name }) => name === group.name)) return

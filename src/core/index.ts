@@ -1,48 +1,19 @@
-import type { EPKConfig, Group, Test, TestConfig, TestRun } from '../types'
+import type { TestRun } from '../types'
 
 import { from, merge, Observable, of, partition } from 'rxjs'
-import { endWith, filter, map, mapTo, mergeMap, scan, share, switchMap, take, takeWhile, tap } from 'rxjs/operators'
-import { SourceMapConsumer } from 'source-map-js'
+import { endWith, filter, map, mergeMap, scan, share, switchMap } from 'rxjs/operators'
 
 import esbuild from './esbuild'
 import { createContext } from '../platforms'
-import { readFile, watch } from 'fs/promises'
-import { cwd } from 'process'
-import { join, relative } from 'path'
 import { Event, Task } from '../utils/runtime'
 import { parseErrorStack } from '../stacktrace'
-import { pathToFileURL } from 'url'
+import { configFileWatcher } from './config'
 
 const keepNewTests = (oldTests: TestRun[] = [], newTests: TestRun[] = []) =>
   [
     ...oldTests.filter(test => !newTests.some(({ test: { name } }) => name === test.test.name)),
     ...newTests ?? []
   ]
-
-const configFileWatcher = (path: string) =>
-  new Observable<EPKConfig>(observer => {
-    const fileUrlPath = pathToFileURL(undefined ?? join(cwd(), './test.config.js')).toString()
-
-    import(fileUrlPath)
-      .then(({ default: config }: { default: EPKConfig }) =>
-        observer.next(config)
-      )
-
-    const { signal, abort } = new AbortController()
-    const watcher = watch(path, { signal })
-    ;(async () => {
-      try {
-        for await (const event of watcher) {
-          const { default: config }: { default: EPKConfig } = await import(`${fileUrlPath}?t=${Date.now()}`)
-          if (event.eventType === 'change') observer.next(config)
-        }
-      } catch (err) {
-        if (err.name === 'AbortError') return
-        throw err
-      }
-    })()
-    return () => abort()
-  })
 
 export default ({ configPath, watch }: { configPath: string, watch?: boolean }) =>
   configFileWatcher(configPath)
@@ -81,29 +52,24 @@ export default ({ configPath, watch }: { configPath: string, watch?: boolean }) 
                                   .pipe(
                                     filter(({ type }) => type === 'register'),
                                     map(({ data: { groups, tests } }: Event<'register'> ) => ({ groups, tests })),
-                                    // tap(val => console.log('val', val)),
                                     // take(1),
                                     share(),
-                                    // tap(val => console.log('val', val))
                                   )
 
                               const runTest =
                                 register
                                   .pipe(
-                                    // tap(val => console.log('val2', val)),
                                     map(({ groups, tests }) => ({
                                       type: 'run',
                                       data: { groups, tests }
                                     } as Task<'run'>)),
                                     mergeMap(({ data: { tests: _tests, groups: _groups } }) => {
-                                      // console.log('registerd', _tests, _groups)
                                       const onlyTests = _tests.filter(({ only }) => only)
                                       const onlyGroups = _groups.filter(({ only, tests }) => only || tests.some(({ only }) => only))
                                       const skipTests = _tests.filter(({ skip }) => skip)
                                       const skipGroups = _groups.filter(({ skip }) => skip)
 
                                       const isOnly = onlyTests.length || onlyGroups.length
-                                      console.log('IS ONLY TEST', isOnly)
 
                                       const nonSkipTests = _tests.filter(test => isOnly ? onlyTests.includes(test) : !skipTests.includes(test))
                                       const nonSkipGroups =
@@ -125,42 +91,10 @@ export default ({ configPath, watch }: { configPath: string, watch?: boolean }) 
                                             }
                                           })
 
-                                      const tests = [
-                                        ...nonSkipTests,
-                                        ..._tests
-                                          .filter(test => !nonSkipTests.includes(test))
-                                          .map(test => ({ ...test, skip: true }))
-                                      ]
-                                      // const groups = [
-                                      //   ...nonSkipGroups,
-                                      //   ..._groups
-                                      //     .filter(group => !nonSkipGroups.some(({ name }) => name === group.name))
-                                      //     .map(group => ({ ...group, skip: true }))
-                                      // ]
-
-                                      // console.log('tests', tests)
-                                      // console.log('groups', JSON.stringify(groups, null, 2))
-
                                       const groups = nonSkipGroups.map((group) => ({ ...group, tests: group.tests.filter(({ skip }) => !skip) }))
-
-                                      // console.log('event', event)
-                                      
-                                      // console.log('REEEEEEEEEEEE',
-                                      // _tests
-                                      // .filter(test => !nonSkipTests.some(({ name }) => name === test.name))
-                                      // .map(test => ({
-                                      //   test,
-                                      //   function: test.function,
-                                      //   status: 'skip',
-                                      //   return: undefined,
-                                      //   originalStack: undefined,
-                                      //   errorStack: undefined
-                                      // })))
-
                                       return (
                                         runInContext({ output })(of({ type: 'run', data: { tests: nonSkipTests, groups } }))
                                           .pipe(
-                                            // tap(val => console.log('TESTTTTTTT RAN', val.data)),
                                             map(event =>
                                               event.type === 'run'
                                                 ? (
@@ -219,11 +153,9 @@ export default ({ configPath, watch }: { configPath: string, watch?: boolean }) 
                                                 )
                                                 : event
                                             ),
-                                            // tap(val => console.log('TESTTTTTTT', val.data)),
                                           )
                                       )
                                     }),
-                                    // tap(val => console.log('val', val)),
                                     share()
                                     // takeWhile(({ data }) => !('done' in data), true),
                                   )

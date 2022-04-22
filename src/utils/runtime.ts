@@ -8,22 +8,22 @@ export type TASK = 'register' | 'run'
 
 export type EVENT = 'log' | 'register' | 'run' | 'error'
 
-export type Task<T extends TASK = TASK> = {
+export type Task<T extends TASK = TASK, Runtime extends boolean = false> = {
   type: T
   data:
     T extends 'register' ? undefined :
-    T extends 'run' ? { groups: Group<true>[], tests: Test<true>[] } :
+    T extends 'run' ? { groups: Group<Runtime>[], tests: Test<Runtime>[] } :
     never
 }
 
-export type Event<T extends EVENT = EVENT> = {
+export type Event<T extends EVENT = EVENT, Runtime extends boolean = false> = {
   type: T
   data:
     T extends 'initDone' ? undefined :
     T extends 'log' ? { error: string } | { warn: string } | { info: string } | { log: string } :
     T extends 'error' ? { message: string, stack: string[], errorStack?: any[] } :
-    T extends 'register' ? { tests: Test[], groups: Group[] } :
-    T extends 'run' ? { group?: GroupRun, test?: TestRun } | { groups?: GroupRun[], tests?: TestRun[], done?: boolean } :
+    T extends 'register' ? { tests: Test<Runtime>[], groups: Group<Runtime>[] } :
+    T extends 'run' ? { group?: GroupRun<Runtime>, test?: TestRun<Runtime> } | { groups?: GroupRun<Runtime>[], tests?: TestRun<Runtime>[], done?: boolean } :
     never
 }
 
