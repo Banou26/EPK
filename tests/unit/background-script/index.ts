@@ -1,3 +1,5 @@
+import { assert } from 'chai'
+import { test } from '../../../lib/lib'
 
 test('from background script, background page url is correct', () => {
   assert.equal(chrome.extension.getURL('_generated_background_page.html'), location.href)
