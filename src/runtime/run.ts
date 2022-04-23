@@ -8,22 +8,23 @@ import { endWith, finalize, last, map, mapTo, mergeMap, scan, share, shareReplay
 const runTests = (tests: Test<true>[], group?: Group<true>): Observable<TestRun<true>[]> =>
   from(tests)
     .pipe(
-      mergeMap(test =>
-        group
-          ? (
-            registeredGroups
-              .find(({ name }) => name === group.name)
+      mergeMap(test => {
+        if (group) {
+          const registeredGroup = registeredGroups.find(({ name }) => name === group.name)
+          const registeredTest =
+            registeredGroup
               .tests
               .filter(({ name }) => group.tests.some(test => name === test.name))
               .find(({ name }) => name === test.name)
-              ?.function(undefined) ?? Promise.resolve(undefined)
-          )
-          : (
-            registeredTests
-              .find(({ name }) => name === test.name)
-              ?.function(undefined) ?? Promise.resolve(undefined)
-          )
-      ),
+
+          return registeredTest?.function(undefined) ?? Promise.resolve(undefined)
+        }
+        return (
+          registeredTests
+            .find(({ name }) => name === test.name)
+            ?.function(undefined) ?? Promise.resolve(undefined)
+        )
+      }),
       scan((tests, test) => [...tests, test].filter(Boolean), [])
     )
 
