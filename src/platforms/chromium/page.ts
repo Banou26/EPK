@@ -14,7 +14,7 @@ import { eventToEpkEvent } from './utils'
 const __dirname: string = __dirname ?? dirname(fileURLToPath(import.meta.url))
 
 export const newPage =
-  async <T extends BuildOutputFile>({ config, output, browser, extensionId, skipPrepare = false }: { config: TestConfig, output: T, browser: BrowserContext, extensionId: number, skipPrepare?: boolean }) => {
+  async <T extends BuildOutputFile>({ config, output, browser, extensionId, skipPrepare = false }: { config: TestConfig, output: T, browser: BrowserContext, extensionId: string, skipPrepare?: boolean }) => {
     if (output.environment !== 'content-script') {
       const page = await browser.newPage() as EPKPage
       if (!skipPrepare) await prepareContext({ config, extensionId, output, page })
@@ -66,7 +66,7 @@ export const newPage =
     }
   }
 
-export const prepareContext = async ({ config, extensionId, output, page, tabId, backgroundPage }: { config: TestConfig, page: EPKPage, tabId?: number, backgroundPage?: EPKPage, output: BuildOutputFile, extensionId: number }) => {
+export const prepareContext = async ({ config, extensionId, output, page, tabId, backgroundPage }: { config: TestConfig, page: EPKPage, tabId?: number, backgroundPage?: EPKPage, output: BuildOutputFile, extensionId: string }) => {
   if (output.environment === 'background-script') {
     await page.goto(`chrome-extension://${extensionId}/_generated_background_page.html`)
   }

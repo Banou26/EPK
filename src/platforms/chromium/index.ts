@@ -22,7 +22,7 @@ const __dirname: string = __dirname ?? dirname(fileURLToPath(import.meta.url))
 
 let runId = 0
 
-const runGroupWithUse = ({ group, output, config, browser: _browser, extensionId }: { group: Group, config: TestConfig, output?: BuildOutputFile, browser: Promise<BrowserContext>, extensionId?: number }) =>
+const runGroupWithUse = ({ group, output, config, browser: _browser, extensionId }: { group: Group, config: TestConfig, output?: BuildOutputFile, browser: Promise<BrowserContext>, extensionId?: string }) =>
   new Observable(observer => {
     let pages: { page: EPKPage, tabId: number, backgroundPage: EPKPage }[] = []
     let epkRunDone
@@ -111,7 +111,7 @@ const runGroupWithUse = ({ group, output, config, browser: _browser, extensionId
     }
   })
 
-const runRootTestsAndVanillaGroups = ({ browser: _browser, output, config, extensionId, task, tests, groups }: ({ task: Task } | { tests: Test[], groups: Group[] }) & { config: TestConfig, output?: BuildOutputFile, browser: Promise<BrowserContext>, extensionId?: number }) =>
+const runRootTestsAndVanillaGroups = ({ browser: _browser, output, config, extensionId, task, tests, groups }: ({ task: Task } | { tests: Test[], groups: Group[] }) & { config: TestConfig, output?: BuildOutputFile, browser: Promise<BrowserContext>, extensionId?: string }) =>
   new Observable(observer => {
     const _page = _browser.then(browser => newPage({ output, config, browser, extensionId }))
     _page
