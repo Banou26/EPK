@@ -12,7 +12,7 @@ import { merge, Observable } from 'rxjs'
 import { filter, finalize, scan, switchMap, tap } from 'rxjs/operators'
 
 import { newPage, sendTask, prepareContext } from './page'
-import { createContext, enableExtension } from './browser'
+import { createContext, enableExtension, getExtensions } from './browser'
 import { runInNewContext, runInThisContext } from 'vm'
 import { EPKPage } from './types'
 import { groups } from '../../runtime/test'
@@ -140,6 +140,7 @@ export default ({ config, output: rootRoutput }: { config: TestConfig, output?: 
   const id = runId++
   let _browser: Promise<BrowserContext>
   let extensionId: string
+  let extensions: { name: string, id: string }[]
   let contextsInUse = 0
 
   return (
@@ -161,6 +162,7 @@ export default ({ config, output: rootRoutput }: { config: TestConfig, output?: 
             }
           }).then(async context => {
             extensionId = await enableExtension({ context, extensionName: 'EPK' })
+            extensions = await getExtensions({ context })
             return context
           })
         }

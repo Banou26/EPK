@@ -20,3 +20,20 @@ export const enableExtension = async ({ context, extensionName }: { context: Bro
   await extensionPage.close()
   return extensionId
 }
+
+export const getExtensions = async ({ context }: { context: BrowserContext }) => {
+  const extensionPage = await context.newPage()
+  await extensionPage.goto('chrome://extensions/')
+  await extensionPage.reload()
+  const cardElemHandles = await extensionPage.locator('#card').elementHandles()
+  // const elemHandles = await extensionPage.locator('#extension-id:below(div#name, 200)').elementHandles()
+  const extensions = await Promise.all(
+    (await cardElemHandles)
+      .map(async cardElemHandle => ({
+        name: await (await cardElemHandle.waitForSelector('#name')).innerText(),
+        id: (await (await cardElemHandle.waitForSelector('#extension-id:below(div#name, 200)')).innerText()).replace('ID: ', '')
+      }))
+  )
+  await extensionPage.close()
+  return extensions
+}
