@@ -1,4 +1,4 @@
-import { EPKPage } from '../platforms/chromium/types'
+import { EPKPage, Extension } from '../platforms/chromium/types'
 import stacktrace from '../stacktrace/stacktrace'
 import { Hook, Test, TestRun, Group, TestOptions } from '../types'
 
@@ -101,7 +101,7 @@ export let tests: Test<true>[] = []
 export type TestFunction = {
   skip: TestFunction
   only: TestFunction
-  (name: string, func: (...args: unknown[]) => unknown): void
+  (name: string, func: (info: { extensions: Extension[] }, ...args: unknown[]) => unknown): void
 }
 
 const makeTest = (options: TestOptions = {}): TestFunction => {
