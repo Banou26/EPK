@@ -8,3 +8,8 @@ export type EPKPage = Omit<Page, 'on'> & {
   on<T extends Capitalize<EVENT>>(event: `epk${T}`, listener: (data: Event<Uncapitalize<T>>['data']) => void): EPKPage
   on<T extends OverloadParameters<Page['on']>[0]>(event: T, listener: (...arg: Parameters<Extract<OverloadParameters<Page['on']>, [T, any]>[1]>) => void): EPKPage
 }
+
+export type Extension = {
+  name: string;
+  id: string;
+}

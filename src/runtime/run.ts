@@ -4,8 +4,9 @@ import type { Group, GroupRun, Test, TestRun } from '../types'
 import { hooks as registeredHooks, groups as registeredGroups, tests as registeredTests } from './test'
 import { combineLatest, from, merge, Observable, of } from 'rxjs'
 import { endWith, finalize, last, map, mapTo, mergeMap, scan, share, shareReplay, startWith, switchMap, tap } from 'rxjs/operators'
+import { Extension } from '../platforms/chromium/types'
 
-const runTests = (tests: Test<true>[], group?: Group<true>): Observable<TestRun<true>[]> =>
+const runTests = ({ tests, group, extensions }:  { tests: Test<true>[], group?: Group<true>, extensions: Extension[] }): Observable<TestRun<true>[]> =>
   from(tests)
     .pipe(
       mergeMap(test => {
@@ -17,18 +18,18 @@ const runTests = (tests: Test<true>[], group?: Group<true>): Observable<TestRun<
               .filter(({ name }) => group.tests.some(test => name === test.name))
               .find(({ name }) => name === test.name)
 
-          return registeredTest?.function(undefined) ?? Promise.resolve(undefined)
+          return registeredTest?.function({ extensions }) ?? Promise.resolve(undefined)
         }
         return (
           registeredTests
             .find(({ name }) => name === test.name)
-            ?.function(undefined) ?? Promise.resolve(undefined)
+            ?.function({ extensions }) ?? Promise.resolve(undefined)
         )
       }),
       scan((tests, test) => [...tests, test].filter(Boolean), [])
     )
 
-export default ({ groups, tests }: Task<'run', true>['data']) => {
+export default ({ groups, tests, extensions }: Task<'run', true>['data']) => {
   // register tests inside groups
   registeredGroups.map(group => {
     if (!groups.some(({ name }) => name === group.name)) return
@@ -37,7 +38,7 @@ export default ({ groups, tests }: Task<'run', true>['data']) => {
   })
 
   const testsResults =
-    runTests(tests)
+    runTests({ tests, extensions })
       .pipe(
         startWith([]),
       )
@@ -54,10 +55,13 @@ export default ({ groups, tests }: Task<'run', true>['data']) => {
         mergeMap(({ group, hooks }) => {
           return (
             runTests(
-              registeredGroups
+              {
+                tests: registeredGroups
                 .find(({ name }) => name === group.name)
                 .tests,
-              group
+                group,
+                extensions
+              }
             )
               .pipe(
                 scan((group, tests) => ({ ...group, tests }), { ...group, tests: [] }),

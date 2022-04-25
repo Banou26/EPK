@@ -1,4 +1,5 @@
 import type { BrowserContext, BrowserType } from 'playwright'
+import { Extension } from './types'
 
 export const createContext = async ({ userDataDir, options }: { userDataDir: string, options?: Parameters<BrowserType<{}>['launchPersistentContext']>[1] }) => {
   const playwright = await import('playwright')
@@ -21,7 +22,7 @@ export const enableExtension = async ({ context, extensionName }: { context: Bro
   return extensionId
 }
 
-export const getExtensions = async ({ context }: { context: BrowserContext }) => {
+export const getExtensions = async ({ context }: { context: BrowserContext }): Promise<Extension[]> => {
   const extensionPage = await context.newPage()
   await extensionPage.goto('chrome://extensions/')
   await extensionPage.reload()

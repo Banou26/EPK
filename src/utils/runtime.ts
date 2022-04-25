@@ -1,4 +1,5 @@
-import { Group, GroupRun, Test, TestRun } from '../types'
+import type { Group, GroupRun, Test, TestRun } from '../types'
+import type { Extension } from '../platforms/chromium/types'
 
 export type Global = 'task' | 'event' | 'initDone'
 
@@ -12,7 +13,7 @@ export type Task<T extends TASK = TASK, Runtime extends boolean = false> = {
   type: T
   data:
     T extends 'register' ? undefined :
-    T extends 'run' ? { groups: Group<Runtime>[], tests: Test<Runtime>[] } :
+    T extends 'run' ? { groups: Group<Runtime>[], tests: Test<Runtime>[], extensions: Extension[] } :
     never
 }
 

@@ -42,6 +42,10 @@ group('my group pre', () => {
   })
 })
 
+test('test has access to extensions', ({ extensions }) => {
+  console.log('EXTENSIONS', JSON.stringify(extensions))
+})
+
 test('e2e test succeed', () => {})
 
 test('from e2e, test fail', () => {

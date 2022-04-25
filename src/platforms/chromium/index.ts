@@ -14,7 +14,7 @@ import { filter, finalize, scan, switchMap, tap } from 'rxjs/operators'
 import { newPage, sendTask, prepareContext } from './page'
 import { createContext, enableExtension, getExtensions } from './browser'
 import { runInNewContext, runInThisContext } from 'vm'
-import { EPKPage } from './types'
+import { EPKPage, Extension } from './types'
 import { groups } from '../../runtime/test'
 
 // @ts-ignore
@@ -22,7 +22,7 @@ const __dirname: string = __dirname ?? dirname(fileURLToPath(import.meta.url))
 
 let runId = 0
 
-const runGroupWithUse = ({ group, output, config, browser: _browser, extensionId }: { group: Group, config: TestConfig, output?: BuildOutputFile, browser: Promise<BrowserContext>, extensionId?: string }) =>
+const runGroupWithUse = ({ group, output, config, browser: _browser, extensionId, extensions }: { group: Group, config: TestConfig, output?: BuildOutputFile, browser: Promise<BrowserContext>, extensionId?: string, extensions: Extension[] }) =>
   new Observable(observer => {
     let pages: { page: EPKPage, tabId: number, backgroundPage: EPKPage }[] = []
     let epkRunDone
@@ -52,7 +52,8 @@ const runGroupWithUse = ({ group, output, config, browser: _browser, extensionId
             type: 'run',
             data: {
               groups: [{ ...group, useArguments: data }],
-              tests: []
+              tests: [],
+              extensions
             }
           },
           output,
@@ -111,7 +112,7 @@ const runGroupWithUse = ({ group, output, config, browser: _browser, extensionId
     }
   })
 
-const runRootTestsAndVanillaGroups = ({ browser: _browser, output, config, extensionId, task, tests, groups }: ({ task: Task } | { tests: Test[], groups: Group[] }) & { config: TestConfig, output?: BuildOutputFile, browser: Promise<BrowserContext>, extensionId?: string }) =>
+const runRootTestsAndVanillaGroups = ({ browser: _browser, output, config, extensionId, extensions, task, tests, groups }: ({ task: Task } | { tests: Test[], groups: Group[] }) & { config: TestConfig, output?: BuildOutputFile, browser: Promise<BrowserContext>, extensionId?: string, extensions: Extension[] }) =>
   new Observable(observer => {
     const _page = _browser.then(browser => newPage({ output, config, browser, extensionId }))
     _page
@@ -126,7 +127,8 @@ const runRootTestsAndVanillaGroups = ({ browser: _browser, output, config, exten
             type: 'run',
             data: {
               groups,
-              tests
+              tests,
+              extensions
             }
           }
         await sendTask({ task: _task, output, page, tabId, backgroundPage })
@@ -174,12 +176,12 @@ export default ({ config, output: rootRoutput }: { config: TestConfig, output?: 
               // wait for the browser context to be created as we need the extensionId before continuing
               switchMap(task => _browser.then(() => task)),
               switchMap(task => {
-                if (task.type === 'register') return runRootTestsAndVanillaGroups({ task, browser: _browser, output, config, extensionId })
+                if (task.type === 'register') return runRootTestsAndVanillaGroups({ task, browser: _browser, output, config, extensionId, extensions })
                 const useGroups = task.data?.groups.filter(({ useFunction }) => !!useFunction) ?? []
                 const vanillaGroups = task.data?.groups.filter(group => !useGroups.includes(group)) ?? []
                 return merge(
-                  ...useGroups.map(group => runGroupWithUse({ browser: _browser, output, config, extensionId, group })),
-                  runRootTestsAndVanillaGroups({ browser: _browser, output, config, extensionId, groups: vanillaGroups, tests: task.data?.tests })
+                  ...useGroups.map(group => runGroupWithUse({ browser: _browser, output, config, extensionId, extensions, group })),
+                  runRootTestsAndVanillaGroups({ browser: _browser, output, config, extensionId, extensions, groups: vanillaGroups, tests: task.data?.tests })
                 )
               }),
               finalize(async () => {
