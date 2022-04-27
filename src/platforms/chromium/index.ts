@@ -10,7 +10,7 @@ import { fileURLToPath } from 'url'
 
 import { merge, Observable } from 'rxjs'
 import { filter, finalize, scan, switchMap, tap } from 'rxjs/operators'
-
+import pLimit from 'p-limit'
 import { newPage, sendTask, prepareContext } from './page'
 import { createContext, enableExtension, getExtensions } from './browser'
 import { runInNewContext, runInThisContext } from 'vm'
@@ -26,7 +26,10 @@ const runGroupWithUse = ({ group, output, config, browser: _browser, extensionId
   new Observable(observer => {
     let pages: { page: EPKPage, tabId: number, backgroundPage: EPKPage }[] = []
     let epkRunDone
-    const getPage = () => {
+
+    const newPageLimit = pLimit(config.maxContexts ?? 15);
+
+    const _getPage = () => {
       return (
         _browser
           .then(async browser => {
@@ -36,6 +39,9 @@ const runGroupWithUse = ({ group, output, config, browser: _browser, extensionId
           })
       )
     }
+
+    const getPage = () => newPageLimit(_getPage)
+
     const run = ({ page, tabId, backgroundPage }: { page: EPKPage, tabId: number, backgroundPage: EPKPage }, data: any) =>
       new Promise(resolve => {
         const _page = page

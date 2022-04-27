@@ -42,6 +42,7 @@ esbuild.build({
       setup(build) {
         let filter = /^[^.\/]|^\.[^.\/]|^\.\.[^\/]/ // Must not start with "/" or "./" or "../"
         build.onResolve({ filter }, async args => {
+          if (args.path === 'p-limit') return ({ path: 'p-limit', external: true })
           if (args.path === 'playwright') return ({ path: 'playwright', external: true })
           const resolvedPath = await esbuildResolve(args.path, '.')
           const result = resolvedPath ? relative('./node_modules', resolvedPath).replaceAll('\\', '/') : args.path

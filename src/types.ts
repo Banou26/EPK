@@ -74,6 +74,7 @@ export type TestConfig = {
   extensionManifest: {
     // manifest here
   },
+  maxContexts?: number
   web?: {
     match: string[]
   },

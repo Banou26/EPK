@@ -31,6 +31,7 @@ const config = {
       extensionManifest: {
         // manifest here
       },
+      maxContexts: 2,
       web: {
         match: ['./tests/unit/web/**/*.ts']
       },

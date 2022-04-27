@@ -16,6 +16,13 @@ import { setup, teardown, group, test, runInUrls, withData } from '../../../lib/
 
 // console.log('web page test file log')
 
+
+
+
+
+
+
+
 const urls = ['https://www.google.com/', 'https://sourcemapped.dev/functional-ish-js-and-state']
 const urls2 = ['https://en.wikipedia.org/wiki/Main_Page', 'https://developer.mozilla.org/en-US/']
 
@@ -63,22 +70,22 @@ test('from e2e, test fail', () => {
 //     }
 //   )
 
-// group
-//   .use(runInUrls, [urls])
-//   (
-//     'my group',
-//     () => {
-//       console.log('location.href', location.href)
-//       test('group test ran in url', () => {
-//         if (!urls.includes(location.href)) throw new Error(`location.href (${location.href}) value wasnt in ${urls.join(', ')}`)
-//         // expect(data.url).eq(window.location.href)
-//       })
-//       test('group test', () => {})
-//       test('group failed test', () => {
-//         throw new Error('thrown error message')
-//       })
-//     }
-//   )
+group
+  .use(runInUrls, [urls])
+  (
+    'my group',
+    () => {
+      console.log('location.href', location.href)
+      test('group test ran in url', () => {
+        if (!urls.includes(location.href)) throw new Error(`location.href (${location.href}) value wasnt in ${urls.join(', ')}`)
+        // expect(data.url).eq(window.location.href)
+      })
+      test('group test', () => {})
+      test('group failed test', () => {
+        throw new Error('thrown error message')
+      })
+    }
+  )
 
 // group
 //   .use(runInUrls, [urls2])
