@@ -158,7 +158,7 @@ export default ({ testConfig, esbuildOptions, watch }: { testConfig: TestConfig,
           },
         }
       ],
-      inject: [join(__dirname, '../src/runtime/index.ts'), join(__dirname, '../src/runtime/console.ts')],
+      inject: [join(__dirname, '../src/runtime/index.ts'), join(__dirname, '../src/runtime/console.ts'), ...esbuildOptions.inject ?? []],
     })
 
     if (errors.length) makeError(errors)
