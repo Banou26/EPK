@@ -81,7 +81,8 @@ const runGroupWithUse = ({ group, output, config, browser: _browser, extensionId
           getPage,
           run,
           prepareContext: ({ page, tabId, backgroundPage }) =>
-            prepareContext({ config, extensionId, output, page, tabId, backgroundPage })
+            prepareContext({ config, extensionId, output, page, tabId, backgroundPage }),
+          extensions
         },
         group.useArguments
       )
