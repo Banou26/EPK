@@ -6,7 +6,7 @@ export const runInUrls: UseEvaluate = async ({ getPage, run, prepareContext }, [
       const { page, tabId, backgroundPage } = await getPage()
       await page.goto(url)
       await prepareContext({ page, tabId, backgroundPage })
-      return await run({ page, tabId, backgroundPage }, { data: { url } })
+      return await run({ page, tabId, backgroundPage }, { data: { url } }).finally(() => page.close())
     })
   )
   const failedResults = results.filter(({ tests }) => tests.some(test => test.status !== 'success'))
