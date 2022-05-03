@@ -71,8 +71,7 @@ const runGroupWithUse = ({ group, output, config, browser: _browser, extensionId
     try {
       // console.log('group.useArguments', group.useArguments)
       const func = runInThisContext(
-        // @ts-ignore
-        group.useFunction as string,
+        group.useFunction.toString(),
         // { console },
         { timeout: 1000, filename: '__epk_generated_use.js' }
       )
@@ -103,6 +102,11 @@ const runGroupWithUse = ({ group, output, config, browser: _browser, extensionId
                   )
             })
           })
+        })
+        .catch(err => {
+          console.log('Error during `group.use`', err)
+          const [line, row] = err.stack.split('\n').at(-1).trim().replace('at __epk_generated_use.js:', '').trim().split(':').map(Number)
+          console.log(group.useFunction.toString().split('\n').slice(Math.max(line - 1, 0), line + 1).join('\n'))
         })
       
       // funcRes
