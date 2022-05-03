@@ -3,7 +3,7 @@ import { from, GroupedObservable, Observable } from 'rxjs'
 import React, { Fragment, useEffect, useState } from 'react'
 import { Box, render, Text } from 'ink'
 import { groupBy, map, mergeMap, scan, tap } from 'rxjs/operators'
-import { relative } from 'path'
+import { relative, sep } from 'path'
 import { cwd } from 'process'
 import { parse } from 'path'
 
@@ -53,7 +53,7 @@ const TestFileTitle = ({ file: { path, events, groupsTestsRuns, testsRuns } }) =
           )
       }
       <Text>
-        <Text color="gray">{parse(relative(cwd(), path)).dir}\</Text>
+        <Text color="gray">{parse(relative(cwd(), path)).dir}{sep}</Text>
         <Text color="white">{parse(relative(cwd(), path)).name}{parse(relative(cwd(), path)).ext}</Text>
       </Text>
       <Text color="white"> (</Text>
