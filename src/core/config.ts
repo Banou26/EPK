@@ -1,6 +1,6 @@
 import type { EPKConfig } from 'src/types'
 
-import { mkdir, unlink, writeFile } from 'fs/promises'
+import { mkdir, readFile, unlink, writeFile } from 'fs/promises'
 import { cwd } from 'process'
 import { join, parse, relative } from 'path'
 import { pathToFileURL } from 'url'
@@ -38,6 +38,7 @@ async function esbuildResolve(id, dir) {
 
 export const configFileWatcher = (path: string) =>
   asyncObservable<EPKConfig>(async observer => {
+    const isInModulePackage = (JSON.parse((await readFile(join(cwd(), './package.json'))).toString()).type ?? '') === 'module'
     const relativePath = relative(cwd(), path)
     const absolutePath = join(cwd(), relativePath)
     const esmFilePath = pathToFileURL(absolutePath).toString()
@@ -48,7 +49,7 @@ export const configFileWatcher = (path: string) =>
       outputCount++
       for (const file of outputFiles) {
         try {
-          await mkdir(parse(esmFilePath).dir, { recursive: true })
+          await mkdir(parse(isInModulePackage ? esmFilePath : absolutePath).dir, { recursive: true })
         } catch (err) {}
           await writeFile(outputPath, file.contents)
       }
@@ -66,7 +67,7 @@ export const configFileWatcher = (path: string) =>
       bundle: true,
       write: false,
       entryPoints: [path],
-      format: 'esm',
+      format: isInModulePackage ? 'esm' : 'cjs',
       watch: {
         async onRebuild(error, result) {
           if (!result) return
