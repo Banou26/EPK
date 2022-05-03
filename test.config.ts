@@ -1,3 +1,8 @@
+import { dirname, join } from 'path'
+import { fileURLToPath } from 'url'
+import { readFile } from 'fs/promises'
+
+const __dirname = globalThis.__dirname ?? dirname(fileURLToPath(import.meta.url))
 
 const config = {
   configs: [
@@ -31,7 +36,7 @@ const config = {
       extensionManifest: {
         // manifest here
       },
-      maxContexts: 2,
+      maxContexts: 10,
       web: {
         match: ['./tests/unit/web/**/*.ts']
       },

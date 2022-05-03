@@ -18,7 +18,7 @@ import { EPKConfig } from '../types'
 
 const run = async ({ entryFiles }: { entryFiles?: string[] } = { entryFiles: [] }) => {
   const watch = process.argv.includes('-w') || process.argv.includes('--watch')
-  const configPath = join(cwd(), './test.config.js') // pathToFileURL(undefined ?? join(cwd(), './test.config.js')).toString()
+  const configPath = join(cwd(), './test.config.ts') // pathToFileURL(undefined ?? join(cwd(), './test.config.js')).toString()
   
   await rm(join(cwd(), './tmp'), { recursive: true }).catch(() => {})
 

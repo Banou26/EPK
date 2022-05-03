@@ -1,33 +1,100 @@
 import type { EPKConfig } from 'src/types'
 
-import { watch } from 'fs/promises'
+import { mkdir, unlink, writeFile } from 'fs/promises'
 import { cwd } from 'process'
-import { join } from 'path'
+import { join, parse, relative } from 'path'
 import { pathToFileURL } from 'url'
 
-import { Observable } from 'rxjs'
+import esbuild, { Message, OutputFile } from 'esbuild'
+import asyncObservable from '../utils/async-observable'
+
+async function esbuildResolve(id, dir) {
+  let result;
+
+  await esbuild.build({
+    stdin: {
+      contents: `import ${JSON.stringify(id)}`,
+      resolveDir: dir
+    },
+    write: false,
+    bundle: true,
+    treeShaking: false,
+    ignoreAnnotations: true,
+    platform: 'node',
+    plugins: [
+      {
+        name: 'resolve',
+        setup({ onLoad }) {
+          onLoad({ filter: /.*/ }, (args) => {
+            result = args.path;
+            return { contents: '' };
+          });
+        }
+      }
+    ]
+  });
+  return result;
+}
 
 export const configFileWatcher = (path: string) =>
-  new Observable<EPKConfig>(observer => {
-    const fileUrlPath = pathToFileURL(undefined ?? join(cwd(), './test.config.js')).toString()
-
-    import(fileUrlPath)
-      .then(({ default: config }: { default: EPKConfig }) =>
-        observer.next(config)
-      )
-
-    const { signal, abort } = new AbortController()
-    const watcher = watch(path, { signal })
-    ;(async () => {
-      try {
-        for await (const event of watcher) {
-          const { default: config }: { default: EPKConfig } = await import(`${fileUrlPath}?t=${Date.now()}`)
-          if (event.eventType === 'change') observer.next(config)
-        }
-      } catch (err) {
-        if (err.name === 'AbortError') return
-        throw err
+  asyncObservable<EPKConfig>(async observer => {
+    const relativePath = relative(cwd(), path)
+    const absolutePath = join(cwd(), relativePath)
+    const esmFilePath = pathToFileURL(absolutePath).toString()
+    let outputCount = 0
+    const makeSuccess = async (outputFiles: OutputFile[]) => {
+      const outputPath = `${absolutePath}__epk-config__${outputCount}__.js`
+      const esmOutputPath = pathToFileURL(outputPath).toString()
+      outputCount++
+      for (const file of outputFiles) {
+        try {
+          await mkdir(parse(esmFilePath).dir, { recursive: true })
+        } catch (err) {}
+          await writeFile(outputPath, file.contents)
       }
-    })()
-    return () => abort()
+      const { default: config }: { default: EPKConfig } = await import(esmOutputPath)
+      observer.next(config)
+      await unlink(outputPath)
+    }
+
+    const makeError = (errorMessages: Message[]) => {
+      // todo: make real error messages
+      console.error(errorMessages)
+    }
+
+    const { errors, outputFiles, stop } = await esbuild.build({
+      bundle: true,
+      write: false,
+      entryPoints: [path],
+      format: 'esm',
+      watch: {
+        async onRebuild(error, result) {
+          if (!result) return
+          const { errors, outputFiles } = result
+          if (errors.length) makeError(errors)
+          else await makeSuccess(outputFiles)
+        }
+      },
+      plugins: [
+        {
+          name: 'make-all-packages-external',
+          setup(build) {
+            let filter = /^[^.\/]|^\.[^.\/]|^\.\.[^\/]/ // Must not start with "/" or "./" or "../"
+            build.onResolve({ filter }, async args => {
+              if (args.path === path) return ({ path: args.path })
+              if (args.path === 'p-limit') return ({ path: 'p-limit', external: true })
+              if (args.path === 'playwright') return ({ path: 'playwright', external: true })
+              const resolvedPath = await esbuildResolve(args.path, '.')
+              const result = resolvedPath ? relative('./node_modules', resolvedPath).replaceAll('\\', '/') : args.path
+              return ({ path: result, external: true })
+            })
+          },
+        }
+      ],
+    })
+
+    if (errors.length) makeError(errors)
+    else await makeSuccess(outputFiles)
+
+    return () => stop()
   })
