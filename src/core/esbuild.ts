@@ -14,7 +14,7 @@ import { toGlobal } from '../utils/runtime'
 import { TestConfig, BuildOutput, BuildOutputFile } from '../types'
 
 // @ts-ignore
-const __dirname: string = __dirname ?? dirname(fileURLToPath(import.meta.url))
+const __dirname: string = globalThis.__dirname ?? dirname(fileURLToPath(import.meta.url))
 
 const includesSourcePath =
   ({ file, testConfig }: { file: OutputFile, testConfig: TestConfig }) =>
