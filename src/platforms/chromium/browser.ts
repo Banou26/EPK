@@ -30,10 +30,14 @@ export const getExtensions = async ({ context }: { context: BrowserContext }): P
   // const elemHandles = await extensionPage.locator('#extension-id:below(div#name, 200)').elementHandles()
   const extensions = await Promise.all(
     (await cardElemHandles)
-      .map(async cardElemHandle => ({
-        name: await (await cardElemHandle.waitForSelector('#name')).innerText(),
-        id: (await (await cardElemHandle.waitForSelector('#extension-id:below(div#name, 200)')).innerText()).replace('ID: ', '')
-      }))
+      .map(async cardElemHandle => {
+        // todo: check why a CERTAIN(Liam related) extension's background page has issues without this
+        await (await cardElemHandle.waitForSelector('#dev-reload-button')).click()
+        return {
+          name: await (await cardElemHandle.waitForSelector('#name')).innerText(),
+          id: (await (await cardElemHandle.waitForSelector('#extension-id:below(div#name, 200)')).innerText()).replace('ID: ', '')
+        }
+      })
   )
   await extensionPage.close()
   return extensions
