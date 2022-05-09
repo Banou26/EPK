@@ -175,7 +175,7 @@ export default ({ config, output: rootRoutput }: { config: TestConfig, output?: 
             }
           }).then(async context => {
             extensionId = await enableExtension({ context, extensionName: 'EPK' })
-            extensions = await getExtensions({ context })
+            extensions = await getExtensions({ config, context })
             return context
           })
         }

@@ -71,6 +71,7 @@ export type TestConfig = {
   name: string
   platform: Platform
   extensions?: string[]
+  initReloadExtensions?: boolean
   extensionManifest: {
     // manifest here
   },

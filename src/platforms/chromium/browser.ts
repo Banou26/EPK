@@ -1,4 +1,5 @@
 import type { BrowserContext, BrowserType } from 'playwright'
+import { TestConfig } from 'src/types'
 import { Extension } from './types'
 
 export const createContext = async ({ userDataDir, options }: { userDataDir: string, options?: Parameters<BrowserType<{}>['launchPersistentContext']>[1] }) => {
@@ -22,7 +23,7 @@ export const enableExtension = async ({ context, extensionName }: { context: Bro
   return extensionId
 }
 
-export const getExtensions = async ({ context }: { context: BrowserContext }): Promise<Extension[]> => {
+export const getExtensions = async ({ config, context }: { config: TestConfig, context: BrowserContext }): Promise<Extension[]> => {
   const extensionPage = await context.newPage()
   await extensionPage.goto('chrome://extensions/')
   await extensionPage.reload()
@@ -31,8 +32,9 @@ export const getExtensions = async ({ context }: { context: BrowserContext }): P
   const extensions = await Promise.all(
     (await cardElemHandles)
       .map(async cardElemHandle => {
-        // todo: check why a CERTAIN(Liam related) extension's background page has issues without this
-        await (await cardElemHandle.waitForSelector('#dev-reload-button')).click()
+        // this is needed for certain extensions as there's a weird bug cutting internet connection to background pages
+        // other weird stuff happens with background pages, e.g can't run anything when clicking on background page in the extensions page on initial load
+        if (config.initReloadExtensions) await (await cardElemHandle.waitForSelector('#dev-reload-button')).click()
         return {
           name: await (await cardElemHandle.waitForSelector('#name')).innerText(),
           id: (await (await cardElemHandle.waitForSelector('#extension-id:below(div#name, 200)')).innerText()).replace('ID: ', '')
