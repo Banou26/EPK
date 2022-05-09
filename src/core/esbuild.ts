@@ -128,6 +128,7 @@ export default ({ testConfig, esbuildOptions, watch }: { testConfig: TestConfig,
         contentScript: { filePaths: contentScriptfilePaths },
         backgroundScript: { filePaths: backgroundScriptfilePaths }
       })
+      if (!watch) observer.complete()
     }
 
     const { errors, metafile, outputFiles, stop } = await esbuild.build({
@@ -140,14 +141,17 @@ export default ({ testConfig, esbuildOptions, watch }: { testConfig: TestConfig,
       outdir: join(cwd(), `./tmp/builds/${testConfig.name}`),
       publicPath: '/',
       minify: process.argv.includes('-m') || process.argv.includes('--minify'),
-      watch: {
-        async onRebuild(error, result) {
-          if (!result) return
-          const { errors, outputFiles } = result
-          if (errors.length) makeError(errors)
-          else await makeSuccess(outputFiles)
-        }
-      },
+      watch:
+        watch
+          ? {
+            async onRebuild(error, result) {
+              if (!result) return
+              const { errors, outputFiles } = result
+              if (errors.length) makeError(errors)
+              else await makeSuccess(outputFiles)
+            }
+          }
+          : undefined,
       plugins: [
         ...esbuildOptions.plugins ?? [],
         {
@@ -164,5 +168,5 @@ export default ({ testConfig, esbuildOptions, watch }: { testConfig: TestConfig,
     if (errors.length) makeError(errors)
     else await makeSuccess(outputFiles)
 
-    return () => stop()
+    return () => stop && stop()
   })

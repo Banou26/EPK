@@ -16,6 +16,12 @@ import cliReporter from '../reporters/cli'
 import { shareReplay } from 'rxjs/operators'
 import { EPKConfig } from '../types'
 
+const testFailed = ({ path, events, groupsTestsRuns, testsRuns }) =>
+  [
+    ...testsRuns,
+    ...groupsTestsRuns.flatMap(({ tests }) => tests),
+  ].filter(({ status }) => status === 'fail')
+
 const run = async ({ entryFiles }: { entryFiles?: string[] } = { entryFiles: [] }) => {
   const watch = process.argv.includes('-w') || process.argv.includes('--watch')
   const configPath = join(cwd(), './test.config.ts') // pathToFileURL(undefined ?? join(cwd(), './test.config.js')).toString()
@@ -50,10 +56,18 @@ const run = async ({ entryFiles }: { entryFiles?: string[] } = { entryFiles: [] 
         shareReplay(),
         cliReporter()
       )
+  
+  let lastValue
 
   epk.subscribe(
-    // v => console.log('CLI', v),
-    // err => console.error(`CLI error ${err}}`)
+    value => {
+      lastValue = value
+    },
+    err => console.error(`CLI error ${err}}`),
+    () => {
+      const failed = lastValue.configs?.map(({ name, files }) => files.map(testFailed).length).length
+      if (failed) process.exit(1)
+    }
   )
 }
 

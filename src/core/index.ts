@@ -17,7 +17,7 @@ const keepNewTests = (oldTests: TestRun[] = [], newTests: TestRun[] = []) =>
   ]
 
 export default ({ configPath, watch }: { configPath: string, watch?: boolean }) =>
-  configFileWatcher(configPath)
+  configFileWatcher({ path: configPath, watch })
     .pipe(
       switchMap(config =>
         from(config.configs)

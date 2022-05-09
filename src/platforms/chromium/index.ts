@@ -102,11 +102,13 @@ const runGroupWithUse = ({ group, output, config, browser: _browser, extensionId
                   )
             })
           })
+          observer.complete()
         })
         .catch(err => {
           console.log('Error during `group.use`', err)
           const [line, row] = err.stack.split('\n').at(-1).trim().replace('at __epk_generated_use.js:', '').trim().split(':').map(Number)
           console.log(group.useFunction.toString().split('\n').slice(Math.max(line - 1, 0), line + 1).join('\n'))
+          // todo: complete observer after sending error object
         })
       
       // funcRes
@@ -131,8 +133,14 @@ const runRootTestsAndVanillaGroups = ({ browser: _browser, output, config, exten
         const _page = page
         _page.on('epkLog', data => observer.next({ type: 'log', data }))
         _page.on('epkError', data => observer.next({ type: 'error', data }))
-        _page.on('epkRegister', data => observer.next({ type: 'register', data }))
-        _page.on('epkRun', data => observer.next({ type: 'run', data }))
+        _page.on('epkRegister', data => {
+          observer.next({ type: 'register', data })
+          observer.complete()
+        })
+        _page.on('epkRun', data => {
+          observer.next({ type: 'run', data })
+          if (data.done) observer.complete()
+        })
         const _task =
           task ?? {
             type: 'run',

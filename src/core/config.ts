@@ -36,7 +36,7 @@ async function esbuildResolve(id, dir) {
   return result;
 }
 
-export const configFileWatcher = (path: string) =>
+export const configFileWatcher = ({ path, watch }: { path: string, watch?: boolean }) =>
   asyncObservable<EPKConfig>(async observer => {
     const isInModulePackage = (JSON.parse((await readFile(join(cwd(), './package.json'))).toString()).type ?? '') === 'module'
     const relativePath = relative(cwd(), path)
@@ -56,6 +56,7 @@ export const configFileWatcher = (path: string) =>
       const { default: config }: { default: EPKConfig } = await import(esmOutputPath)
       observer.next(config)
       await unlink(outputPath)
+      if (!watch) observer.complete()
     }
 
     const makeError = (errorMessages: Message[]) => {
@@ -68,14 +69,17 @@ export const configFileWatcher = (path: string) =>
       write: false,
       entryPoints: [path],
       format: isInModulePackage ? 'esm' : 'cjs',
-      watch: {
-        async onRebuild(error, result) {
-          if (!result) return
-          const { errors, outputFiles } = result
-          if (errors.length) makeError(errors)
-          else await makeSuccess(outputFiles)
-        }
-      },
+      watch:
+        watch
+          ? {
+            async onRebuild(error, result) {
+              if (!result) return
+              const { errors, outputFiles } = result
+              if (errors.length) makeError(errors)
+              else await makeSuccess(outputFiles)
+            }
+          }
+          : undefined,
       plugins: [
         {
           name: 'make-all-packages-external',
@@ -97,5 +101,5 @@ export const configFileWatcher = (path: string) =>
     if (errors.length) makeError(errors)
     else await makeSuccess(outputFiles)
 
-    return () => stop()
+    return () => stop && stop()
   })
