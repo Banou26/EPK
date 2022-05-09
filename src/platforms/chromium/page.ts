@@ -85,6 +85,7 @@ export const prepareContext = async ({ config, extensionId, output, page, tabId,
     if (type === 'log') page.emit(eventToEpkEvent('log'), { log: text })
   })
   const initDone = new Promise(async resolve => {
+    await page.exposeFunction(toGlobal('waitForSelector'), (...args) => page.waitForSelector(...args))
     await page.exposeBinding(toGlobal('initDone'), () => resolve(undefined)).catch(() => {})
     if (output.environment === 'content-script') {
       await backgroundPage.evaluate(

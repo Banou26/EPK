@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { setup, teardown, group, test, runInUrls, withData } from '../../../lib/lib'
+import { setup, teardown, group, test, runInUrls, withData, waitForSelector } from '../../../lib/lib'
 
 // group('my group', () => {
 //   test('group test', () => {})
@@ -35,6 +35,9 @@ group('my group pre', () => {
   })
   teardown(() => {
     console.log('teardown')
+  })
+  test('test', async () => {
+    await waitForSelector('body', )
   })
   test('my pre group test', () => {
     console.log('normal test run')
