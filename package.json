@@ -12,7 +12,7 @@
   "exports": {
     "default": "./lib/lib.js"
   },
-  "types": "./lib/lib.d.ts",
+  "types": "./lib/src/lib.d.ts",
   "type": "module",
   "dependencies": {
     "chai": "^4.3.6",
