@@ -65,7 +65,7 @@ const run = async ({ entryFiles }: { entryFiles?: string[] } = { entryFiles: [] 
     },
     err => console.error(`CLI error ${err}}`),
     () => {
-      const failed = lastValue.configs?.map(({ name, files }) => files.map(testFailed).length).length
+      const failed = lastValue.configs?.flatMap(({ files }) => files.flatMap(testFailed)).length
       if (failed) process.exit(1)
     }
   )
