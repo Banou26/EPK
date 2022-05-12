@@ -12,7 +12,7 @@ export const parseErrorStack = ({ group, sourceMapString, originalStack, errorSt
     const lineStr = mappedStackFrame.line ?? mappedStackFrame.lineNumber ?? 0
     const columnStr = mappedStackFrame.column ?? mappedStackFrame.columnNumber ?? 0
     const { functionName } = mappedStackFrame
-    const source = relative(cwd(), mappedStackFrame.source).slice(6) || '<anonymous>'
+    const source = relative(cwd(), mappedStackFrame.source ?? '').slice(6) || '<anonymous>'
     return `at ${functionName ?? ''}${functionName ? ' (' : ''}${source}:${lineStr}:${columnStr}${functionName ? ')' : ''}`
   })
   return {
