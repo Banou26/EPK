@@ -27,7 +27,7 @@ const runGroupWithUse = ({ group, output, config, browser: _browser, extensionId
     let pages: { page: EPKPage, tabId: number, backgroundPage: EPKPage }[] = []
     let epkRunDone
 
-    const newPageLimit = pLimit(config.maxContexts ?? 15);
+    const newPageLimit = pLimit(config.maxContexts ?? 15)
 
     const _getPage = () => {
       return (

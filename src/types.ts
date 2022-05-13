@@ -15,6 +15,8 @@ export type Hook<Runtime> = {
 export type TestOptions = {
   skip?: boolean
   only?: boolean
+  serial?: boolean
+  isolate?: boolean
 }
 
 export type Test<Runtime extends boolean = false> =

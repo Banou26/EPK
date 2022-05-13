@@ -1,15 +1,17 @@
 import type { Task } from '../utils/runtime'
 import type { Group, GroupRun, Test, TestRun } from '../types'
 
-import { hooks as registeredHooks, groups as registeredGroups, tests as registeredTests } from './test'
 import { combineLatest, from, merge, Observable, of } from 'rxjs'
 import { endWith, finalize, last, map, mapTo, mergeMap, scan, share, shareReplay, startWith, switchMap, tap } from 'rxjs/operators'
+import pLimit from 'p-limit'
+
+import { hooks as registeredHooks, groups as registeredGroups, tests as registeredTests } from './test'
 import { Extension } from '../platforms/chromium/types'
 
-const runTests = ({ tests, group, extensions }:  { tests: Test<true>[], group?: Group<true>, extensions: Extension[] }): Observable<TestRun<true>[]> =>
+const runTests = ({ tests, group, extensions, runInserialTestLimit }:  { tests: Test<true>[], group?: Group<true>, extensions: Extension[], runInserialTestLimit: (...args) => any }): Observable<TestRun<true>[]> =>
   from(tests)
     .pipe(
-      mergeMap(test => {
+      mergeMap(async test => {
         if (group) {
           const registeredGroup = registeredGroups.find(({ name }) => name === group.name)
           const registeredTest =
@@ -18,12 +20,25 @@ const runTests = ({ tests, group, extensions }:  { tests: Test<true>[], group?: 
               .filter(({ name }) => group.tests.some(test => name === test.name))
               .find(({ name }) => name === test.name)
 
-          return registeredTest?.function({ extensions }) ?? Promise.resolve(undefined)
+          if (test.serial) {
+            return (await runInserialTestLimit(() => registeredTest?.function({ extensions })))
+          }
+          return registeredTest?.function({ extensions })
         }
+
+        const testFunction =
+          registeredTests
+            .find(({ name }) => name === test.name)
+            ?.function ?? (() => {})
+
+        if (test.serial) {
+          return (await runInserialTestLimit(() => testFunction({ extensions })))
+        }
+
         return (
           registeredTests
             .find(({ name }) => name === test.name)
-            ?.function({ extensions }) ?? Promise.resolve(undefined)
+            ?.function({ extensions })
         )
       }),
       scan((tests, test) => [...tests, test].filter(Boolean), [])
@@ -37,8 +52,12 @@ export default ({ groups, tests, extensions }: Task<'run', true>['data']) => {
     // console.log('hooks', group.hooks)
   })
 
+  const serialTestLimit = pLimit(1)
+
+  const runInserialTestLimit = (func) => serialTestLimit(func)
+
   const testsResults =
-    runTests({ tests, extensions })
+    runTests({ tests, extensions, runInserialTestLimit })
       .pipe(
         startWith([]),
       )
@@ -60,7 +79,8 @@ export default ({ groups, tests, extensions }: Task<'run', true>['data']) => {
                 .find(({ name }) => name === group.name)
                 .tests,
                 group,
-                extensions
+                extensions,
+                runInserialTestLimit
               }
             )
               .pipe(
