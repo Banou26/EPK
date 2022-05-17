@@ -39,7 +39,7 @@
   "scripts": {
     "build-watch": "node ./build.js -w",
     "build": "node ./build.js",
-    "test-watch": "nodemon -e * --watch \"./build/**/*\" --exec \"npm run test\"",
+    "test-watch": "nodemon -e * --watch \"./build/**/*\" --exec \"node build/cli.js ./tests/unit/*.ts -w\"",
     "test": "node build/cli.js ./tests/unit/*.ts",
     "watch": "concurrently \"npm run build-watch\" \"npm run test-watch\"",
     "dev": "npm run watch",
