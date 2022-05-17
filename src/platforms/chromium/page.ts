@@ -9,6 +9,7 @@ import { fileURLToPath } from 'url'
 
 import { toGlobal } from '../../utils/runtime'
 import { eventToEpkEvent } from './utils'
+import { runInThisContext } from 'vm'
 
 // @ts-ignore
 const __dirname: string = __dirname ?? dirname(fileURLToPath(import.meta.url))
@@ -85,7 +86,42 @@ export const prepareContext = async ({ config, extensionId, output, page, tabId,
     if (type === 'log') page.emit(eventToEpkEvent('log'), { log: text })
   })
   const initDone = new Promise(async resolve => {
-    await page.exposeFunction(toGlobal('waitForSelector'), (...args) => page.waitForSelector(...args))
+    await page.exposeFunction(
+      toGlobal('epkEval'),
+      (functionString, ...args) => {
+        const func = runInThisContext(
+          functionString,
+          { timeout: 1000, filename: '__epk_generated_eval.js' }
+        )
+        return (
+          func(
+            {
+              page
+            },
+            ...args
+          )
+        )
+      }
+    )
+    await page.exposeBinding(
+      toGlobal('epkEvalHandle'),
+      async (_, handle) => {
+        const functionString = await (await handle.getProperty('functionString')).jsonValue()
+        const func = runInThisContext(
+          functionString,
+          { timeout: 1000, filename: '__epk_generated_eval.js' }
+        )
+        return (
+          func(
+            {
+              page
+            },
+            await handle.getProperty('handle')
+          )
+        )
+      },
+      { handle: true }
+    )
     await page.exposeBinding(toGlobal('initDone'), () => resolve(undefined)).catch(() => {})
     if (output.environment === 'content-script') {
       await backgroundPage.evaluate(

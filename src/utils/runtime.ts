@@ -1,7 +1,7 @@
 import type { Group, GroupRun, Test, TestRun } from '../types'
 import type { Extension } from '../platforms/chromium/types'
 
-export type Global = 'task' | 'event' | 'initDone' | 'waitForSelector'
+export type Global = 'task' | 'event' | 'initDone' | 'epkEval' | 'epkEvalHandle'
 
 export const toGlobal = (globalVariableName: Global) => `__epk_${globalVariableName}__`
 
