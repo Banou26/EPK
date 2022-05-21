@@ -153,7 +153,7 @@ export default ({ testConfig, esbuildOptions, watch }: { testConfig: TestConfig,
           }
           : undefined,
       plugins: [
-        ...esbuildOptions.plugins ?? [],
+        ...esbuildOptions?.plugins ?? [],
         {
           name: 'playwright-browser',
           setup(build) {
@@ -162,7 +162,7 @@ export default ({ testConfig, esbuildOptions, watch }: { testConfig: TestConfig,
           },
         }
       ],
-      inject: [join(__dirname, '../src/runtime/index.ts'), join(__dirname, '../src/runtime/console.ts'), ...esbuildOptions.inject ?? []],
+      inject: [join(__dirname, '../src/runtime/index.ts'), join(__dirname, '../src/runtime/console.ts'), ...esbuildOptions?.inject ?? []],
     })
 
     if (errors.length) makeError(errors)
