@@ -1,6 +1,7 @@
 import type { BuildOptions, Message, OutputFile } from 'esbuild'
+import type { BrowserType } from 'playwright'
 
-import type { JSHandle } from 'playwright'
+import { devices } from 'playwright'
 
 export type Environment = 'web' | 'content-script' | 'background-script'
 export type Platform = 'node' | 'chromium'
@@ -69,9 +70,14 @@ export type EPKConfig = {
   configs: TestConfig[]
 }
 
+export { devices }
+export type Devices = typeof devices
+
 export type TestConfig = {
   name: string
   platform: Platform
+  device?: Devices[string]
+  browserConfig?: Parameters<BrowserType<{}>['launchPersistentContext']>[1]
   extensions?: string[]
   initReloadExtensions?: boolean
   extensionManifest: {

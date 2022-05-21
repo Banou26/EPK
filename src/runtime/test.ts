@@ -47,7 +47,7 @@ const makeHook = <T extends (...args: any[]) => any>(options: Pick<Hook<true>, '
   return Object.defineProperties(hook, Object.fromEntries(variants)) as HookFunction<T>
 }
 
-export const setup = makeHook<() => (() => void) | undefined | void>({ name: 'setup' })
+export const setup = makeHook<() => Promise<(() => void) | undefined | void> | ((() => void) | undefined | void)>({ name: 'setup' })
 export const teardown = makeHook<() => void>({ name: 'teardown' })
 
 export let groups: Group<true>[] = []

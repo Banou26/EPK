@@ -175,14 +175,16 @@ export default ({ config, output: rootRoutput }: { config: TestConfig, output?: 
           _browser = createContext({
             userDataDir: join(cwd(), `tmp/platform/chromium/${id}`),
             options: {
-              headless: false,
-              devtools: true,
+              bypassCSP: true,
+              headless: config.extensions?.length ? false : true,
+              ...config.browserConfig ?? {},
+              ...config.device ?? {},
               args: [
+                ...config.browserConfig?.args ?? [],
                 `--disable-extensions-except=${[extensionPath, ...config.extensions ?? []].join(',')}`,
                 // ` --load-extension='./chrome_extensions/lmhkpmbekcpmknklioeibfkpmmfibljd/2.17.0_0,./chrome_extensions/fmkadmapgofadopljbjfkapdkoienihi/3.6.0_0'`
                 `--load-extension=${[extensionPath, ...config.extensions ?? []].join(',')}`
-              ],
-              bypassCSP: true
+              ]
             }
           }).then(async context => {
             extensionId = await enableExtension({ context, extensionName: 'EPK' })
