@@ -54,7 +54,12 @@ export const configFileWatcher = ({ path, watch }: { path: string, watch?: boole
           await writeFile(outputPath, file.contents)
       }
       const { default: config }: { default: EPKConfig } = await import(esmOutputPath)
-      observer.next(config)
+      observer.next(
+        isInModulePackage
+          ? config
+          // @ts-ignore
+          : config.default
+      )
       await unlink(outputPath)
       if (!watch) observer.complete()
     }
