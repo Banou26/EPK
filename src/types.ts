@@ -76,11 +76,13 @@ export type Devices = typeof devices
 export type TestConfig = {
   name: string
   platform: Platform
+  setup?: () => any,
+  teardown?: () => any,
   device?: Devices[string]
   browserConfig?: Parameters<BrowserType<{}>['launchPersistentContext']>[1]
   extensions?: string[]
   initReloadExtensions?: boolean
-  extensionManifest: {
+  extensionManifest?: {
     // manifest here
   },
   maxContexts?: number
@@ -93,8 +95,8 @@ export type TestConfig = {
   backgroundScript?: {
     match: string[]
   },
-  logLevel: LogLevel
-  esbuild: BuildOptions
+  logLevel?: LogLevel
+  esbuild?: BuildOptions
 }
 
 export type TestConfigRun = {

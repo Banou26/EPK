@@ -1,4 +1,4 @@
-import type { Group, GroupRun, Test, TestRun } from '../types'
+import type { Group, GroupRun, Hook, Test, TestRun } from '../types'
 import type { Extension } from '../platforms/chromium/types'
 
 export type Global = 'task' | 'event' | 'initDone' | 'epkEval' | 'epkEvalHandle'
@@ -23,7 +23,7 @@ export type Event<T extends EVENT = EVENT, Runtime extends boolean = false> = {
     T extends 'initDone' ? undefined :
     T extends 'log' ? { error: string } | { warn: string } | { info: string } | { log: string } :
     T extends 'error' ? { message: string, stack: string[], errorStack?: any[] } :
-    T extends 'register' ? { tests: Test<Runtime>[], groups: Group<Runtime>[] } :
+    T extends 'register' ? { tests: Test<Runtime>[], groups: Group<Runtime>[], hooks: Hook<Runtime>[] } :
     T extends 'run' ? { group?: GroupRun<Runtime>, test?: TestRun<Runtime> } | { groups?: GroupRun<Runtime>[], tests?: TestRun<Runtime>[], done?: boolean } :
     never
 }

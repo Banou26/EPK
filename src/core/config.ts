@@ -43,7 +43,13 @@ export const configFileWatcher = ({ path, watch }: { path: string, watch?: boole
     const absolutePath = join(cwd(), relativePath)
     const esmFilePath = pathToFileURL(absolutePath).toString()
     let outputCount = 0
+    let latestConfig: EPKConfig
     const makeSuccess = async (outputFiles: OutputFile[]) => {
+      if (latestConfig) {
+        for (const config of latestConfig.configs) {
+          if (config.teardown) await config.teardown()
+        }
+      }
       const outputPath = `${absolutePath}__epk-config__${outputCount}__.js`
       const esmOutputPath = pathToFileURL(outputPath).toString()
       outputCount++
@@ -53,13 +59,17 @@ export const configFileWatcher = ({ path, watch }: { path: string, watch?: boole
         } catch (err) {}
           await writeFile(outputPath, file.contents)
       }
-      const { default: config }: { default: EPKConfig } = await import(esmOutputPath)
-      observer.next(
+      const { default: _default }: { default: EPKConfig } = await import(esmOutputPath)
+      const config: EPKConfig =
         isInModulePackage
-          ? config
+          ? _default
           // @ts-ignore
-          : config.default
-      )
+          : _default.default
+      latestConfig = config
+      for (const config of latestConfig.configs) {
+        if (config.setup) await config.setup()
+      }
+      observer.next(config)
       await unlink(outputPath)
       if (!watch) observer.complete()
     }
