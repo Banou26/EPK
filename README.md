@@ -37,7 +37,7 @@ Here's a minimalistic test configuration
 
 `test.config.ts`
 ```ts
-import type { EPKConfig } from './src/lib'
+import type { EPKConfig } from 'epk'
 
 const config: EPKConfig = {
   configs: [
@@ -64,7 +64,7 @@ Now we'll setup a few simple tests, we'll place them in the `/tests/` folder
 `/tests/foo.ts`
 ```ts
 import { expect } from 'chai'
-import { setup, group, test } from '../../../lib/lib'
+import { setup, group, test } from 'epk'
 
 test('this test succeed', () => {
   expect(1).to.equal(1)
@@ -96,7 +96,7 @@ And you're set!
 If you need more complex testing environments, you can customize both esbuild and playwright configurations as well as sideloaded extensions as shown in this more advanced configuration:
 
 ```ts
-import type { EPKConfig } from './src/lib'
+import type { EPKConfig } from 'epk'
 import { dirname, join } from 'path'
 import { fileURLToPath } from 'url'
 import { readFile } from 'fs/promises'
