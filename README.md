@@ -1,5 +1,15 @@
 # EPK
 
+## Introduction
+EPK serves as a all-in-one tool for testing javascript, It will be able to have a test runner on both Node and Web environments.
+
+In addition of that, for the node runner, EPK plans on supporting all major web browsers (Chrome, Firefox, Safari, Edge, ect...) for tests to run in, in addition of running tests in node.
+
+One of the main goals for this project is to support testing [Web Extensions](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions), as there is a big void in the testing tools out there regarding them.
+
+You should be able to write tests that will run in all contexts needed for real applications.
+That means you'll be able to run tests in actual web pages, in web pages's content script contexts, and in extension background pages. So you'll be able to run tests in more real environments without having to mock APIs.
+
 ## features
 - Currently supported test runner environment:
   - [x] NodeJS
